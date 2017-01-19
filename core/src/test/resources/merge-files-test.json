@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "dispatch": {
+    "duration": "5s",
+    "spark.local.dir": "/var"
+  },
+  "source": {
+    "kafka": {
+      "topics": {
+        "segment": {
+          "format": "avro",
+          "start": -1
+        }
+      },
+      "properties": {
+        "schema.registry.url": "http://localhost:8081",
+        "message.max.bytes": 10000,
+        "metadata.broker.list": "localhost:6667"
+      }
+    }
+  },
+  "targets": {
+    "jdbc": {
+      "table": "tester",
+      "idColumn": {
+        "name": "id",
+        "type": "long"
+      },
+      "columns": [
+        {
+          "source": "anonymousId",
+          "name": "user_handle",
+          "type": "string"
+        },
+        {
+          "source": "context.ip",
+          "name": "ip_address"
+        }
+      ],
+      "properties": {
+        "url": "jdbc:postgresql://localhost/tester",
+        "user": "tester",
+        "password": "tester"
+      }
+    }
+  }
+}

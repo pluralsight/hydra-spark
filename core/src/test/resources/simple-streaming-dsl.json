@@ -1,0 +1,24 @@
+{
+  "dispatch": {
+    "version": 1,
+    "name": "test-defaults-job",
+    "spark.master": "local[*]",
+    "streaming.interval": "2s",
+    "source": {
+      "kafka": {
+        "topics": {
+          "test.topic": {
+            "format": "json",
+            "start": -1
+          }
+        }
+      }
+    },
+    "operations": {
+      "1:value-filter": {
+        "column": "ip",
+        "value": "alex"
+      }
+    }
+  }
+}

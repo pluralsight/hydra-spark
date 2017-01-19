@@ -1,0 +1,15 @@
+{
+  "namespace": "hydra.spark.test",
+  "type": "record",
+  "name": "Test",
+  "fields": [
+    {
+      "name": "testName",
+      "type": "string"
+    },
+    {
+      "name": "testValue",
+      "type": "string"
+    }
+  ]
+}

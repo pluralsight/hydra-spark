@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+  ~ Copyright (C) 2017 Pluralsight, LLC.
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~ http://www.apache.org/licenses/LICENSE-2.0
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<!DOCTYPE log4j:configuration SYSTEM "log4j.dtd">
+
+<log4j:configuration debug="true" xmlns:log4j="http://jakarta.apache.org/log4j/">
+
+    <appender name="console" class="org.apache.log4j.ConsoleAppender">
+        <layout class="org.apache.log4j.PatternLayout">
+            <param name="ConversionPattern"
+                   value="%d{yyyy-MM-dd HH:mm:ss} %-5p %c{1}:%L - %m%n"/>
+        </layout>
+    </appender>
+
+    <category name="kafka.utils.VerifiableProperties">
+        <priority value="ERROR"/>
+    </category>
+
+    <category name="kafka.producer">
+        <priority value="ERROR"/>
+    </category>
+
+    <category name="kafka.network">
+        <priority value="WARN"/>
+    </category>
+
+    <category name="com.mchange">
+        <priority value="ERROR"/>
+    </category>
+
+    <category name="kafka.client">
+        <priority value="ERROR"/>
+    </category>
+
+    <category name="akka">
+        <priority value="ERROR"/>
+    </category>
+
+    <category name="org.reflections">
+        <priority value="ERROR"/>
+    </category>
+
+    <category name="de.flapdoodle">
+        <priority value="ERROR"/>
+    </category>
+
+    <category name="com.jolbox">
+        <priority value="ERROR"/>
+    </category>
+
+    <category name="ru.yandex.qatools.embed.postgresql.ex">
+        <priority value="ERROR"/>
+    </category>
+
+    <category name="slick">
+        <priority value="ERROR"/>
+    </category>
+
+    <category name="slick.compiler">
+        <priority value="ERROR"/>
+    </category>
+
+    <category name="org.apache.derby">
+        <priority value="ERROR"/>
+    </category>
+
+    <category name="scala.slick">
+        <priority value="ERROR"/>
+    </category>
+
+    <category name="org.apache.hadoop">
+        <priority value="ERROR"/>
+    </category>
+
+
+    <category name="org.apache.hive">
+        <priority value="ERROR"/>
+    </category>
+
+    <category name="org.datanucleus">
+        <priority value="ERROR"/>
+    </category>
+
+
+
+    <category name="io.netty">
+        <priority value="ERROR"/>
+    </category>
+
+    <category name="kafka">
+        <priority value="ERROR"/>
+    </category>
+
+    <category name="org.apache.spark">
+        <priority value="ERROR"/>
+    </category>
+
+    <category name="org.I0Itec.zkclient">
+        <priority value="ERROR"/>
+    </category>
+
+    <category name="org.apache.zookeeper">
+        <priority value="ERROR"/>
+    </category>
+
+    <category name="org.spark-project">
+        <priority value="ERROR"/>
+    </category>
+
+    <category name="org.elasticsearch">
+        <priority value="ERROR"/>
+    </category>
+
+    <category name="spray.can.server">
+        <priority value="ERROR"/>
+    </category>
+
+    <category name="io.confluent.kafka.schemaregistry.client.rest.utils">
+        <priority value="ERROR"/>
+    </category>
+
+    <category name="scalacache.guava">
+        <priority value="ERROR"/>
+    </category>
+
+
+    <root>
+        <level value="DEBUG"/>
+        <appender-ref ref="console"/>
+    </root>
+
+</log4j:configuration>

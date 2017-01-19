@@ -1,0 +1,30 @@
+---
+version: '2'
+
+services:
+
+  spark:
+    image: sequenceiq/spark:1.6.0
+    command: spark-class org.apache.spark.deploy.master.Master
+    volumes:
+      - ./target/scala-2.10:/app
+    expose:
+      - 7001
+      - 7002
+      - 7003
+      - 7004
+      - 7005
+      - 7006
+      - 7077
+      - 6066
+    ports:
+      - 4040:4040
+      - 6066:6066
+      - 7077:7077
+      - 8088:8088
+      - 8080:8080
+      - 8042:8042
+    volumes:
+      - ./conf/master:/conf
+      - ./data:/tmp/data
+
