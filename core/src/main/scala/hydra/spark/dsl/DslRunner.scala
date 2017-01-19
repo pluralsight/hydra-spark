@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-package hydra.spark.submit
+package hydra.spark.dsl
 
 import hydra.spark.api._
 import hydra.spark.dispatch.SparkDispatch
@@ -42,7 +42,5 @@ object DslRunner extends App {
         sparkDispatch.awaitTermination()
         sparkDispatch.stop()
     }
-
   }
-
 }

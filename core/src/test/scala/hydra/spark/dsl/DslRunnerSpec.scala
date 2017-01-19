@@ -1,4 +1,4 @@
-package hydra.spark.submit
+package hydra.spark.dsl
 
 import org.scalatest.{FunSpecLike, Matchers}
 
