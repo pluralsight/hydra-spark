@@ -102,6 +102,7 @@ object FactoryHelper {
       val clz: Class[_] = scala.util.Try(m.runtimeClass(c))
         .recover { case e: ClassNotFoundException => classOf[AnyRef] }.get
       val v = clz match {
+        case q if q == classOf[Seq[String]] => cfg.get[List[String]](key).getOrElse(List.empty)
         case q if q == classOf[Map[_, _]] => cfg.get[Map[String, String]](key).getOrElse(Map.empty)
         case q if q == classOf[String] => cfg.getString(key)
         case q if q == classOf[Int] => cfg.getInt(key)
