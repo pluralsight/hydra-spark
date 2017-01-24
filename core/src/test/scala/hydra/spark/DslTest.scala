@@ -36,6 +36,40 @@ object DslTest extends  App {
        |}
     """.stripMargin
 
-  SparkDispatch.apply(dsl).run()
+  val ds1 =
+    """
+      |{
+      |        "dispatch": {
+      |            "version": "1",
+      |            "name": "rpc-to-hdfs",
+      |              spark.master = "local[*]",
+      |            "source": {
+      |                "kafka": {
+      |                    "topics": {
+      |                        "test4.exp.zuora.RatePlanCharge_test1": {
+      |                            "format": "avro",
+      |                            "start": "last"
+      |                        }
+      |                    },
+      |                    "properties": {
+      |                        "group.id": "rpc_test",
+      |                        "metadata.broker.list": "10.107.219.195:9092,10.107.221.225:9092,10.107.223.56:9092,10.107.220.206:9092,10.107.217.184:9092",
+      |                        "schema.registry.url": "http://10.107.220.101:8081"
+      |                    }
+      |                }
+      |            },
+      |            "operations": {
+      |                "save-as-avro": {
+      |                    "directory": "hdfs://172.16.100.220/tmp/hydra/RatePlanCharge_test1",
+      |                    "schema": "RatePlanCharge_test2",
+      |                "properties": {
+      |                    "schema.registry.url": "http://10.107.220.101:8081"
+      |                }
+      |                }
+      |            }
+      |        }
+      |       }
+    """.stripMargin
+  SparkDispatch.apply(ds1).run()
 
 }
