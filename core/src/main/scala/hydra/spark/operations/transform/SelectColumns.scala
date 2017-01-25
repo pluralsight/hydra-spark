@@ -13,27 +13,30 @@
  * limitations under the License.
  */
 
-package org.elasticsearch.bootstrap;
+package hydra.spark.operations.transform
 
-import java.net.URL;
+import hydra.spark.api._
+import org.apache.spark.sql.DataFrame
 
-public class JarHell {
-    private JarHell() {
-    }
 
-    public static void checkJarHell() throws Exception {
-    }
+/**
+  * Created by alexsilva on 8/16/16.
+  */
+case class SelectColumns(columns: Seq[String]) extends DFOperation {
+  override def id: String = s"select-column-${columns.mkString}"
 
-    public static void checkJarHell(URL urls[]) throws Exception {
-    }
+  override def transform(df: DataFrame): DataFrame = {
+    df.select(columns.head, columns.drop(1): _*)
+  }
 
-    public static void checkVersionFormat(String targetVersion) {
-    }
+  override def validate: ValidationResult = {
+    if (columns.isEmpty)
+      Invalid(ValidationError("select-columns", "Column list cannot be empty."))
+    else Valid
+  }
 
-    public static void checkJavaVersion(String resource, String targetVersion) {
-    }
 
-    public static URL[] parseClassPath() {
-        return new URL[]{};
-    }
 }
+
+
+

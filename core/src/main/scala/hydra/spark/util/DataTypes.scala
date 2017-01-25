@@ -16,12 +16,11 @@
 package hydra.spark.util
 
 import hydra.spark.api.InvalidDslException
-import hydra.spark.sql.types.JsonType
 import org.apache.spark.sql.types._
 
 /**
- * Created by alexsilva on 8/15/16.
- */
+  * Created by alexsilva on 8/15/16.
+  */
 object DataTypes {
 
   private val arrayElemTypeRegex = """\[.*\]""".r
@@ -31,7 +30,6 @@ object DataTypes {
     name.toLowerCase match {
       case "decimal" => DecimalType.USER_DEFAULT
       case FIXED_DECIMAL(precision, scale) => DecimalType(precision.toInt, scale.toInt)
-      case "json" => JsonType
       case dataType if dataType.startsWith("array") => arrayDataType(dataType)
       case other => nonDecimalNameToType(other)
     }

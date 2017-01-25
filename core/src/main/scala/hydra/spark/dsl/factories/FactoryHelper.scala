@@ -20,36 +20,38 @@ import java.lang.reflect.Method
 import com.typesafe.config._
 import hydra.spark.api.InvalidDslException
 import hydra.spark.configs._
-import hydra.spark.dsl.util.{ CaseClassFactory, ReflectionUtils }
+import hydra.spark.dsl.util.{CaseClassFactory, ReflectionUtils}
 
 import scala.collection.JavaConverters._
 import scala.language.existentials
 import scala.reflect.runtime.universe._
 
 /**
- * Methods to help constructing sources and operations from config files using reflection.
- *
- * Created by alexsilva on 10/21/16.
- */
+  * Methods to help constructing sources and operations from config files using reflection.
+  *
+  * Created by alexsilva on 10/21/16.
+  */
 object FactoryHelper {
 
   val defaults = ConfigFactory.defaultReference.withFallback(ConfigFactory.load(getClass.getClassLoader, "reference"))
 
   /**
-   *
-   * @param elm     The config object for the element to be materialized.
-   * @param choices The pool of choices to pick from
-   * @param props   The set of 'global' properties that can be used in the materialized objects using the format
-   *                ${prop.name}
-   * @tparam T
-   * @return
-   */
+    *
+    * @param elm     The config object for the element to be materialized.
+    * @param choices The pool of choices to pick from
+    * @param props   The set of 'global' properties that can be used in the materialized objects using the format
+    *                ${prop.name}
+    * @tparam T
+    * @return
+    */
   def materialize[T: TypeTag](elm: ConfigObject, choices: Map[String, Class[_ <: T]], props: Config): Seq[T] = {
     val elements = elm.entrySet().asScala.map(x => {
       val dk = DslKey(x.getKey)
       //try to look up in the map, if not found try to load it as a class name
       val c = scala.util.Try(choices.get(dk.kname).getOrElse(Class.forName(dk.kname).asInstanceOf[Class[_ <: T]]))
-      if (c.isFailure) throw InvalidDslException(s"'${dk.kname}' is not a registered operation or source.")
+      if (c.isFailure)
+        throw InvalidDslException(s"'${dk.kname}' is not a registered operation or source. Known operations are " +
+          s"${choices.keys.mkString(",")}")
       val elemCfg = x.getValue.atPath(dk.kname).getConfig(dk.kname).resolveWith(props)
       dk -> scala.util.Try(instantiate(c.get, elemCfg))
     }).toSeq
@@ -61,7 +63,7 @@ object FactoryHelper {
     val cname = s"""hydra.spark.defaults."${clazz.getName}""""
     val defaultProps = defaults.get[ConfigObject](cname).getOrElse(ConfigFactory.empty().root()).toConfig
 
-     val propsCfg = ConfigFactory
+    val propsCfg = ConfigFactory
       .parseMap((defaultProps.flattenAtKey("properties") ++ cfg.flattenAtKey("properties")).asJava)
 
     val elemCfg = cfg.withFallback(propsCfg)
