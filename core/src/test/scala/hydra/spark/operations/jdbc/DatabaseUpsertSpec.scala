@@ -311,7 +311,7 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
 
     }
 
-    it("Should deserialize a json column as a string by default") {
+    ignore("Should deserialize a json column as a string by default") {
 
       val seg =
         """
@@ -367,9 +367,9 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
 
       val df = SQLContext.getOrCreate(ctx.get).read.json(rdd)
 
-      // val ndf = dbu.transform(df)
+      val ndf = dbu.transform(df)
 
-      //ndf.show()
+      ndf.show()
 
     }
 
