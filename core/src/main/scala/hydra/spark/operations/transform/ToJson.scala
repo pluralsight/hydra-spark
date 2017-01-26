@@ -1,7 +1,7 @@
 package hydra.spark.operations.transform
 
 import hydra.spark.api._
-import org.apache.spark.sql.catalyst.expressions.StructToJson
+import org.apache.spark.sql.catalyst.expressions.ColumnToJson
 import org.apache.spark.sql.{Column, DataFrame}
 
 /**
@@ -10,11 +10,10 @@ import org.apache.spark.sql.{Column, DataFrame}
 case class ToJson(columns: Seq[String]) extends DFOperation {
 
   override def transform(df: DataFrame): DataFrame = {
-    val jsonCols = columns.map(c => c -> new Column(StructToJson.fromColumn(Map.empty, df.col(c))))
+    val jsonCols = columns.map(c => c -> new Column(ColumnToJson.expr(Map.empty, df.col(c)).get))
 
     jsonCols.foldLeft(df)((df, col) => df.withColumn(col._1, col._2))
   }
-
 
   override def validate: ValidationResult = {
     if (columns.isEmpty)
@@ -22,3 +21,4 @@ case class ToJson(columns: Seq[String]) extends DFOperation {
     else Valid
   }
 }
+

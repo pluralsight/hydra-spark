@@ -3,6 +3,7 @@ package hydra.spark.json
 /**
   * Created by alexsilva on 1/25/17.
   */
+
 import java.io.Writer
 
 import com.fasterxml.jackson.core._
@@ -12,9 +13,9 @@ import org.apache.spark.sql.catalyst.util.{ArrayData, DateTimeUtils, MapData}
 import org.apache.spark.sql.types._
 
 class JacksonGenerator(
-                                     schema: StructType,
-                                     writer: Writer,
-                                     options: JSONOptions = new JSONOptions(Map.empty[String, String])) {
+                        schema: StructType,
+                        writer: Writer,
+                        options: JSONOptions = new JSONOptions(Map.empty[String, String])) {
   // A `ValueWriter` is responsible for writing a field of an `InternalRow` to appropriate
   // JSON data. Here we are using `SpecializedGetters` rather than `InternalRow` so that
   // we can directly access data in `ArrayData` without the help of `SpecificMutableRow`.
@@ -130,7 +131,7 @@ class JacksonGenerator(
     }
   }
 
-  private def writeArray(f: => Unit): Unit = {
+   def writeArray(f: => Unit): Unit = {
     gen.writeStartArray()
     f
     gen.writeEndArray()

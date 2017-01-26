@@ -9,6 +9,10 @@ import org.apache.spark.sql.types._
   */
 object JacksonUtils {
 
+  /**
+    * verifies if the schema is supported in json parsing
+    * @param schema
+    */
   def verifySchema(schema: StructType): Unit = {
     def verifyType(name: String, dataType: DataType): Unit = dataType match {
       case NullType | BooleanType | ByteType | ShortType | IntegerType | LongType | FloatType |

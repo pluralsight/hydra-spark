@@ -7,10 +7,13 @@ import org.apache.spark.sql.Column
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.analysis.TypeCheckResult
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenFallback
-import org.apache.spark.sql.types.{AbstractDataType, DataType, StringType, StructType}
+import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.types.UTF8String
 
 /**
+  * Converts a [[StructType]] to a json output string.
+  *
+  *
   * From org.apache.spark.sql.catalyst.expressions.jsonExpressions (Spark 2.1.0)
   *
   * Created by alexsilva on 1/25/17.
@@ -51,7 +54,7 @@ case class StructToJson(options: Map[String, String], child: Expression)
     UTF8String.fromString(json)
   }
 
-  override def inputTypes: Seq[AbstractDataType] = StructType :: Nil
+  override def inputTypes: Seq[AbstractDataType] = StructType :: ArrayType :: Nil
 }
 
 object StructToJson {
