@@ -38,7 +38,7 @@ class DslParserSpec extends Matchers with FunSpecLike with BeforeAndAfterEach wi
 
   val dsl =
     """
-     dispatch {
+     transport {
       |  version = 1
       |  name = test-job
       |  streaming.interval = 5s
@@ -287,7 +287,7 @@ class DslParserSpec extends Matchers with FunSpecLike with BeforeAndAfterEach wi
       val defDsl =
         s"""
 
-           |      	dispatch {
+           |      	transport {
            |      		version= 1,
            |      		name = test-defaults-job
            |         spark.master = "local[*]"
@@ -327,7 +327,7 @@ class DslParserSpec extends Matchers with FunSpecLike with BeforeAndAfterEach wi
       val path = Thread.currentThread().getContextClassLoader.getResource("credentials.conf").getFile
       val defDsl =
         s"""
-           |dispatch {
+           |transport {
            |  include file("$path")
            |  version = 1
            |  name = test-defaults-job

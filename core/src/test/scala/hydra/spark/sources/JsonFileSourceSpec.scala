@@ -88,7 +88,7 @@ class JsonFileSourceSpec extends Matchers with FunSpecLike with ScalaFutures wit
     it("Should be parseable") {
       val dsl =
         """
-          dispatch {
+          transport {
           |  version = 1
           |  spark.master = "local[*]"
           |  spark.ui.enabled = false
