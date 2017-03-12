@@ -52,7 +52,7 @@ class DataFrameUtilsSpec extends Matchers with FunSpecLike with SharedSparkConte
 
       val ddf = df.dropNestedColumn("user.handle")
       val ndf = SQLContext.getOrCreate(sc).read.json(sc.parallelize(dropJson :: Nil))
-      ddf.schema.fields shouldBe ndf.schema.fields
+      ddf.schema.fields.map(_.name) shouldBe ndf.schema.fields.map(_.name)
       ddf.first() shouldBe ndf.first()
     }
 
