@@ -26,7 +26,7 @@ case class SelectColumns(columns: Seq[String]) extends DFOperation {
   override def id: String = s"select-column-${columns.mkString}"
 
   override def transform(df: DataFrame): DataFrame = {
-    df.select(columns.head, columns.drop(1): _*)
+    df.select(columns.map(df.col(_)):_*)
   }
 
   override def validate: ValidationResult = {
