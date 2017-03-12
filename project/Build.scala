@@ -63,6 +63,8 @@ object HydraSparkBuild extends Build with BuildInfoKeys {
     concurrentRestrictions in Global += Tags.limit(Tags.Test, 1),
     scalaVersion := "2.11.8",
     crossScalaVersions := Seq("2.10.6", "2.11.8"),
+    excludeDependencies += "org.slf4j" % "slf4j-log4j12",
+    excludeDependencies += "log4j" % "log4j",
     dependencyOverrides += "org.scala-lang" % "scala-compiler" % scalaVersion.value,
     publishArtifact in Test := false,
     publishMavenStyle := true,

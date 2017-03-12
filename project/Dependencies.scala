@@ -59,8 +59,11 @@ object Dependencies {
 
   lazy val guava = Seq("com.google.guava" % "guava" % guavaVersion).map(_.force())
 
-  lazy val log4J = Seq("org.apache.logging.log4j" % "log4j-api" % "2.7",
-    "org.apache.logging.log4j" % "log4j-core" % "2.7")
+  lazy val log4J = Seq(
+    "org.apache.logging.log4j" % "log4j-slf4j-impl" % log4jVersion,
+    "org.apache.logging.log4j" % "log4j-core" % log4jVersion,
+    "org.apache.logging.log4j" % "log4j-api" % log4jVersion,
+    "org.apache.logging.log4j" % "log4j-1.2-api" % log4jVersion)
 
   lazy val jackson = Seq("com.fasterxml.jackson.core" % "jackson-core" % jacksonVersion,
     "com.fasterxml.jackson.core" % "jackson-databind" % jacksonVersion,

@@ -25,5 +25,4 @@ private[spark] trait Logging {
   @transient lazy val log: Logger = LoggerFactory.getLogger(logName)
 
   protected def logName = getClass.getName.stripSuffix("$")
-
 }

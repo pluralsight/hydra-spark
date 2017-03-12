@@ -30,6 +30,7 @@ object Versions {
   lazy val postgresVersion = "9.3-1102-jdbc41"
   lazy val guavaVersion = "18.0"
   lazy val avroVersion = "1.8.1"
+  val log4jVersion = "2.7"
   lazy val reflectionsVersion = "0.9.10"
   lazy val scoptVersion = "3.5.0"
   lazy val sparkCassandraConnectorVersion = "1.6.0"
