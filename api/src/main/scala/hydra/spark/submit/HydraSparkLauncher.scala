@@ -27,9 +27,10 @@ object HydraSparkLauncher extends Logging {
 
   }
 
-  def createLauncher(baseSparkConfig: Config, sparkInfo: SparkSubmitInfo, dsl: String): SparkLauncher = {
+  def createLauncher(baseSparkConfig: Config, sparkInfo: SparkSubmitInfo, dsl: String,
+                     containerElem: String = "transport"): SparkLauncher = {
 
-    val dslC = ConfigFactory.parseString(dsl).getConfig("dispatch")
+    val dslC = ConfigFactory.parseString(dsl).getConfig(containerElem)
 
     val sparkConf = ConfigFactory.parseMap(dslC.flattenAtKey("spark").asJava)
       .withFallback(baseSparkConfig)
@@ -39,7 +40,7 @@ object HydraSparkLauncher extends Logging {
       .setSparkHome(sparkInfo.sparkHome)
       .setAppResource(sparkInfo.hydraSparkJar)
       .setAppName(dslC.get[String]("name").getOrElse(UUID.randomUUID().toString))
-      .setMainClass("hydra.spark.submit.DslRunner")
+      .setMainClass("hydra.spark.dsl.DslRunner")
       .addAppArgs(dsl)
       .setMaster(sparkConf.getString("spark.master"))
       .setVerbose(true)

@@ -23,7 +23,7 @@ object Versions {
   lazy val scalaTestVersion = "2.2.6"
   lazy val scalaMockVersion = "3.2.2"
   lazy val scalaticVersion = "2.2.6"
-  lazy val confluentVersion = "2.0.1"
+  lazy val confluentVersion = "3.1.0"
   lazy val springVersion = "4.2.2.RELEASE"
   lazy val slickVersion = "3.2.0-M1"
   lazy val SparkJobServerVersion = "0.6.2"

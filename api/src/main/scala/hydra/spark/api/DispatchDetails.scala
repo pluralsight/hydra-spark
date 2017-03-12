@@ -37,13 +37,13 @@ case class DispatchDetails[S](name: String, source: Source[S], operations: Opera
   lazy val newCtx: ContextLike = {
     val sparkConf: SparkConf = {
       import hydra.spark.configs._
-      val sparkRefConf = dsl.getConfig("dispatch").flattenAtKey("spark")
+      val sparkRefConf = dsl.getConfig("transport").flattenAtKey("spark")
       val jars = dsl.get[List[String]]("spark.jars").getOrElse(List.empty)
       val appName = sparkRefConf.get("spark.app.name").getOrElse(name)
       new SparkConf().setAll(sparkRefConf).setAppName(appName).setJars(jars)
     }
 
-    val ctx = fact.makeContext(sparkConf, dsl.getConfig("dispatch"))
+    val ctx = fact.makeContext(sparkConf, dsl.getConfig("transport"))
 
     if (!ctx.isValidDispatch(this))
       throw new InvalidDslException(s"Spark context ${ctx.getClass.getName()} " +

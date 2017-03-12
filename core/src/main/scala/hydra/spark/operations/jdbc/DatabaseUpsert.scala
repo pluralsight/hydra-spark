@@ -18,27 +18,27 @@ package hydra.spark.operations.jdbc
 import java.security.MessageDigest
 
 import com.typesafe.config.Config
-import hydra.spark.util.Collections._
 import hydra.spark.api._
 import hydra.spark.internal.Logging
+import hydra.spark.util.Collections._
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.jdbc.DataFrameWriterExtensions._
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{ AnalysisException, Column, DataFrame }
+import org.apache.spark.sql.{AnalysisException, Column, DataFrame}
 
 import scala.collection.mutable
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 /**
- * Created by alexsilva on 6/18/16.
- */
+  * Created by alexsilva on 6/18/16.
+  */
 case class DatabaseUpsert(table: String, properties: Map[String, String],
-    idColumn: Option[SQLMapping], columns: Seq[SQLMapping]) extends DFOperation with Logging {
+                          idColumn: Option[ColumnMapping], columns: Seq[ColumnMapping]) extends DFOperation with Logging {
 
   val mapping = TableMapping(idColumn, columns)
 
   override def transform(df: DataFrame): DataFrame = {
-    val ndf = prepareDF(df)
+    val ndf = mapping.targetDF(df)
 
     val idField = idColumn.map(id => StructField(id.target, id.`type`, nullable = false))
 
@@ -48,13 +48,7 @@ case class DatabaseUpsert(table: String, properties: Map[String, String],
     ndf
   }
 
-  def prepareDF(df: DataFrame): DataFrame = {
-    val targetDf = mapping.targetDf(df)
-    targetDf
-  }
-
   override def validate: ValidationResult = {
-    import DatabaseUpsert._
 
     val errors = mutable.ListBuffer[ValidationError]()
     val requiredKeys = "url"
@@ -76,11 +70,11 @@ object DatabaseUpsert {
   def apply(cfg: Config): DatabaseUpsert = {
     import hydra.spark.configs._
     import hydra.spark.util.DataTypes._
-    def mapping(cfg: Config): SQLMapping = {
+    def mapping(cfg: Config): ColumnMapping = {
       val name = cfg.get[String]("name").getOrElse(throw new IllegalArgumentException("A column name is required."))
       val source = cfg.get[String]("source").getOrElse(name)
       val theType = cfg.get[String]("type").getOrElse("string")
-      SQLMapping(source, name, theType)
+      ColumnMapping(source, name, theType)
     }
 
     val properties = cfg.get[Map[String, String]]("properties").getOrElse(Map.empty[String, String])
@@ -93,51 +87,5 @@ object DatabaseUpsert {
   }
 }
 
-case class SQLMapping(source: String, target: String, `type`: DataType)
+case class ColumnMapping(source: String, target: String, `type`: DataType)
 
-private[jdbc] case class TableMapping(idColumn: Option[SQLMapping], columns: Seq[SQLMapping]) {
-
-  val mapping = idColumn.toList ++ columns
-
-  val mappingByTarget: Map[String, SQLMapping] = mapping.map(m => m.target -> m).toMap
-
-  val targetSchema: Seq[StructField] = mapping.map(m => StructField(m.target, m.`type`))
-
-  /**
-   * Converts the source data frame into the target dataframe given the mapping
-   *
-   * @param df
-   */
-  def targetDf(df: DataFrame): DataFrame = {
-    val tdf = targetCols(df)
-    df.select(tdf: _*)
-  }
-
-  private def targetCols(df: DataFrame): Seq[Column] = {
-    val target = targetSchema.map { f =>
-      val mapping = mappingByTarget(f.name)
-      Try(df(mapping.source)).recover { case t: AnalysisException => lit(null) }
-        .get.as(mapping.target).cast(mapping.`type`)
-    }
-
-    if (target.isEmpty) inferTargetColumns(df) else target
-  }
-
-  private def inferTargetColumns(df: DataFrame): Seq[Column] = {
-    val fcols = flattenSchema(df.schema)
-    val fs = fcols.map(c => df(c.toString()).as(c.toString().replace(".", "_")))
-    fs
-  }
-
-  private def flattenSchema(schema: StructType, prefix: String = null): Array[Column] = {
-    import org.apache.spark.sql.functions._
-    schema.fields.flatMap(f => {
-      val colName = if (prefix == null) f.name else (prefix + "." + f.name)
-
-      f.dataType match {
-        case st: StructType => flattenSchema(st, colName)
-        case _ => Array(col(colName))
-      }
-    })
-  }
-}

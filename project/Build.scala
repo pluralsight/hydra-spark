@@ -32,7 +32,6 @@ object HydraSparkBuild extends Build with BuildInfoKeys {
     .dependsOn(api)
     .settings(
       name := "hydra-spark-core",
-      parallelExecution in ThisBuild := false,
       libraryDependencies ++= Seq(log4J, spark, guava, postgres, kafka08, confluent, jackson, slf4j, sprayJson,
         reflections, springCore, spEL, scopt, coreTestDeps, dbTesting).flatten
     )
@@ -41,7 +40,6 @@ object HydraSparkBuild extends Build with BuildInfoKeys {
     .settings(commonSettings: _*).
     settings(
       name := "hydra-spark-api",
-      parallelExecution in ThisBuild := false,
       libraryDependencies ++= Seq(log4J, spark, guava, postgres, kafka08, confluent, jackson, typesafeConfig,
         reflections, springCore, spEL, scopt, coreTestDeps, dbTesting).flatten
     )
@@ -51,7 +49,6 @@ object HydraSparkBuild extends Build with BuildInfoKeys {
     .dependsOn(core)
     .settings(
       name := "hydra-spark-extras",
-      parallelExecution in ThisBuild := false,
       libraryDependencies ++= Seq(log4J, spark, guava, extraSparkDeps, coreTestDeps).flatten
     )
 
@@ -62,8 +59,8 @@ object HydraSparkBuild extends Build with BuildInfoKeys {
     organizationHomepage := Some(url("https://github.com/pluralsight")),
     version := Versions.hydraSparkVersion + buildTag,
     publishArtifact := true,
-    concurrentRestrictions := Seq(
-      Tags.limit(Tags.CPU, java.lang.Runtime.getRuntime.availableProcessors())),
+    parallelExecution in ThisBuild := false,
+    concurrentRestrictions in Global += Tags.limit(Tags.Test, 1),
     scalaVersion := "2.11.8",
     crossScalaVersions := Seq("2.10.6", "2.11.8"),
     dependencyOverrides += "org.scala-lang" % "scala-compiler" % scalaVersion.value,

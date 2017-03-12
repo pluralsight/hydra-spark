@@ -40,25 +40,25 @@ case class TypesafeDSLParser(sourcesPkg: Seq[String] = Seq("hydra.spark.sources"
 
   def apply(dsl: Config): DispatchDetails[_] = {
 
-    val dispatch = dsl.getConfig("dispatch").resolve()
+    val transport = dsl.getConfig("transport").resolve()
 
-    val source = dispatch.get[ConfigObject]("source") match {
-      case Some(source) => factory.createSource(source, dispatch)
+    val source = transport.get[ConfigObject]("source") match {
+      case Some(source) => factory.createSource(source, transport)
       case None => throw InvalidDslException("Invalid DSL: A source is required.")
     }
 
-    val operations: Seq[DFOperation] = dispatch.get[ConfigObject]("operations") match {
-      case Some(ops) => factory.createOperations(ops, dispatch)
+    val operations: Seq[DFOperation] = transport.get[ConfigObject]("operations") match {
+      case Some(ops) => factory.createOperations(ops, transport)
       case None => throw InvalidDslException("Invalid DSL: At least one target/operation is required.")
     }
 
-    val name = dispatch.get[String]("name").getOrElse(UUID.randomUUID().toString)
+    val name = transport.get[String]("name").getOrElse(UUID.randomUUID().toString)
 
-    val streamingProps = dispatch.flattenAtKey("streaming")
+    val streamingProps = transport.flattenAtKey("streaming")
 
     val isStreaming = streamingProps.get("streaming.interval").isDefined
 
-    val contextFactory = getContextFactory(dispatch, isStreaming)
+    val contextFactory = getContextFactory(transport, isStreaming)
 
     DispatchDetails(name, source, Operations(operations), isStreaming, dsl, contextFactory)
   }

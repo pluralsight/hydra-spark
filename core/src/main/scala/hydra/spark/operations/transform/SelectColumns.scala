@@ -15,30 +15,28 @@
 
 package hydra.spark.operations.transform
 
-import com.typesafe.config.Config
 import hydra.spark.api._
-import org.apache.spark.sql.{Column, DataFrame}
+import org.apache.spark.sql.DataFrame
+
 
 /**
   * Created by alexsilva on 8/16/16.
   */
 case class SelectColumns(columns: Seq[String]) extends DFOperation {
-  override def id: String = s"add-columns-${columns.mkString}"
+  override def id: String = s"select-column-${columns.mkString}"
 
   override def transform(df: DataFrame): DataFrame = {
-    val cols: Seq[Column] = columns.map(df.col)
-    df.select(cols: _*)
+    df.select(columns.map(df.col(_)):_*)
   }
 
-  override def validate: ValidationResult =
-    if (columns.isEmpty) Invalid(ValidationError("select-columns", "Column list cannot be empty")) else Valid
+  override def validate: ValidationResult = {
+    if (columns.isEmpty)
+      Invalid(ValidationError("select-columns", "Column list cannot be empty."))
+    else Valid
+  }
+
 
 }
 
-object SelectColumns {
-  def apply(cfg: Config): SelectColumns = {
-    import hydra.spark.configs._
-    val list = cfg.get[List[String]]("columns").getOrElse(throw new InvalidDslException("A column list is required."))
-    SelectColumns(list)
-  }
-}
+
+

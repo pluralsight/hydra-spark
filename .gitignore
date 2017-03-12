@@ -61,3 +61,5 @@ build
 
 #Logs
 *.log
+
+metastore_db

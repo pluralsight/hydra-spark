@@ -21,7 +21,7 @@ class ConcatColumnsSpec extends Matchers with FunSpecLike with SharedSparkContex
        val dsl =
       """
       |{
-        |    "dispatch": {
+        |    "transport": {
           |        "version": 1,
           |        "spark.master": "local[*]",
           |        "name": "test-dispatch",

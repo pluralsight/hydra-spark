@@ -15,31 +15,30 @@
 
 package hydra.spark.operations.transform
 
-import hydra.spark.api.Invalid
-import hydra.spark.testutils.{SharedSparkContext, StaticJsonSource}
+import java.io.File
+
+import hydra.spark.testutils.SharedSparkContext
 import org.apache.spark.sql.SQLContext
 import org.scalatest.{FunSpecLike, Matchers}
+
+import scala.io.Source
 
 /**
   * Created by alexsilva on 8/12/16.
   */
-class SelectColumnsSpec extends Matchers with FunSpecLike with SharedSparkContext {
+class ToJsonSpec extends Matchers with FunSpecLike with SharedSparkContext {
 
-  describe("It should select column") {
-    it("selects one column") {
+  describe("When converting columns to json") {
+    it("works with complex types") {
+      import spray.json._
       val sqlContext = new SQLContext(sc)
-      val df = SelectColumns(Seq("msg-no")).transform(StaticJsonSource.createDF(sqlContext))
-      df.columns shouldBe Array("msg-no")
-    }
-
-    it("selects multiple column") {
-      val sqlContext = new SQLContext(sc)
-      val df = SelectColumns(Seq("msg-no","data")).transform(StaticJsonSource.createDF(sqlContext))
-      df.columns shouldBe Array("msg-no","data")
-    }
-
-    it("validates") {
-      SelectColumns(Seq.empty).validate shouldBe an[Invalid]
+      val path = Thread.currentThread().getContextClassLoader.getResource("data.txt").getFile
+      val data = Source.fromFile(new File(path)).getLines().toArray.map(_.parseJson.asJsObject.fields("batters"))
+      val df = sqlContext.read.json(path).repartition(1)
+      val ndf = ToJson(Seq("batters")).transform(df)
+      ndf.rdd.zipWithIndex().collect().foreach { case (row, idx) =>
+        data(idx.toInt) shouldBe (row.getString(row.fieldIndex("batters")).parseJson)
+      }
     }
   }
 }

@@ -17,7 +17,7 @@ class HydraSparkLauncherSpec extends Matchers with FunSpecLike {
     val dsl =
       """
         |    {
-        |    	"dispatch": {
+        |    	"transport": {
         |    		"version": 1,
         |      "env":{
         |         "HADOOP_USER_NAME":"hydra"
@@ -37,7 +37,7 @@ class HydraSparkLauncherSpec extends Matchers with FunSpecLike {
       """.stripMargin
 
     it("builds the right environment variables") {
-      val dslC = ConfigFactory.parseString(dsl).getConfig("dispatch")
+      val dslC = ConfigFactory.parseString(dsl).getConfig("transport")
 
       val env = HydraSparkLauncher.buildEnv(dslC, sparkInfo)
 
