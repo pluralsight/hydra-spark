@@ -16,24 +16,24 @@
 package hydra.spark.dsl.parser
 
 /**
- * Created by alexsilva on 1/3/17.
- */
+  * Created by alexsilva on 1/3/17.
+  */
 
 import com.typesafe.config.ConfigFactory
 import hydra.spark.configs._
-import hydra.spark.operations.filters.{ RegexFilter, ValueFilter }
+import hydra.spark.operations.filters.{RegexFilter, ValueFilter}
 import hydra.spark.operations.io.SaveAsJson
-import hydra.spark.operations.jdbc.{ DatabaseUpsert, ColumnMapping }
+import hydra.spark.operations.jdbc.{ColumnMapping, DatabaseUpsert}
 import hydra.spark.sources.kafka.KafkaSource
 import kafka.api.OffsetRequest
-import org.apache.spark.sql.types.{ LongType, StringType }
-import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach, FunSpecLike, Matchers }
+import org.apache.spark.sql.types.{LongType, StringType}
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, FunSpecLike, Matchers}
 
 import scala.concurrent.duration._
 
 /**
- * Created by alexsilva on 6/20/16.
- */
+  * Created by alexsilva on 6/20/16.
+  */
 class DslParserSpec extends Matchers with FunSpecLike with BeforeAndAfterEach with BeforeAndAfterAll {
 
   val dsl =
@@ -271,7 +271,7 @@ class DslParserSpec extends Matchers with FunSpecLike with BeforeAndAfterEach wi
           |	}
           |}
         """
-        .stripMargin
+          .stripMargin
 
       val sd = TypesafeDSLParser().parse(defDsl)
       sd.isStreaming shouldBe false

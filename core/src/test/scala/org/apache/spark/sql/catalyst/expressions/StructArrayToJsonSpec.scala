@@ -20,7 +20,7 @@ class StructArrayToJsonSpec extends Matchers with FunSpecLike with RowHelper {
   val schema = new StructType(Array(StructField("a", innerStruct, true)))
 
   describe("When converting a StructType to JSON") {
-    it("converts to json") {
+    ignore("converts to json") {
       val st: StructType = new StructType().add(StructField("a", IntegerType))
       val attrs = schema.fields.map(f => AttributeReference(f.name, f.dataType, f.nullable, f.metadata)())
       val encoder = RowEncoder(schema).resolve(attrs, new ConcurrentHashMap[String, AnyRef]())
