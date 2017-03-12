@@ -15,11 +15,11 @@
 
 package hydra.spark.operations.io
 
+
 import com.typesafe.config.ConfigFactory
-import hydra.spark.api.{ Invalid, Operations, Valid }
+import hydra.spark.api.{Invalid, Operations, Valid}
 import hydra.spark.dispatch.SparkBatchDispatch
-import hydra.spark.testutils.{ SharedSparkContext, StaticJsonSource }
-import info.batey.kafka.unit.KafkaUnit
+import hydra.spark.testutils.{KafkaUnitWithKeys, SharedSparkContext, StaticJsonSource}
 import kafka.serializer.StringEncoder
 import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.common.serialization.StringSerializer
@@ -27,12 +27,12 @@ import org.scalatest._
 import org.scalatest.concurrent.Eventually
 
 /**
- * Created by alexsilva on 8/9/16.
- */
+  * Created by alexsilva on 8/9/16.
+  */
 class PublishToKafkaSpec extends Matchers with FunSpecLike with Inside with BeforeAndAfterAll with Eventually
-    with BeforeAndAfterEach with SharedSparkContext {
+  with BeforeAndAfterEach with SharedSparkContext {
 
-  var kafka: Option[KafkaUnit] = None
+  var kafka: KafkaUnitWithKeys = new KafkaUnitWithKeys(5000, 5001)
 
   val props = ConfigFactory.parseString(
     s"""
@@ -55,11 +55,8 @@ class PublishToKafkaSpec extends Matchers with FunSpecLike with Inside with Befo
 
   override def beforeAll() = {
     super.beforeAll()
-    kafka = Some(new KafkaUnit(5000, 5001))
-    kafka.foreach { k =>
-      k.startup()
-      k.createTopic("test-topic")
-    }
+    kafka.startup()
+    kafka.createTopic("test-topic")
   }
 
   describe("When writing to Kafka") {
@@ -83,7 +80,7 @@ class PublishToKafkaSpec extends Matchers with FunSpecLike with Inside with Befo
 
       sd.run()
 
-      val msgs = kafka.get.readMessages("test-topic", StaticJsonSource.msgs.size)
+      val msgs = kafka.readMessages("test-topic", StaticJsonSource.msgs.size)
 
       eventually {
         msgs.size shouldBe StaticJsonSource.msgs.size
@@ -102,7 +99,7 @@ class PublishToKafkaSpec extends Matchers with FunSpecLike with Inside with Befo
 
       sd.run()
 
-      val msgs = kafka.get.readMessages("test-topic", StaticJsonSource.msgs.size)
+      val msgs = kafka.readMessages("test-topic", StaticJsonSource.msgs.size)
 
       val sorted = StaticJsonSource.msgs.sortWith(_.parseJson.asJsObject.fields("msg-no").asInstanceOf[JsNumber]
         .value > _.parseJson.asJsObject.fields("msg-no").asInstanceOf[JsNumber].value)
@@ -114,6 +111,7 @@ class PublishToKafkaSpec extends Matchers with FunSpecLike with Inside with Befo
     }
 
     it("Should only select the columns specified") {
+
       import spray.json._
 
       val op = PublishToKafka("test-topic", columns = Some(List("msg-no")), properties = kafkaProps)
@@ -124,7 +122,7 @@ class PublishToKafkaSpec extends Matchers with FunSpecLike with Inside with Befo
 
       sd.run()
 
-      val msgs = kafka.get.readMessages("test-topic", StaticJsonSource.msgs.size)
+      val msgs = kafka.readMessages("test-topic", StaticJsonSource.msgs.size)
 
       msgs.size shouldBe StaticJsonSource.msgs.size
       for (i <- 0 until msgs.size) {
@@ -137,6 +135,7 @@ class PublishToKafkaSpec extends Matchers with FunSpecLike with Inside with Befo
 
   it("Should produce messages with a key") {
     import spray.json._
+    import DefaultJsonProtocol._
 
     import scala.collection.JavaConverters._
 
@@ -148,20 +147,23 @@ class PublishToKafkaSpec extends Matchers with FunSpecLike with Inside with Befo
 
     sd.run()
 
-    val msgs = kafka.get.readMessages("test-topic", StaticJsonSource.msgs.size)
+    val sortedNoKeys = StaticJsonSource.msgs.map { json =>
+      val fields = json.parseJson.asJsObject.fields
+      fields("msg-no").convertTo[Int] -> JsObject(fields - "msg-no").compactPrint
+    }.sortWith(_._1 < _._1)
 
-    msgs.asScala.foreach(m => op.getKey(m) shouldBe m.parseJson.asJsObject.fields("msg-no").toString)
+    val msgs = kafka.readMessagesWithKey("test-topic", StaticJsonSource.msgs.size).asMap.asScala
+    msgs.keys should contain theSameElementsAs (sortedNoKeys.map(_._1.toString))
 
-    val sorted = StaticJsonSource.msgs.sortWith(_.parseJson.asJsObject.fields("msg-no").asInstanceOf[JsNumber]
-      .value > _.parseJson.asJsObject.fields("msg-no").asInstanceOf[JsNumber].value)
+    val allMsgs = msgs.values.map(_.asScala.mkString.parseJson)
 
-    for (i <- 0 until msgs.size)
-      msgs.get(i).parseJson.asJsObject.fields("msg-no").asInstanceOf[JsNumber].value shouldBe
-        sorted(i).parseJson.asJsObject.fields("msg-no").asInstanceOf[JsNumber].value
+    allMsgs should contain theSameElementsAs (sortedNoKeys.map(_._2.parseJson))
   }
 
   override def afterAll() = {
     super.afterAll()
-    kafka.foreach(_.shutdown())
+    kafka.shutdown()
   }
+
+
 }

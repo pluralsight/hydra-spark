@@ -16,27 +16,27 @@
 package hydra.spark.operations.io
 
 import com.google.common.io.Files
-import hydra.spark.api.{ Invalid, Source, Valid }
+import hydra.spark.api.{Invalid, Source, Valid}
 import hydra.spark.testutils.ListOperation
 import org.apache.avro.Schema
 import org.apache.avro.file.DataFileReader
-import org.apache.avro.generic.{ GenericDatumReader, GenericRecord }
+import org.apache.avro.generic.{GenericDatumReader, GenericRecord}
 import org.apache.avro.io.DecoderFactory
 import org.apache.commons.io.FileUtils
-import org.apache.commons.io.filefilter.{ RegexFileFilter, TrueFileFilter }
+import org.apache.commons.io.filefilter.{RegexFileFilter, TrueFileFilter}
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{ DataFrame, SQLContext }
+import org.apache.spark.sql.{DataFrame, SQLContext}
 import org.apache.spark.streaming.StreamingContext
 import org.apache.spark.streaming.dstream.DStream
-import org.apache.spark.{ SparkConf, SparkContext }
+import org.apache.spark.{SparkConf, SparkContext}
 import org.scalatest._
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 
 /**
- * Created by alexsilva on 6/22/16.
- */
+  * Created by alexsilva on 6/22/16.
+  */
 class SaveAsAvroSpec extends Matchers with FunSpecLike with Inside with BeforeAndAfterEach with BeforeAndAfterAll {
 
   val tmpDir = Files.createTempDir()
@@ -89,7 +89,8 @@ object AvroSpecSource extends Source[String] {
   import hydra.spark.util.RDDConversions._
 
   val msgs = for (i <- 0 to 10)
-    yield s"""{"testName": "name-${i}", "testValue": "value-${i}"}""".stripMargin
+    yield
+      s"""{"testName": "name-${i}", "testValue": "value-${i}"}""".stripMargin
 
   val schema = new Schema.Parser().parse(Thread.currentThread()
     .getContextClassLoader.getResourceAsStream("schema.avsc"))

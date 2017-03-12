@@ -46,6 +46,12 @@ trait Dispatch[S] extends Validatable {
     */
   def name: String = id
 
+  /**
+    * The person (or machine?) who wrote this dispatch.
+    * @return
+    */
+  def author:String
+
   def source: Source[S]
 
   def operations: Operations

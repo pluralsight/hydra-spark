@@ -43,6 +43,8 @@ case class StreamingTestDispatch[S: TypeTag](source: Source[S], operations: Oper
 
   def run() = dispatch.run()
 
+  val author = "tester"
+
   override def validate: ValidationResult = Valid
 
   override def stop(): Unit = dispatch.stop()

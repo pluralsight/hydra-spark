@@ -17,13 +17,17 @@ package hydra.spark.dispatch
 
 import com.typesafe.config.Config
 import hydra.spark.api._
+import hydra.spark.configs._
 import hydra.spark.dsl.parser.TypesafeDSLParser
 
 /**
   * Created by alexsilva on 6/21/16.
   */
 abstract class SparkDispatch[S](name: String, source: Source[S], operations: Operations,
-                                dsl: Config, ctx: ContextLike) extends Dispatch[S]
+                                dsl: Config, ctx: ContextLike) extends Dispatch[S] {
+
+  val author = dsl.get[String]("author").getOrElse("The Tooth Fairy")
+}
 
 object SparkDispatch {
 

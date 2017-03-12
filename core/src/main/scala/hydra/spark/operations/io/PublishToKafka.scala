@@ -63,11 +63,21 @@ case class PublishToKafka(topic: String, format: String = "json", orderBy: Optio
         }
       }
 
-      val msg = kafkaMessage(format, getKey(json), json)
+      val msg = kafkaMessage(format, getKey(json), dropKey(json))
       producer.send(new KeyedMessage[Any, Any](topic, msg.key, msg.payload))
     })
 
     df
+  }
+
+  private def dropKey(json: String): String = {
+    val msg = key.map { k =>
+      import spray.json._
+      val fields = json.parseJson.asJsObject.fields
+      JsObject(fields - k).compactPrint
+    }.getOrElse(json)
+
+    msg
   }
 
   private def dropColumns(df: DataFrame) = {
@@ -108,8 +118,10 @@ case class PublishToKafka(topic: String, format: String = "json", orderBy: Optio
   val getKey: (String) => String = (r) => key.map { k =>
     import spray.json._
     val jsonAst = r.parseJson
-    val jsonKey = jsonAst.asJsObject.getFields(k)
-    if (jsonKey.size == 1) jsonKey(0).toString else "unknown"
+    jsonAst.asJsObject.fields.get(k) match {
+      case Some(key) => key.compactPrint.replaceAll("^\"|\"$", "")
+      case None => throw new IllegalArgumentException(s"Key $k not found.")
+    }
   }.getOrElse("")
 }
 

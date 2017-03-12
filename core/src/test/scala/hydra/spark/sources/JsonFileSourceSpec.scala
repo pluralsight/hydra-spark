@@ -15,17 +15,14 @@
 
 package hydra.spark.sources
 
-import java.nio.file.Files
-
 import hydra.spark.api.Invalid
-import hydra.spark.dispatch.SparkDispatch
 import hydra.spark.dsl.parser.TypesafeDSLParser
 import hydra.spark.testutils.SharedSparkContext
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.SQLContext
-import org.apache.spark.streaming.{ Durations, StreamingContext }
-import org.scalatest.concurrent.{ Eventually, PatienceConfiguration, ScalaFutures }
-import org.scalatest.{ BeforeAndAfterAll, FunSpecLike, Matchers }
+import org.apache.spark.streaming.{Durations, StreamingContext}
+import org.scalatest.concurrent.{Eventually, PatienceConfiguration, ScalaFutures}
+import org.scalatest.{BeforeAndAfterAll, FunSpecLike, Matchers}
 
 /**
  * Created by alexsilva on 6/2/16.
