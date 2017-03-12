@@ -27,7 +27,7 @@ class PublishToWebhookSpec extends Matchers with FunSpecLike {
       val dsl =
         """
           |{
-          |	"dispatch": {
+          |	"transport": {
           |		"version": 1,
           |		"spark.master": "local[*]",
           |		"name": "test-dispatch",

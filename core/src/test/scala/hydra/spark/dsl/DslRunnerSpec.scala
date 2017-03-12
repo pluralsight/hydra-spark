@@ -10,7 +10,7 @@ class DslRunnerSpec extends Matchers with FunSpecLike {
   val validDsl =
     """
     {
- |	"dispatch": {
+ |	"transport": {
  |		"version": 1,
  |		"spark.master": "local[*]",
  |		"name": "test-dispatch",
@@ -29,7 +29,7 @@ class DslRunnerSpec extends Matchers with FunSpecLike {
   val invalidDsl =
     """
       |{
-      |	"dispatch": {
+      |	"transport": {
       |		"version": 1,
       |   "spark.master" = "mesos",
       |  "name": "test-dispatch",

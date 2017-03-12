@@ -30,7 +30,7 @@ class TypesafeDSLParserSpec extends Matchers with FunSpecLike {
   val customFactoryDsl =
     """
       |      {
-      |      	"dispatch": {
+      |      	"transport": {
       |      		"version": 1,
       |      		"name": "test-defaults-job",
       |         "spark.master":"local[*]",

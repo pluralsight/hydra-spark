@@ -63,7 +63,3 @@ case class StructArrayToJson(options: Map[String, String], child: Expression)
   override def inputTypes: Seq[AbstractDataType] = StructType :: ArrayType :: Nil
 }
 
-object StructArrayToJson {
-  def fromColumn(options: Map[String, String], col: Column): StructToJson = StructToJson(options, col.expr)
-}
-

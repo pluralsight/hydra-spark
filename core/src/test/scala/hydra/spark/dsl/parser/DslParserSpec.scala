@@ -23,7 +23,7 @@ import com.typesafe.config.ConfigFactory
 import hydra.spark.configs._
 import hydra.spark.operations.filters.{ RegexFilter, ValueFilter }
 import hydra.spark.operations.io.SaveAsJson
-import hydra.spark.operations.jdbc.{ DatabaseUpsert, SQLMapping }
+import hydra.spark.operations.jdbc.{ DatabaseUpsert, ColumnMapping }
 import hydra.spark.sources.kafka.KafkaSource
 import kafka.api.OffsetRequest
 import org.apache.spark.sql.types.{ LongType, StringType }
@@ -106,7 +106,7 @@ class DslParserSpec extends Matchers with FunSpecLike with BeforeAndAfterEach wi
 
       d.isStreaming shouldBe true
 
-      val cfg = d.dsl.getConfig("dispatch")
+      val cfg = d.dsl.getConfig("transport")
 
       cfg.get[FiniteDuration]("streaming.interval").get shouldBe 5.seconds
 
@@ -144,11 +144,11 @@ class DslParserSpec extends Matchers with FunSpecLike with BeforeAndAfterEach wi
       db.properties shouldBe
         Map("url" -> "jdbc:postgresql://localhost/youbora", "user" -> "youbora", "password" -> "password")
 
-      db.idColumn shouldBe Some(SQLMapping("id", "id", LongType))
+      db.idColumn shouldBe Some(ColumnMapping("id", "id", LongType))
 
       db.columns shouldBe Seq(
-        SQLMapping("anonymousId", "user_handle", StringType),
-        SQLMapping("context.ip", "ip_address", StringType)
+        ColumnMapping("anonymousId", "user_handle", StringType),
+        ColumnMapping("context.ip", "ip_address", StringType)
       )
 
       val r = operations.steps(2)
@@ -162,7 +162,7 @@ class DslParserSpec extends Matchers with FunSpecLike with BeforeAndAfterEach wi
       val defDsl =
         """
           |      {
-          |      	"dispatch": {
+          |      	"transport": {
           |      		"version": 1,
           |      		"name": "test-defaults-job",
           |         "spark.master":"local[*]",
@@ -200,7 +200,7 @@ class DslParserSpec extends Matchers with FunSpecLike with BeforeAndAfterEach wi
       val defDsl =
         """
           |{
-          |	"dispatch": {
+          |	"transport": {
           |		"version": 1,
           |		"name": "test - defaults - job",
           |		"spark.master": "local[*]",
@@ -242,7 +242,7 @@ class DslParserSpec extends Matchers with FunSpecLike with BeforeAndAfterEach wi
       val defDsl =
         """
           |{
-          |	"dispatch": {
+          |	"transport": {
           |		"version": 1,
           |		"name": "test-defaults-job",
           |		"spark.master": "local[*]",

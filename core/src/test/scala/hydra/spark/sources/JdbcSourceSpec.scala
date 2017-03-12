@@ -109,7 +109,7 @@ class JdbcSourceSpec extends Matchers with FunSpecLike with ScalaFutures with Pa
       val dsl =
         """
      {
-          |  "dispatch": {
+          |  "transport": {
           |    "version": 1,
           |    "spark.master":"local[*]",
           |    "interval":"1s",

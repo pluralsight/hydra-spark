@@ -7,7 +7,7 @@ import scala.util.{Failure, Success, Try}
 
 /**
   * Factory class that given a column decides if we should use
-  * StructToJson or StructArrayToJson to convert.
+  * StructToJson or StructArrayToJson to do the conversion.
   *
   * Created by alexsilva on 1/26/17.
   */
@@ -24,3 +24,5 @@ object ColumnToJson {
     else Failure(new AnalysisException(s"Column must be a StructType or Array<StructType>.  It is a ${dt.typeName}"))
   }
 }
+
+

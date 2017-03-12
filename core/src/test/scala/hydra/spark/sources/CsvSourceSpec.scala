@@ -60,7 +60,7 @@ class CsvSourceSpec extends Matchers with FunSpecLike with ScalaFutures with Pat
       val dsl =
         """
           |{
-          |	"dispatch": {
+          |	"transport": {
           |		"version": 1,
           |		"spark.master": "local[*]",
           |		"spark.ui.enabled": false,
