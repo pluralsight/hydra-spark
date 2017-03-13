@@ -242,6 +242,34 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
       }
     }
 
+    it("Should create table using all source fields if no columns are specified") {
+
+      import slick.driver.H2Driver.api._
+
+      val json =
+        """{"AccountId": "1234", "Amount": 2.3, "Name": "TestAccount", "Id": "1234EVEr",
+          |"Description": "Test account"}""".stripMargin
+      val url = s"jdbc:h2:mem:$dbname;DB_CLOSE_DELAY=-1"
+
+      val mappings = Seq.empty
+
+      val props = Map("savemode" -> "overwrite", "url" -> url)
+
+      val dbUpsert = DatabaseUpsert("INFERRED_NEW_TABLE", props, None, mappings)
+
+      val rdd = sc.parallelize(json :: Nil)
+
+      val df = SQLContext.getOrCreate(sc).read.json(rdd)
+
+      dbUpsert.transform(df)
+
+      whenReady(database.run(sql"select AccountId, Amount, Name, Id, Description from INFERRED_NEW_TABLE".as[(String, Double, String, String, String)])) { r =>
+        r shouldBe Seq(("1234", 2.3, "TestAccount", "1234EVEr", "Test account"))
+        val f: Future[Int] = database.run(basicUpdate(s"DROP TABLE INFERRED_NEW_TABLE"))
+        eventually(f.value.get.get shouldBe 0)
+      }
+    }
+
     it("Should use all source fields as strings if no columns are specified") {
 
       val f = database.run(basicUpdate(s"CREATE TABLE test2 (user_id integer,user_handle varchar(100)," +
