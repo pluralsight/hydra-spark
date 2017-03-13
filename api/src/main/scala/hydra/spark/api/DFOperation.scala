@@ -15,8 +15,10 @@
 
 package hydra.spark.api
 
+
 import com.google.common.base.CaseFormat
 import org.apache.spark.sql.DataFrame
+import scala.util.{Failure, Try, Success}
 
 trait DFOperation extends Validatable {
 
@@ -28,6 +30,13 @@ trait DFOperation extends Validatable {
   def id: String = CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_HYPHEN, getClass.getSimpleName)
 
   def transform(df: DataFrame): DataFrame
+
+  def ifNotEmpty(df:DataFrame)(f:DataFrame=>DataFrame):DataFrame = {
+    Try(df.first) match {
+      case Success(_) => f.apply(df)
+      case Failure(x)=> df
+    }
+  }
 
   def checkRequiredParams(params: Seq[(String, Any)]): ValidationResult = {
     val nullParams = params.collect { case (n, "") => n case (n, null) => n }

@@ -12,8 +12,12 @@ case class ConcatColumns(columnNames: Seq[String], newName: String) extends DFOp
   override def transform(df: DataFrame): DataFrame = {
     import df.sqlContext.implicits.StringToColumn
     //Define a udf to concatenate two passed in string values
-    val getConcatenated = udf( (col1: String, col2: String) => {col1 + "|" + col2} )
-    df.withColumn(newName, getConcatenated(columnNames.map(c=>$"$c"): _*))
+    ifNotEmpty(df) { df =>
+      val getConcatenated = udf((col1: String, col2: String) => {
+        col1 + "|" + col2
+      })
+      df.withColumn(newName, getConcatenated(columnNames.map(c => $"$c"): _*))
+    }
   }
 
   override def validate: ValidationResult = {

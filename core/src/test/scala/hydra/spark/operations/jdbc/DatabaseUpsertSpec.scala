@@ -309,6 +309,25 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
       val dispatch = TypesafeDSLParser().parse(dsl)
       dispatch.operations.steps.head.validate shouldBe Valid
     }
+
+    it ("does not fail with an empty dataset") {
+      val mappings = List(
+        ColumnMapping("context.ip", "ip_address", "string"),
+        ColumnMapping("user.handle", "username", "string")
+      )
+
+      val dbUpsert = DatabaseUpsert("table", Map("url" -> "url"), Some(ColumnMapping("user.id", "user_id", "int")),
+        mappings)
+
+      val rdd = sc.parallelize("" :: Nil)
+
+      val df = SQLContext.getOrCreate(sc).read.json(rdd)
+
+      val ndf = dbUpsert.transform(df)
+
+      ndf.collect() shouldBe empty
+    }
+
   }
 
 }

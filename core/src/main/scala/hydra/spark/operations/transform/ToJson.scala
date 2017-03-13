@@ -10,9 +10,11 @@ import org.apache.spark.sql.{Column, DataFrame}
 case class ToJson(columns: Seq[String]) extends DFOperation {
 
   override def transform(df: DataFrame): DataFrame = {
-    val jsonCols = columns.map(c => c -> new Column(ColumnToJson.expr(Map.empty, df.col(c)).get))
+    ifNotEmpty(df) { df =>
+      val jsonCols = columns.map(c => c -> new Column(ColumnToJson.expr(Map.empty, df.col(c)).get))
 
-    jsonCols.foldLeft(df)((df, col) => df.withColumn(col._1, col._2))
+      jsonCols.foldLeft(df)((df, col) => df.withColumn(col._1, col._2))
+    }
   }
 
   override def validate: ValidationResult = {

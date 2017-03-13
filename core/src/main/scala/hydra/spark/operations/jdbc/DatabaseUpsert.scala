@@ -38,14 +38,15 @@ case class DatabaseUpsert(table: String, properties: Map[String, String],
   val mapping = TableMapping(idColumn, columns)
 
   override def transform(df: DataFrame): DataFrame = {
-    val ndf = mapping.targetDF(df)
+    ifNotEmpty(df){df=>
+        val ndf = mapping.targetDF(df)
 
-    val idField = idColumn.map(id => StructField(id.target, id.`type`, nullable = false))
+        val idField = idColumn.map(id => StructField(id.target, id.`type`, nullable = false))
 
-    ndf.write.mode(properties.get("savemode").getOrElse("append")).upsert(properties("url"), table, idField,
-      properties, ndf)
-
-    ndf
+        ndf.write.mode(properties.get("savemode").getOrElse("append")).upsert(properties("url"), table, idField,
+          properties, ndf)
+        ndf
+    }
   }
 
   override def validate: ValidationResult = {

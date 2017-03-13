@@ -40,5 +40,11 @@ class ToJsonSpec extends Matchers with FunSpecLike with SharedSparkContext {
         data(idx.toInt) shouldBe (row.getString(row.fieldIndex("batters")).parseJson)
       }
     }
+    it("does not fail with empty dataset") {
+      val rdd = sc.parallelize("" :: Nil)
+      val df = SQLContext.getOrCreate(sc).read.json(rdd)
+      val ndf = ToJson(Seq("batters")).transform(df)
+      ndf.collect() shouldBe empty
+    }
   }
 }
