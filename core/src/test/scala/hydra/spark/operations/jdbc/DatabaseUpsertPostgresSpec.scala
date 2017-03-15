@@ -45,7 +45,7 @@ class DatabaseUpsertPostgresSpec extends Matchers with FunSpecLike with ScalaFut
 
   describe("The DatabaseUpsert Should work with Postgres") {
 
-  }
+
   it("Should perform inserts w/o a PK") {
     import slick.driver.H2Driver.api._
 
@@ -119,6 +119,7 @@ class DatabaseUpsertPostgresSpec extends Matchers with FunSpecLike with ScalaFut
     whenReady(database.run(sql"select * from TEST_TABLE".as[(Int, String, String)])) { r =>
       r shouldBe Seq((123, "alex_updated", "127.0.0.1"))
     }
+  }
   }
 }
 
