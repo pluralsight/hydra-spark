@@ -228,16 +228,18 @@ object PostgresUpsertBuilder extends UpsertBuilder {
   def upsertStatement(conn: Connection, table: String, idField: Option[StructField], schema: StructType) = {
     idField match {
       case Some(id) => {
-        val cSchema = StructType(schema.fields.filterNot(_.name == id.name))
-        val columns = cSchema.fields.map(_.name).mkString(",")
-        val placeholders = cSchema.fields.map(_ => "?").mkString(",")
+        val columns = schema.fields.map(_.name).mkString(",")
+        val placeholders = schema.fields.map(_ => "?").mkString(",")
+        val updateSchema = StructType(schema.fields.filterNot(_.name == id.name))
+        val updateColumns = updateSchema.fields.map(_.name).mkString(",")
+        val updatePlaceholders = updateSchema.fields.map(_ => "?").mkString(",")
         val sql =
-          s"""insert into ${table} (${id.name}, $columns) values (?, $placeholders)
+          s"""insert into ${table} ($columns) values ($placeholders)
               |on conflict (${id.name})
-              |do update set ($columns) = ($placeholders)
+              |do update set ($updateColumns) = ($updatePlaceholders)
               |where ${table}.${id.name} = ?;""".stripMargin
 
-        val schemaFields = Seq(id) ++ cSchema.fields ++ cSchema.fields :+ id
+        val schemaFields = schema.fields ++ updateSchema.fields :+ id
         val upsertSchema = StructType(schemaFields)
         UpsertInfo(conn.prepareStatement(sql), upsertSchema)
       }
@@ -252,11 +254,10 @@ object H2UpsertBuilder extends UpsertBuilder {
   def upsertStatement(conn: Connection, table: String, idField: Option[StructField], schema: StructType) = {
     idField match {
       case Some(id) => {
-        val cSchema = StructType(schema.fields.filterNot(_.name == id.name))
-        val columns = cSchema.fields.map(_.name).mkString(",")
-        val placeholders = cSchema.fields.map(_ => "?").mkString(",")
+        val columns = schema.fields.map(_.name).mkString(",")
+        val placeholders = schema.fields.map(_ => "?").mkString(",")
         val sql =
-          s"""merge into ${table} (${id.name}, $columns) key(${id.name}) values (?, $placeholders);"""
+          s"""merge into ${table} ($columns) key(${id.name}) values ($placeholders);"""
             .stripMargin
         //H2 is nice enough to keep the same parameter list
         UpsertInfo(conn.prepareStatement(sql), schema)
