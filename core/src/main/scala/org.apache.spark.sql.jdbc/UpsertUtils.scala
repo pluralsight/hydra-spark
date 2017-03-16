@@ -104,7 +104,7 @@ object UpsertUtils extends Logging {
             case (f, idx) =>
               val i = row.fieldIndex(f.name)
               if (row.isNullAt(i)) {
-                stmt.setNull(idx, nullTypes(i))
+                stmt.setNull(idx + 1, nullTypes(i))
               } else {
                 uschema.fields(i).dataType match {
                   case IntegerType => stmt.setInt(idx + 1, row.getInt(i))
