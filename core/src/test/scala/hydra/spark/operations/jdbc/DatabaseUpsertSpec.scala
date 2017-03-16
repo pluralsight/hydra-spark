@@ -382,6 +382,30 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
       ndf.collect() shouldBe empty
     }
 
+    it("does not fail with null values") {
+      import slick.driver.H2Driver.api._
+      val url = s"jdbc:h2:mem:$dbname;DB_CLOSE_DELAY=-1"
+      val json = """{ "context": { "ip": null }, "user": { "handle": "alex", "id": null } }"""
+
+      val mappings = List(
+        ColumnMapping("context.ip", "ip_address", "string"),
+        ColumnMapping("user.handle", "username", "string")
+      )
+
+      val dbUpsert = DatabaseUpsert(table, Map("url" -> url),
+        Some(ColumnMapping("user.id", "user_id", "int")), mappings)
+
+      val rdd = sc.parallelize(json :: Nil)
+
+      val df = SQLContext.getOrCreate(sc).read.json(rdd)
+
+      dbUpsert.transform(df)
+
+      // works with nulls but converts null Int to 0
+      whenReady(database.run(sql"select * from TEST_TABLE".as[(Int, String, String)])) { r =>
+        r shouldBe Seq((0, "alex", null))
+      }
+    }
   }
 
 }
