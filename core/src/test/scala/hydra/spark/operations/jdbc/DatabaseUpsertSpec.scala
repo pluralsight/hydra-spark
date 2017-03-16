@@ -249,7 +249,6 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
 
     it("Should use all source fields if no columns are specified") {
 
-      val json = """{ "context": { "ip": "127.0.0.1" }, "user": { "handle": "alex", "id": "123" } }"""
       val props = Map("url" -> h2Url)
       val mappings = Seq.empty
       val dbu = DatabaseUpsert(inferredTable, props, Some(ColumnMapping("user.id", "user_id", "int")), mappings)
@@ -295,7 +294,7 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
       }
     }
 
-    it("Should upsert with a string PK using source fields if no columns specified") {
+    it("Should upsert with a PK using source fields if no columns specified") {
       import slick.driver.H2Driver.api._
       val sjson = """{ "context": { "ip": "127.0.0.1" }, "user": { "handle": "alex", "id": 123 } }"""
       val url = s"jdbc:h2:mem:$dbname;DB_CLOSE_DELAY=-1"
@@ -371,7 +370,7 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
         ColumnMapping("user.handle", "username", "string")
       )
 
-      val dbUpsert = DatabaseUpsert("table", Map("url" -> "url"), Some(ColumnMapping("user.id", "user_id", "int")),
+      val dbUpsert = DatabaseUpsert(table, Map("url" -> "url"), Some(ColumnMapping("user.id", "user_id", "int")),
         mappings)
 
       val rdd = sc.parallelize("" :: Nil)
