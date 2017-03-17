@@ -117,8 +117,6 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
 
       val ndf = dbUpsert.mapping.targetDF(df)
 
-      ndf.show()
-
       val row: Row = ndf.take(1)(0)
 
       //    row.getStruct(0)(0) shouldBe "127.0.0.1"
@@ -152,7 +150,7 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
       }
     }
 
-    it("Should create the table") {
+    it("Should create the table without PK") {
 
       import slick.driver.H2Driver.api._
 
@@ -173,8 +171,39 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
 
       dbUpsert.transform(df)
 
+      whenReady(database.run(sql"SELECT SQL FROM INFORMATION_SCHEMA.CONSTRAINTS WHERE TABLE_NAME = 'NEW_TABLE'".as[String])) { r =>
+        r shouldBe empty
+      }
       whenReady(database.run(sql"select * from NEW_TABLE".as[(String, String)])) { r =>
         r shouldBe Seq(("127.0.0.1", "alex"))
+        val f: Future[Int] = database.run(basicUpdate(s"DROP TABLE NEW_TABLE"))
+        eventually(f.value.get.get shouldBe 0)
+      }
+    }
+
+    it("Should create the table with PK") {
+      import slick.driver.H2Driver.api._
+
+      val url = s"jdbc:h2:mem:$dbname;DB_CLOSE_DELAY=-1"
+
+      val mappings = List(
+        ColumnMapping("context.ip", "ip_address", "string"),
+        ColumnMapping("user.handle", "username", "string")
+      )
+      val idCol = Some(ColumnMapping("user.id", "user_id", "int"))
+
+      val props = Map("savemode" -> "overwrite", "url" -> url)
+
+      val dbUpsert = DatabaseUpsert("NEW_TABLE", props, idCol, mappings)
+
+      val rdd = sc.parallelize(json :: Nil)
+
+      val df = SQLContext.getOrCreate(sc).read.json(rdd)
+
+      dbUpsert.transform(df)
+
+      whenReady(database.run(sql"SELECT SQL FROM INFORMATION_SCHEMA.CONSTRAINTS WHERE TABLE_NAME = 'NEW_TABLE'".as[String])) { r =>
+        r.toString should include ("PRIMARY KEY(USER_ID)")
         val f: Future[Int] = database.run(basicUpdate(s"DROP TABLE NEW_TABLE"))
         eventually(f.value.get.get shouldBe 0)
       }

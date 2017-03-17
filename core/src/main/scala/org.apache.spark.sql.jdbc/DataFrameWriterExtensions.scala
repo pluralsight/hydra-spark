@@ -59,7 +59,11 @@ object DataFrameWriterExtensions {
         // Create the table if the table didn't exist.
         if (!tableExists) {
           val schema = JdbcUtils.schemaString(df, url)
-          val sql = s"CREATE TABLE $table ($schema)"
+          val pk = idColumn.map(id => id.name) match {
+            case Some(s: String) => s", primary key($s)"
+            case _ => ""
+          }
+          val sql = s"CREATE TABLE $table ( $schema $pk )"
           val statement = conn.createStatement
           try {
             statement.executeUpdate(sql)

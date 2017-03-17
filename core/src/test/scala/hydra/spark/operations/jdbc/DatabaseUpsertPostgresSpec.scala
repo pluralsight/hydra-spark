@@ -59,6 +59,60 @@ class DatabaseUpsertPostgresSpec extends Matchers with FunSpecLike with ScalaFut
 
   describe("The DatabaseUpsert Should work with Postgres") {
 
+    it("Should create the table without PK") {
+      import slick.driver.PostgresDriver.api._
+
+      val mappings = List(
+        ColumnMapping("context.ip", "ip_address", "string"),
+        ColumnMapping("user.handle", "username", "string")
+      )
+
+      val props = Map("savemode" -> "overwrite", "url" -> url)
+
+      val dbUpsert = DatabaseUpsert("NEW_TABLE", props, None, mappings)
+
+      val rdd = sc.parallelize(json :: Nil)
+
+      val df = SQLContext.getOrCreate(sc).read.json(rdd)
+
+      dbUpsert.transform(df)
+
+      whenReady(database.run(sql"select conname from pg_constraint where conname = 'new_table_pkey'".as[String])) { r =>
+        r shouldBe empty
+      }
+      whenReady(database.run(sql"select * from NEW_TABLE".as[(String, String)])) { r =>
+        r shouldBe Seq(("127.0.0.1", "alex"))
+        val f: Future[Int] = database.run(basicUpdate(s"DROP TABLE NEW_TABLE"))
+        eventually(f.value.get.get shouldBe 0)
+      }
+    }
+
+    it("Should create the table with PK") {
+      import slick.driver.PostgresDriver.api._
+
+      val mappings = List(
+        ColumnMapping("context.ip", "ip_address", "string"),
+        ColumnMapping("user.handle", "username", "string")
+      )
+      val idCol = Some(ColumnMapping("user.id", "user_id", "int"))
+
+      val props = Map("savemode" -> "overwrite", "url" -> url)
+
+      val dbUpsert = DatabaseUpsert("NEW_TABLE", props, idCol, mappings)
+
+      val rdd = sc.parallelize(json :: Nil)
+
+      val df = SQLContext.getOrCreate(sc).read.json(rdd)
+
+      dbUpsert.transform(df)
+
+      whenReady(database.run(sql"select conname from pg_constraint where conname = 'new_table_pkey'".as[String])) { r =>
+        r should contain("new_table_pkey")
+        val f: Future[Int] = database.run(basicUpdate(s"DROP TABLE NEW_TABLE"))
+        eventually(f.value.get.get shouldBe 0)
+      }
+    }
+
     it("Should perform inserts w/o a PK") {
       import slick.driver.PostgresDriver.api._
 
