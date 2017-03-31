@@ -15,7 +15,7 @@
 
 package org.apache.spark.sql.jdbc
 
-import java.sql.{ Connection, PreparedStatement }
+import java.sql.{ Connection, PreparedStatement, BatchUpdateException}
 import java.util.Properties
 
 import org.apache.spark.Logging
@@ -171,6 +171,8 @@ object UpsertUtils extends Logging {
         if (rowCount > 0) {
           stmt.executeBatch()
         }
+      } catch {
+        case jdbce: BatchUpdateException => jdbce.getNextException().printStackTrace()
       } finally {
         stmt.close()
       }
