@@ -34,92 +34,166 @@ class DatabaseUpsertPostgresSpec extends Matchers with FunSpecLike with ScalaFut
   implicit override val patienceConfig = PatienceConfig(timeout = Span(2, Seconds), interval = Span(1, Seconds))
 
   val table = "TEST_TABLE"
+  val inferredTable = "INFERRED_TEST_TABLE"
 
   val json = """{ "context": { "ip": "127.0.0.1" }, "user": { "handle": "alex", "id": 123 } }"""
 
+  override def beforeEach(): Unit = {
+    super.beforeEach()
+    val f: Future[Int] = database.run(basicUpdate(s"CREATE TABLE $table (user_id integer,username varchar(100)," +
+      s"ip_address varchar(10))"))
+    eventually(f.value.get.get shouldBe 0)
+
+    val f2: Future[Int] = database.run(basicUpdate(s"CREATE TABLE $inferredTable (user_id integer, user_handle varchar(100), context_ip varchar(10), primary key(user_id))"))
+    eventually(f2.value.get.get shouldBe 0)
+  }
+
   override def afterEach(): Unit = {
     super.afterEach()
-    val f: Future[Int] = database.run(basicUpdate(s"DROP TABLE $table"))
+    val f: Future[Int] = database.run(basicUpdate(s"DROP TABLE IF EXISTS $table"))
     eventually(f.value.get.get shouldBe 0)
+
+    val f2: Future[Int] = database.run(basicUpdate(s"DROP TABLE IF EXISTS $inferredTable"))
+    eventually(f2.value.get.get shouldBe 0)
   }
 
   describe("The DatabaseUpsert Should work with Postgres") {
 
+    it("Should create the table without PK") {
+      import slick.driver.PostgresDriver.api._
 
-  it("Should perform inserts w/o a PK") {
-    import slick.driver.H2Driver.api._
+      val mappings = List(
+        ColumnMapping("context.ip", "ip_address", "string"),
+        ColumnMapping("user.handle", "username", "string")
+      )
 
-    val f: Future[Int] = database.run(basicUpdate(s"CREATE TABLE $table (user_id integer,username varchar(100)," +
-      s"ip_address varchar(10))"))
+      val props = Map("savemode" -> "overwrite", "url" -> url)
 
-    eventually(f.value.get.get shouldBe 0)
+      val dbUpsert = DatabaseUpsert("NEW_TABLE", props, None, mappings)
 
-    val mappings = List(
-      ColumnMapping("context.ip", "ip_address", "string"),
-      ColumnMapping("user.handle", "username", "string")
-    )
+      val rdd = sc.parallelize(json :: Nil)
 
-    val dbUpsert = DatabaseUpsert("TEST_TABLE", Map("url" -> url), None, mappings)
+      val df = SQLContext.getOrCreate(sc).read.json(rdd)
 
-    val rdd = sc.parallelize(json :: Nil)
+      dbUpsert.transform(df)
 
-    val df = SQLContext.getOrCreate(sc).read.json(rdd)
-
-    dbUpsert.transform(df)
-
-    whenReady(database.run(sql"select * from TEST_TABLE".as[(Int, String, String)])) { r =>
-      r shouldBe Seq((0, "alex", "127.0.0.1"))
-    }
-  }
-
-  it("Should upsert with a PK and infer the other columns") {
-
-    val f: Future[Int] = database.run(basicUpdate(s"CREATE TABLE $table (user_id integer,username varchar(100)," +
-      s"ip_address varchar(10),primary key(user_id))"))
-
-    eventually(f.value.get.get shouldBe 0)
-
-    val dbUpsert = DatabaseUpsert("TEST_TABLE", Map("url" -> url),
-      Some(ColumnMapping("user.id", "user_id", "long")), Seq.empty)
-
-
-  }
-
-  it("Should upsert with a PK") {
-
-    import slick.driver.H2Driver.api._
-
-    val f: Future[Int] = database.run(basicUpdate(s"CREATE TABLE $table (user_id integer,username varchar(100)," +
-      s"ip_address varchar(10),primary key(user_id))"))
-
-    eventually(f.value.get.get shouldBe 0)
-
-    val mappings = List(
-      ColumnMapping("context.ip", "ip_address", "string"),
-      ColumnMapping("user.handle", "username", "string")
-    )
-
-    val dbUpsert = DatabaseUpsert("TEST_TABLE", Map("url" -> url),
-      Some(ColumnMapping("user.id", "user_id", "long")), mappings)
-
-    val df = SQLContext.getOrCreate(sc).read.json(sc.parallelize(json :: Nil))
-
-    dbUpsert.transform(df)
-
-    whenReady(database.run(sql"select * from TEST_TABLE".as[(Int, String, String)])) { r =>
-      r shouldBe Seq((123, "alex", "127.0.0.1"))
+      whenReady(database.run(sql"select conname from pg_constraint where conname = 'new_table_pkey'".as[String])) { r =>
+        r shouldBe empty
+      }
+      whenReady(database.run(sql"select * from NEW_TABLE".as[(String, String)])) { r =>
+        r shouldBe Seq(("127.0.0.1", "alex"))
+        val f: Future[Int] = database.run(basicUpdate(s"DROP TABLE NEW_TABLE"))
+        eventually(f.value.get.get shouldBe 0)
+      }
     }
 
-    val njson = """{ "context": { "ip": "127.0.0.1" }, "user": { "handle": "alex_updated", "id": 123 } }"""
+    it("Should create the table with PK") {
+      import slick.driver.PostgresDriver.api._
 
-    val ndf = SQLContext.getOrCreate(sc).read.json(sc.parallelize(njson :: Nil))
+      val mappings = List(
+        ColumnMapping("context.ip", "ip_address", "string"),
+        ColumnMapping("user.handle", "username", "string")
+      )
+      val idCol = Some(ColumnMapping("user.id", "user_id", "int"))
 
-    dbUpsert.transform(ndf)
+      val props = Map("savemode" -> "overwrite", "url" -> url)
 
-    whenReady(database.run(sql"select * from TEST_TABLE".as[(Int, String, String)])) { r =>
-      r shouldBe Seq((123, "alex_updated", "127.0.0.1"))
+      val dbUpsert = DatabaseUpsert("NEW_TABLE", props, idCol, mappings)
+
+      val rdd = sc.parallelize(json :: Nil)
+
+      val df = SQLContext.getOrCreate(sc).read.json(rdd)
+
+      dbUpsert.transform(df)
+
+      whenReady(database.run(sql"select conname from pg_constraint where conname = 'new_table_pkey'".as[String])) { r =>
+        r should contain("new_table_pkey")
+        val f: Future[Int] = database.run(basicUpdate(s"DROP TABLE NEW_TABLE"))
+        eventually(f.value.get.get shouldBe 0)
+      }
     }
-  }
+
+    it("Should perform inserts w/o a PK") {
+      import slick.driver.PostgresDriver.api._
+
+      val mappings = List(
+        ColumnMapping("context.ip", "ip_address", "string"),
+        ColumnMapping("user.handle", "username", "string")
+      )
+
+      val dbUpsert = DatabaseUpsert("TEST_TABLE", Map("url" -> url), None, mappings)
+
+      val rdd = sc.parallelize(json :: Nil)
+
+      val df = SQLContext.getOrCreate(sc).read.json(rdd)
+
+      dbUpsert.transform(df)
+
+      whenReady(database.run(sql"select * from TEST_TABLE".as[(Int, String, String)])) { r =>
+        r shouldBe Seq((0, "alex", "127.0.0.1"))
+      }
+    }
+
+    it("Should upsert with a PK") {
+      import slick.driver.PostgresDriver.api._
+
+      val f: Future[Int] = database.run(basicUpdate(s"ALTER TABLE $table ADD CONSTRAINT pk_user_id primary key (user_id)"))
+
+      eventually(f.value.get.get shouldBe 0)
+
+      val mappings = List(
+        ColumnMapping("context.ip", "ip_address", "string"),
+        ColumnMapping("user.handle", "username", "string")
+      )
+
+      val dbUpsert = DatabaseUpsert("TEST_TABLE", Map("url" -> url),
+        Some(ColumnMapping("user.id", "user_id", "long")), mappings)
+
+      val df = SQLContext.getOrCreate(sc).read.json(sc.parallelize(json :: Nil))
+
+      dbUpsert.transform(df)
+
+      whenReady(database.run(sql"select * from TEST_TABLE".as[(Int, String, String)])) { r =>
+        r shouldBe Seq((123, "alex", "127.0.0.1"))
+      }
+
+      val njson = """{ "context": { "ip": "127.0.0.1" }, "user": { "handle": "alex_updated", "id": 123 } }"""
+
+      val ndf = SQLContext.getOrCreate(sc).read.json(sc.parallelize(njson :: Nil))
+
+      dbUpsert.transform(ndf)
+
+      whenReady(database.run(sql"select * from TEST_TABLE".as[(Int, String, String)])) { r =>
+        r shouldBe Seq((123, "alex_updated", "127.0.0.1"))
+      }
+    }
+
+    it("Should upsert with a PK using source fields if no columns specified") {
+      import slick.driver.PostgresDriver.api._
+
+      val mappings = Seq.empty
+
+      val dbUpsert = DatabaseUpsert(inferredTable, Map("url" -> url),
+        Some(ColumnMapping("user_id", "user_id", "int")), mappings)
+
+      val df = SQLContext.getOrCreate(sc).read.json(sc.parallelize(json :: Nil))
+
+      dbUpsert.transform(df)
+
+      whenReady(database.run(sql"select user_id, user_handle, context_ip from INFERRED_TEST_TABLE".as[(Int, String, String)])) { r =>
+        r shouldBe Seq((123, "alex", "127.0.0.1"))
+      }
+
+      val njson = """{ "context_ip": "127.0.0.1", "user_handle": "alex_updated", "user_id": 123 }"""
+      val ndf = SQLContext.getOrCreate(sc).read.json(sc.parallelize(njson :: Nil))
+
+      dbUpsert.transform(ndf)
+
+      whenReady(database.run(sql"select user_id, user_handle, context_ip from INFERRED_TEST_TABLE".as[(Int, String, String)])) { r =>
+        r shouldBe Seq((123, "alex_updated", "127.0.0.1"))
+      }
+    }
+
   }
 }
 
