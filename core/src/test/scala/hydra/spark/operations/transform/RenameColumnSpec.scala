@@ -28,7 +28,7 @@ class RenameColumnSpec extends Matchers with FunSpecLike with SharedSparkContext
 
   override def beforeAll() = {
     super.beforeAll()
-    sqlContext = new SQLContext(sc)
+    sqlContext =  ss.sqlContext
   }
 
   describe("It should rename a column") {

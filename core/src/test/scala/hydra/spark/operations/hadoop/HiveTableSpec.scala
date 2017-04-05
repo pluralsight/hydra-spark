@@ -18,25 +18,26 @@ package hydra.spark.operations.hadoop
 import java.io.File
 import java.nio.file.Files
 
-import hydra.spark.testutils.{ SharedSparkContext, StaticJsonSource }
+import hydra.spark.testutils.{SharedSparkContext, StaticJsonSource}
 import org.apache.commons.io.FileUtils
 import org.apache.hadoop.hive.conf.HiveConf
-import org.apache.spark.sql.hive.HiveContext
-import org.apache.spark.{ SparkConf, SparkContext }
-import org.scalatest.{ BeforeAndAfterAll, FunSpecLike, Matchers }
+import org.apache.spark.SparkConf
+import org.apache.spark.sql.SparkSession
+import org.scalatest.{BeforeAndAfterAll, FunSpecLike, Matchers}
 import spray.json._
 
 /**
- * Created by alexsilva on 1/4/17.
- */
+  * Created by alexsilva on 1/4/17.
+  */
 class HiveTableSpec extends Matchers with FunSpecLike with BeforeAndAfterAll with DefaultJsonProtocol
-    with SharedSparkContext {
+  with SharedSparkContext {
 
   val warehouseDir = makeWarehouseDir()
 
+
   val sparkConf = new SparkConf()
     .setMaster("local")
-    .setAppName("hydra")
+    .setAppName("hydra-spark-hive-test")
     .set("spark.ui.enabled", "false")
     .set("spark.local.dir", "/tmp")
     .set("spark.driver.allowMultipleContexts", "true")
@@ -44,19 +45,21 @@ class HiveTableSpec extends Matchers with FunSpecLike with BeforeAndAfterAll wit
     .set("spark.sql.warehouse.dir", warehouseDir.toURI.getPath)
     .set(HiveConf.ConfVars.METASTOREWAREHOUSE.varname, warehouseDir.toURI.getPath)
 
-  // var sparkContext = new SparkContext(sparkConf)
+
+  val hive = SparkSession.builder().config(sparkConf).enableHiveSupport().getOrCreate()
+
 
   override def afterAll(): Unit = {
     super.afterAll()
     warehouseDir.delete()
     FileUtils.deleteDirectory(new File("metastore_db"))
+    hive.close()
     //  sparkContext.stop()
   }
 
   describe("When writing to Hive") {
     it("should save") {
-      val hive = new HiveContext(sc)
-      val df = StaticJsonSource.createDF(hive)
+      val df = StaticJsonSource.createDF(hive.sqlContext)
       HiveTable("test", Map("option.path" -> warehouseDir.toURI.getPath), Seq.empty).transform(df)
       val dfHive = hive.sql("SELECT * from test")
 

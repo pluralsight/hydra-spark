@@ -15,21 +15,20 @@
 
 package hydra.spark.sources.kafka
 
-import hydra.spark.api.{ Invalid, Valid }
-import hydra.spark.testutils.{ SharedKafka, SharedSparkContext }
-import org.apache.spark.sql.SQLContext
+import hydra.spark.api.{Invalid, Valid}
+import hydra.spark.testutils.{KafkaTestSupport, SharedSparkContext}
 import org.apache.spark.streaming.StreamingContext
-import org.scalatest.concurrent.{ Eventually, PatienceConfiguration, ScalaFutures }
-import org.scalatest.time.{ Seconds, Span }
-import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach, FunSpecLike, Matchers }
+import org.scalatest.concurrent.{Eventually, PatienceConfiguration, ScalaFutures}
+import org.scalatest.time.{Seconds, Span}
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, FunSpecLike, Matchers}
 
 import scala.collection.mutable.ArrayBuffer
 
 /**
- * Created by alexsilva on 6/2/16.
- */
+  * Created by alexsilva on 6/2/16.
+  */
 class KafkaSourceSpec extends Matchers with FunSpecLike with ScalaFutures with PatienceConfiguration
-    with Eventually with BeforeAndAfterAll with BeforeAndAfterEach with SharedKafka with SharedSparkContext {
+  with Eventually with BeforeAndAfterAll with BeforeAndAfterEach with KafkaTestSupport with SharedSparkContext {
 
   implicit override val patienceConfig = PatienceConfig(timeout = Span(12, Seconds), interval = Span(1, Seconds))
 
@@ -80,7 +79,7 @@ class KafkaSourceSpec extends Matchers with FunSpecLike with ScalaFutures with P
   it("should create the RDD") {
     val properties = Map("metadata.broker.list" -> "localhost:5001", "group.id" -> "test")
     val source = KafkaSource(Map("testJson" -> jsonTopic), properties)
-    source.createDF(new SQLContext(sc)).count() shouldBe 11
+    source.createDF(ss.sqlContext).count() shouldBe 11
   }
 
   it("includes the key in the json payload when specified") {

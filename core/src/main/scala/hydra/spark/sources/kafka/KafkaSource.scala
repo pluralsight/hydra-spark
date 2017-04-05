@@ -15,34 +15,34 @@
 
 package hydra.spark.sources.kafka
 
-import com.typesafe.config.{ Config, ConfigObject }
+import com.typesafe.config.{Config, ConfigObject}
 import hydra.spark.api._
 import hydra.spark.util.RDDConversions._
-import hydra.spark.util.{ KafkaUtils, Network, SimpleConsumerConfig }
+import hydra.spark.util.{KafkaUtils, Network}
 import kafka.api.OffsetRequest
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{ DataFrame, SQLContext }
+import org.apache.spark.sql.{DataFrame, SQLContext}
 import org.apache.spark.streaming.StreamingContext
 import org.apache.spark.streaming.dstream.DStream
-import org.apache.spark.streaming.kafka.HasOffsetRanges
+import org.apache.spark.streaming.kafka010.HasOffsetRanges
 
 import scala.util.Try
 
 /**
- * Dispatch source that uses a Spark Direct Stream to consume messages from Kafka.
- *
- * @param topics     A map where the key is the topic name and the value are the properties to be used for that topic,
- *                   which are:
- *                   format -> the topic format
- *                   start -> When to start streaming; can use -1(OffsetRequest.EarliestTime) or -2 (OffsetRequest
- *                   .LatestTime)
- * @param properties Any Kafka config property.
- *
- *                   Key columns: Adding a keyColumn property to topics, will add a column with the name specified by this parameter
- *                   to the dataframe and its value will be the KafkaKey.
- */
+  * Dispatch source that uses a Spark Direct Stream to consume messages from Kafka.
+  *
+  * @param topics     A map where the key is the topic name and the value are the properties to be used for that topic,
+  *                   which are:
+  *                   format -> the topic format
+  *                   start -> When to start streaming; can use -1(OffsetRequest.EarliestTime) or -2 (OffsetRequest
+  *                   .LatestTime)
+  * @param properties Any Kafka config property.
+  *
+  *                   Key columns: Adding a keyColumn property to topics, will add a column with the name specified by this parameter
+  *                   to the dataframe and its value will be the KafkaKey.
+  */
 case class KafkaSource(topics: Map[String, Map[String, Any]], properties: Map[String, String])
-    extends Source[KafkaMessageAndMetadata[_, _]] {
+  extends Source[KafkaMessageAndMetadata[_, _]] {
 
   type KMMD = KafkaMessageAndMetadata[_, _]
 
@@ -94,7 +94,7 @@ case class KafkaSource(topics: Map[String, Map[String, Any]], properties: Map[St
         offsetRanges.map { range =>
           val topic = range.topic
           val format = formatName(topics(topic))
-          val cfg = SimpleConsumerConfig(SparkKafkaUtils.consumerConfig(format, properties))
+          val cfg = new kafka.consumer.ConsumerConfig(SparkKafkaUtils.consumerConfig(format, properties))
           val offsets: Map[Int, (Long, Long)] = Map(range.partition -> (range.fromOffset, range.untilOffset))
           KafkaUtils.commitOffsets(topic, offsets, cfg)
         }
@@ -102,7 +102,7 @@ case class KafkaSource(topics: Map[String, Map[String, Any]], properties: Map[St
         topics.foreach { props =>
           val topic = props._1
           val format = formatName(topics(topic))
-          val cfg = SimpleConsumerConfig(SparkKafkaUtils.consumerConfig(format, properties))
+          val cfg = new kafka.consumer.ConsumerConfig(SparkKafkaUtils.consumerConfig(format, properties))
           val start = Offsets.stringToNumber(props._2.get("start"), OffsetRequest.EarliestTime)
           val stop = Offsets.stringToNumber(props._2.get("stop"), OffsetRequest.LatestTime)
           val offsets = Offsets.offsetRange(topic, start, stop, cfg)
@@ -114,10 +114,10 @@ case class KafkaSource(topics: Map[String, Map[String, Any]], properties: Map[St
   }
 
   /**
-   * Converts an RDD of type S to a dataframe of the same type.
-   *
-   * @param rdd
-   */
+    * Converts an RDD of type S to a dataframe of the same type.
+    *
+    * @param rdd
+    */
   override def toDF(rdd: RDD[KMMD]): DataFrame = rdd.toDF
 }
 

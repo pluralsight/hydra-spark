@@ -15,14 +15,15 @@
 
 package hydra.spark.sources.kafka
 
-import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.{JsonNode, ObjectMapper}
 import org.apache.avro.SchemaBuilder
-import org.apache.avro.generic.{ GenericData, GenericRecord }
-import org.scalatest.{ FunSpecLike, Matchers }
+import org.apache.avro.generic.{GenericData, GenericRecord}
+import org.apache.kafka.clients.consumer.ConsumerRecord
+import org.scalatest.{FunSpecLike, Matchers}
 
 /**
- * Created by alexsilva on 12/14/16.
- */
+  * Created by alexsilva on 12/14/16.
+  */
 class KafkaFormatSpec extends Matchers with FunSpecLike {
 
   import spray.json._
@@ -59,20 +60,20 @@ class KafkaFormatSpec extends Matchers with FunSpecLike {
 
   describe("When using string topics") {
     it("Adds the key to string messages that can be parsed as json") {
-      val kmmd = KafkaMessageAndMetadata("msg-key", json, "test-topic", 0, 0)
-      val keyed = KafkaStringFormat.addKey(kmmd, "key")
+      val record = new ConsumerRecord[String, String]("test-topic", 0, 0, "msg-key", json)
+      val keyed = KafkaStringFormat.addKey(record, "key")
       keyed.value.parseJson shouldBe keyedJson.parseJson
-      keyed.key shouldBe kmmd.key
+      keyed.key shouldBe record.key
     }
 
     describe("When using json topics") {
       it("Adds the key to json messages") {
         val mapper = new ObjectMapper()
         val original = mapper.reader().readTree(json)
-        val kmmd = KafkaMessageAndMetadata("msg-key", original, "test-topic", 0, 0)
-        val keyed = KafkaJsonFormat.addKey(kmmd, "key")
+        val record = new ConsumerRecord[String, JsonNode]("test-topic", 0, 0, "msg-key", original)
+        val keyed = KafkaJsonFormat.addKey(record, "key")
         keyed.value shouldBe mapper.reader().readTree(keyedJson)
-        keyed.key shouldBe kmmd.key
+        keyed.key shouldBe record.key
       }
     }
 
@@ -80,9 +81,8 @@ class KafkaFormatSpec extends Matchers with FunSpecLike {
       it("Adds the key to generic record messages") {
         val record = new GenericData.Record(originalSchema)
         record.put("test", "json")
-
-        val kmmd = KafkaMessageAndMetadata[String, Object]("msg-key", record, "test-topic", 0, 0)
-        val keyed = KafkaAvroFormat.addKey(kmmd, "key")
+        val cRecord = new ConsumerRecord[String, Object]("test-topic", 0, 0, "msg-key", record)
+        val keyed = KafkaAvroFormat.addKey(cRecord, "key")
 
         //check the schema
         val testSchemaFields = keyedSchema.getFields.asScala
@@ -95,7 +95,7 @@ class KafkaFormatSpec extends Matchers with FunSpecLike {
         keyedRecord.put("key", "msg-key")
 
         keyed.value shouldBe keyedRecord
-        keyed.key shouldBe kmmd.key
+        keyed.key shouldBe cRecord.key
       }
     }
   }

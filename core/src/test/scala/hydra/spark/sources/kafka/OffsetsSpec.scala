@@ -15,29 +15,33 @@
 
 package hydra.spark.sources.kafka
 
+import java.util.Properties
+
 import hydra.spark.api.InvalidDslException
-import hydra.spark.testutils.SharedKafka
-import hydra.spark.util.{Collections, SimpleConsumerConfig}
+import hydra.spark.testutils.KafkaTestSupport
 import kafka.api.OffsetRequest
 import kafka.common.TopicAndPartition
+import kafka.consumer.ConsumerConfig
 import org.scalatest.concurrent.Eventually
 import org.scalatest.time.{Seconds, Span}
 import org.scalatest.{BeforeAndAfterAll, FunSpecLike, Matchers}
 
+import scala.collection.JavaConverters._
+
 /**
   * Created by alexsilva on 12/12/16.
   */
-class OffsetsSpec extends Matchers with FunSpecLike with BeforeAndAfterAll with Eventually with SharedKafka {
-
-  import Collections._
+class OffsetsSpec extends Matchers with FunSpecLike with BeforeAndAfterAll with Eventually with KafkaTestSupport {
 
   implicit override val patienceConfig = PatienceConfig(timeout = Span(5, Seconds), interval = Span(1, Seconds))
 
   //setting the group id to 10 because KafkaUnit sets it to 10 as well within its readMessages method...
-  val cfg = SimpleConsumerConfig(Map(
-    "metadata.broker.list" -> bootstrapServers,
-    "zookeeper.connect.url" -> zkConnect, "group.id" -> "10"
-  ))
+  val props = new Properties()
+  props.putAll(Map(
+    "bootstrap.servers" -> bootstrapServers,
+    "zookeeper.connect" -> zkConnect, "group.id" -> "10"
+  ).asJava)
+  val cfg = new ConsumerConfig(props)
 
   describe("Kafka offsets") {
     it("Should translate topic start/stop values into the correct number") {

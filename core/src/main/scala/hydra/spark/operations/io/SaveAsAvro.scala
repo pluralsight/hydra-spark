@@ -17,20 +17,14 @@ package hydra.spark.operations.io
 
 import java.io.File
 
-import com.pluralsight.hydra.common.avro.JsonConverter
+import com.databricks.spark.avro._
 import com.typesafe.config.Config
 import hydra.spark.api._
 import hydra.spark.avro.SchemaRegistrySupport
 import hydra.spark.internal.Logging
 import org.apache.avro.Schema
-import org.apache.avro.generic.{GenericDatumReader, GenericRecord}
-import org.apache.avro.mapred.AvroKey
-import org.apache.avro.mapreduce.{AvroJob, AvroKeyOutputFormat}
 import org.apache.hadoop.fs.Path
-import org.apache.hadoop.io.NullWritable
-import org.apache.hadoop.mapreduce.Job
-import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.DataFrame
+import org.apache.spark.sql.{DataFrame, Dataset, Row}
 
 import scala.reflect.ClassTag
 import scala.util.Try
@@ -47,37 +41,12 @@ case class SaveAsAvro(directory: String, schema: String, codec: Option[String], 
 
   override def transform(df: DataFrame): DataFrame = {
     val path = new File(directory, System.currentTimeMillis.toString)
-    saveHadoopAvro[String](df.toJSON, new Path(directory, System.currentTimeMillis().toString))
+    saveHadoopAvro[Row](df, new Path(directory, System.currentTimeMillis().toString))
     df
   }
 
-  private def saveHadoopAvro[A: ClassTag](rdd: RDD[A], path: Path): Unit = {
-
-    val job: Job = Job.getInstance()
-    AvroJob.setOutputKeySchema(job, avroSchema)
-
-    codec.foreach { c =>
-      job.getConfiguration.set("mapreduce.output.compress", "true")
-      job.getConfiguration.set("mapred.output.compression.codec", c)
-    }
-
-    val schemaAsString = avroSchema.toString(false)
-
-    rdd.mapPartitions(tuples => {
-      val innerSchema = new Schema.Parser().parse(schemaAsString)
-      tuples.map(tuple => {
-        val reader = new GenericDatumReader[GenericRecord](innerSchema)
-        val converter = new JsonConverter[GenericRecord](innerSchema)
-        converter.convert(tuple.toString)
-      })
-    }).map(r => (new AvroKey[GenericRecord](r), NullWritable.get()))
-      .saveAsNewAPIHadoopFile(
-        path.toString,
-        classOf[AvroKey[A]],
-        classOf[NullWritable],
-        classOf[AvroKeyOutputFormat[A]],
-        job.getConfiguration
-      )
+  private def saveHadoopAvro[A: ClassTag](ds: Dataset[A], path: Path): Unit = {
+    ds.write.avro(path.toString)
   }
 
   override def validate: ValidationResult = {

@@ -40,7 +40,7 @@ class ValueFilterSpec extends Matchers with FunSpecLike with BeforeAndAfterEach 
   describe("When Filtering by a value") {
     it("Should only include matching rows") {
       val json = StaticJsonSource.msgs(0).parseJson
-      SparkBatchDispatch("test", StaticJsonSource, Operations(Seq(t, ListOperation)), config, scl).run()
+      SparkBatchDispatch("test", StaticJsonSource, Operations(Seq(t, ListOperation)), config, ss).run()
       ListOperation.l.size shouldBe 1
       ListOperation.l.map(_.parseJson) should contain(json)
     }

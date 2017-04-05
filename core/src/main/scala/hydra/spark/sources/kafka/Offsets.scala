@@ -16,22 +16,22 @@
 package hydra.spark.sources.kafka
 
 import hydra.spark.api.InvalidDslException
-import hydra.spark.util.{ KafkaUtils, SimpleConsumerConfig }
+import hydra.spark.util.KafkaUtils
 import kafka.api.OffsetRequest
-import kafka.common.TopicAndPartition
+import org.apache.kafka.common.TopicPartition
 
 import scala.util.Try
 
 /**
- * Created by alexsilva on 12/12/16.
- */
+  * Created by alexsilva on 12/12/16.
+  */
 object Offsets {
 
-  type TPO = Map[TopicAndPartition, (Long, Long)]
+  type TPO = Map[TopicPartition, (Long, Long)]
 
   /**
-   * Indicates the last offset consumed by a consumer group.
-   */
+    * Indicates the last offset consumed by a consumer group.
+    */
   val LastTimeString = "last"
 
   val LastTime = -3L
@@ -46,7 +46,7 @@ object Offsets {
     }).getOrElse(defaultValue)
   }
 
-  def offsetRange(topic: String, start: Long, stop: Long, cfg: SimpleConsumerConfig): TPO = {
+  def offsetRange(topic: String, start: Long, stop: Long, cfg: kafka.consumer.ConsumerConfig): TPO = {
     if (start == LastTime) //-3 is a special case
       KafkaUtils.lastGroupOffsets(topic, cfg, stop)
     else

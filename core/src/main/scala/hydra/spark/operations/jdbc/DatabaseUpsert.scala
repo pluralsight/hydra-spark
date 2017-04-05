@@ -21,6 +21,7 @@ import com.typesafe.config.Config
 import hydra.spark.api._
 import hydra.spark.internal.Logging
 import hydra.spark.util.Collections._
+import org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.jdbc.DataFrameWriterExtensions._
 import org.apache.spark.sql.types._
@@ -44,7 +45,7 @@ case class DatabaseUpsert(table: String, properties: Map[String, String],
         val idField = idColumn.map(id => StructField(id.target, id.`type`, nullable = false))
 
         ndf.write.mode(properties.get("savemode").getOrElse("append")).upsert(properties("url"), table, idField,
-          properties, ndf)
+          new JDBCOptions(properties), ndf)
         ndf
     }
   }

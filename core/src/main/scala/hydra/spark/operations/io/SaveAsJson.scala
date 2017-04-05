@@ -15,8 +15,9 @@
 
 package hydra.spark.operations.io
 
+import java.io.File
+
 import com.typesafe.config.Config
-import hydra.spark.configs._
 import hydra.spark.api._
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
@@ -27,8 +28,8 @@ import org.apache.spark.sql.DataFrame
 import scala.reflect.ClassTag
 
 /**
- * Created by alexsilva on 6/21/16.
- */
+  * Created by alexsilva on 6/21/16.
+  */
 case class SaveAsJson(directory: String, codec: Option[String]) extends DFOperation {
 
   override def id: String = s"save-as-json-$directory-$codec"
@@ -36,15 +37,9 @@ case class SaveAsJson(directory: String, codec: Option[String]) extends DFOperat
   lazy val output: Path = new Path(directory, System.currentTimeMillis().toString)
 
   override def transform(df: DataFrame): DataFrame = {
-    saveHadoopJson(df.toJSON, output)
+    val writer = codec.map(c => df.write.option("codec", c)).getOrElse(df.write)
+    writer.json(output.getName)
     df
-  }
-
-  private def saveHadoopJson[A: ClassTag](rdd: RDD[A], path: Path): Unit = {
-    codec match {
-      case Some(c) => rdd.saveAsTextFile(path.toString, Class.forName(c).asInstanceOf[Class[_ <: CompressionCodec]])
-      case None => rdd.saveAsTextFile(path.toString)
-    }
   }
 
   override def validate: ValidationResult = {

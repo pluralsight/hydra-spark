@@ -15,16 +15,13 @@
 
 package hydra.spark.dsl.parser
 
-import java.net.URL
 import java.util.UUID
 
 import com.typesafe.config._
 import hydra.spark.api._
 import hydra.spark.configs._
-import hydra.spark.dispatch.context.{DefaultSparkContextFactory, StreamingContextFactory}
 import hydra.spark.dsl.factories.ClasspathDslElementFactory
 import hydra.spark.internal.Logging
-import hydra.spark.util.ContextURLClassLoader
 
 case class TypesafeDSLParser(sourcesPkg: Seq[String] = Seq("hydra.spark.sources"),
                              operationsPkg: Seq[String] = Seq("hydra.spark.operations"))
@@ -58,21 +55,7 @@ case class TypesafeDSLParser(sourcesPkg: Seq[String] = Seq("hydra.spark.sources"
 
     val isStreaming = streamingProps.get("streaming.interval").isDefined
 
-    val contextFactory = getContextFactory(transport, isStreaming)
-
-    DispatchDetails(name, source, Operations(operations), isStreaming, dsl, contextFactory)
-  }
-
-  def getContextFactory(config: Config, isStreaming: Boolean): SparkContextFactory = {
-    val factory = config.get[String]("context-factory") match {
-      case Some(factoryClassName) =>
-        val jarLoader = new ContextURLClassLoader(Array[URL](), getClass.getClassLoader)
-        val factoryClass = jarLoader.loadClass(factoryClassName)
-        Thread.currentThread.setContextClassLoader(jarLoader)
-        factoryClass.newInstance.asInstanceOf[SparkContextFactory]
-      case None => if (isStreaming) new StreamingContextFactory else new DefaultSparkContextFactory
-    }
-    factory
+    DispatchDetails(name, source, Operations(operations), isStreaming, dsl)
   }
 
 

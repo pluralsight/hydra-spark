@@ -17,7 +17,7 @@ package hydra.spark.operations.io
 
 import com.google.common.io.Files
 import hydra.spark.api.{Invalid, Source, Valid}
-import hydra.spark.testutils.ListOperation
+import hydra.spark.testutils.{ListOperation, SharedSparkContext}
 import org.apache.avro.Schema
 import org.apache.avro.file.DataFileReader
 import org.apache.avro.generic.{GenericDatumReader, GenericRecord}
@@ -37,12 +37,10 @@ import scala.collection.mutable
 /**
   * Created by alexsilva on 6/22/16.
   */
-class SaveAsAvroSpec extends Matchers with FunSpecLike with Inside with BeforeAndAfterEach with BeforeAndAfterAll {
+class SaveAsAvroSpec extends Matchers with FunSpecLike with Inside with BeforeAndAfterEach with BeforeAndAfterAll
+  with SharedSparkContext {
 
   val tmpDir = Files.createTempDir()
-
-  val conf = new SparkConf().setMaster("local[4]").set("spark.ui.enabled", "false").setAppName("avro-spec")
-    .set("spark.driver.allowMultipleContexts", "false")
 
   lazy val sparkCtx = new SparkContext(conf)
 
@@ -68,7 +66,7 @@ class SaveAsAvroSpec extends Matchers with FunSpecLike with Inside with BeforeAn
 
     it("Should save a string source") {
       val t = SaveAsAvro(tmpDir.getAbsolutePath, "classpath:schema.avsc", None, Map.empty)
-      t.transform(AvroSpecSource.createDF(new SQLContext(sparkCtx)))
+      t.transform(AvroSpecSource.createDF(ss.sqlContext))
       val output = FileUtils.listFiles(tmpDir, new RegexFileFilter("^.*.avro$"), TrueFileFilter.INSTANCE)
       val records = output.asScala.map { file =>
         val reader = DataFileReader.openReader(file, new GenericDatumReader[GenericRecord]())

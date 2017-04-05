@@ -27,28 +27,17 @@ import org.apache.spark.SparkConf
   * @param operations  The list of operations
   * @param isStreaming Whether or not this is a streaming dispatch
   * @param dsl         The underlying DSL converted to a resolved Typesafe config format
-  * @param fact        The SparkContextFactory object that can create contexts for this dispatch.
   *
   *                    Created by alexsilva on 1/3/17.
   */
 case class DispatchDetails[S](name: String, source: Source[S], operations: Operations, isStreaming: Boolean,
-                              dsl: Config, fact: SparkContextFactory) {
+                              dsl: Config) {
 
-  lazy val newCtx: ContextLike = {
-    val sparkConf: SparkConf = {
-      import hydra.spark.configs._
-      val sparkRefConf = dsl.getConfig("transport").flattenAtKey("spark")
-      val jars = dsl.get[List[String]]("spark.jars").getOrElse(List.empty)
-      val appName = sparkRefConf.get("spark.app.name").getOrElse(name)
-      new SparkConf().setAll(sparkRefConf).setAppName(appName).setJars(jars)
-    }
-
-    val ctx = fact.makeContext(sparkConf, dsl.getConfig("transport"))
-
-    if (!ctx.isValidDispatch(this))
-      throw new InvalidDslException(s"Spark context ${ctx.getClass.getName()} " +
-        s"is not a valid context for dispatch ${name}.")
-
-    ctx
+  val conf: SparkConf = {
+    import hydra.spark.configs._
+    val sparkRefConf = dsl.getConfig("transport").flattenAtKey("spark")
+    val jars = dsl.get[List[String]]("spark.jars").getOrElse(List.empty)
+    val appName = sparkRefConf.get("spark.app.name").getOrElse(name)
+    new SparkConf().setAll(sparkRefConf).setAppName(appName).setJars(jars)
   }
 }

@@ -17,7 +17,6 @@ import sbt._
 
 object Dependencies {
 
-  import ExclusionRules._
   import Versions._
 
   lazy val postgres = Seq("org.postgresql" % "postgresql" % postgresVersion)
@@ -31,14 +30,18 @@ object Dependencies {
     "com.typesafe.slick" %% "slick-hikaricp" % slickVersion,
     "org.postgresql" % "postgresql" % postgresVersion)
 
+  lazy val akkaHttp = Seq("com.typesafe.akka" %% "akka-http-core" % akkaHttpVersion
+    , "com.typesafe.akka" %% "akka-http" % akkaHttpVersion)
+
   lazy val typesafeConfig = Seq("com.typesafe" % "config" % typeSafeConfigVersion)
 
   lazy val configExt = Seq("com.github.kxbmap" %% "configs" % kxbmapConfigVersion)
 
-  lazy val kafka08 = Seq("org.apache.kafka" %% "kafka" % "0.8.2.2", kafkaUnit)
+  lazy val embeddedKafka = "net.manub" %% "scalatest-embedded-kafka" % "0.12.0" % "test"
 
-  lazy val kafkaUnit = "info.batey.kafka" % "kafka-unit" % "0.3" % Test excludeAll (
-    ExclusionRule(organization = "org.apache.kafka"))
+  lazy val kafka = Seq("org.apache.kafka" %% "kafka" % kafkaVersion,
+    "org.apache.kafka" % "kafka-clients" % kafkaVersion,
+    embeddedKafka)
 
   lazy val reflections = Seq("org.reflections" % "reflections" % reflectionsVersion)
 
@@ -49,17 +52,19 @@ object Dependencies {
   lazy val spEL = Seq("org.springframework" % "spring-expression" % springVersion)
 
   lazy val coreTestDeps = Seq(
-    "org.scalactic" %% "scalactic" % scalaticVersion,
+    "org.scalactic" %% "scalactic" % scalaTestVersion % "test",
     "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
     "org.scalamock" %% "scalamock-scalatest-support" % scalaMockVersion % "test")
 
-  lazy val confluent = Seq("io.confluent" % "kafka-avro-serializer" % confluentVersion excludeAll (excludeJackson: _*))
+  lazy val httpTest = Seq("com.typesafe.akka" %% "akka-http-testkit" % akkaHttpVersion % "test")
+
+  lazy val confluent = Seq("io.confluent" % "kafka-avro-serializer" % confluentVersion)
 
   lazy val avro = Seq("org.apache.avro" % "avro" % avroVersion)
 
   lazy val guava = Seq("com.google.guava" % "guava" % guavaVersion).map(_.force())
 
-  lazy val log4J = Seq(
+  val logging = Seq(
     "org.apache.logging.log4j" % "log4j-slf4j-impl" % log4jVersion,
     "org.apache.logging.log4j" % "log4j-core" % log4jVersion,
     "org.apache.logging.log4j" % "log4j-api" % log4jVersion,
@@ -70,40 +75,20 @@ object Dependencies {
     "com.fasterxml.jackson.core" % "jackson-annotations" % jacksonVersion)
 
   lazy val sparkCore = Seq(
-    "org.apache.spark" %% "spark-core" % sparkVersion % "provided" excludeAll (sparkExcludes: _*),
-    "org.apache.spark" %% "spark-streaming" % sparkVersion % "provided" excludeAll (sparkExcludes: _*))
+    "org.apache.spark" %% "spark-core" % sparkVersion % "provided",
+    "org.apache.spark" %% "spark-streaming" % sparkVersion % "provided")
 
   lazy val spark = sparkCore ++ Seq(
-    "org.apache.spark" %% "spark-sql" % sparkVersion % "provided" excludeAll (excludeJackson: _*),
-    "org.apache.spark" %% "spark-hive" % sparkVersion % "provided" excludeAll (excludeJackson: _*),
-    "org.apache.spark" %% "spark-yarn" % sparkVersion % "provided" excludeAll (excludeJackson: _*),
-    "com.databricks" %% "spark-csv" % "1.4.0" excludeAll (excludeJackson: _*),
+    "org.apache.spark" %% "spark-sql" % sparkVersion % "provided",
+    "org.apache.spark" %% "spark-hive" % sparkVersion % "provided",
+    "org.apache.spark" %% "spark-yarn" % sparkVersion % "provided",
     "com.databricks" %% "spark-avro" % avroSparkVersion,
     sparkStreamingKafka)
 
-  lazy val extraSparkDeps = sparkCassandraConnector ++ sparkElasticSearch
-
-  lazy val sparkElasticSearch = Seq(
-    "org.elasticsearch" %% "elasticsearch-spark" % sparkElasticVersion,
-    "org.elasticsearch.test" % "framework" % elasticSearchVersion % "test",
-    "org.apache.lucene" % "lucene-test-framework" % luceneVersion % "test",
-    "org.elasticsearch" % "elasticsearch" % elasticSearchVersion % "provided",
-    "com.github.spullara.mustache.java" % "compiler" % "0.8.13" % "provided"
-  )
-
-  lazy val sparkCassandraConnector = Seq(
-    "com.datastax.spark" %% "spark-cassandra-connector" % sparkCassandraConnectorVersion,
-    "org.cassandraunit" % "cassandra-unit" % "2.2.2.1" % "test",
-    "net.jpountz.lz4" % "lz4" % "1.3.0" % "test",
-    "org.hectorclient" % "hector-core" % "2.0-0" % "test").map(_.force())
-
-  lazy val sparkStreamingKafka = "org.apache.spark" %% "spark-streaming-kafka" % sparkVersion excludeAll (excludeJackson: _*)
+  lazy val sparkStreamingKafka = "org.apache.spark" %% "spark-streaming-kafka-0-10" % sparkVersion
 
   lazy val scopt = Seq("com.github.scopt" %% "scopt" % scoptVersion)
 
-  lazy val sprayJson = Seq( "io.spray" %%  "spray-json" % sprayVersion)
-
-  lazy val akkaHttp = Seq("com.typesafe.akka" %% "akka-http-core" % akkaHttpVersion,
-    "com.typesafe.akka" %% "akka-http-testkit" % akkaHttpVersion % "test")
+  lazy val sprayJson = Seq("io.spray" %% "spray-json" % sprayVersion)
 
 }

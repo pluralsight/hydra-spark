@@ -19,11 +19,10 @@ import com.typesafe.config.{Config, ConfigFactory}
 import hydra.spark.api.{DFOperation, Invalid, Valid, ValidationResult}
 import hydra.spark.avro.SchemaRegistrySupport
 import hydra.spark.configs._
+import hydra.spark.internal.Logging
 import hydra.spark.kafka.types.{AvroMessage, JsonMessage, StringMessage}
-import hydra.spark.util.Collections._
 import hydra.spark.util.Network
-import kafka.producer.{KeyedMessage, Producer, ProducerConfig}
-import org.apache.spark.Logging
+import org.apache.kafka.clients.producer.{KafkaProducer, ProducerRecord}
 import org.apache.spark.sql.DataFrame
 
 import scala.util.Try
@@ -54,17 +53,19 @@ case class PublishToKafka(topic: String, format: String = "json", orderBy: Optio
 
     //TODO: allow other formats
     toOrderedDF(cdf).toJSON.foreach(json => {
-      val producer: Producer[Any, Any] = {
+      val producer: KafkaProducer[Any, Any] = {
         if (ProducerObject.isCached) ProducerObject.getCachedProducer
         else {
-          val producer = new Producer[Any, Any](new ProducerConfig(broadcastedConfig.value))
+          import scala.collection.JavaConverters._
+          val producer = new KafkaProducer[Any, Any](broadcastedConfig.value.map(k => k._1 -> k._2.asInstanceOf[AnyRef])
+            .asJava)
           ProducerObject.cacheProducer(producer)
           producer
         }
       }
 
       val msg = kafkaMessage(format, getKey(json), dropKey(json))
-      producer.send(new KeyedMessage[Any, Any](topic, msg.key, msg.payload))
+      producer.send(new ProducerRecord[Any, Any](topic, msg.key, msg.payload))
     })
 
     df
@@ -127,11 +128,11 @@ case class PublishToKafka(topic: String, format: String = "json", orderBy: Optio
 
 object ProducerObject {
 
-  private var producerOpt: Option[Producer[Any, Any]] = None
+  private var producerOpt: Option[KafkaProducer[Any, Any]] = None
 
-  def getCachedProducer: Producer[Any, Any] = producerOpt.get
+  def getCachedProducer: KafkaProducer[Any, Any] = producerOpt.get
 
-  def cacheProducer(producer: Producer[Any, Any]): Unit = producerOpt = Some(producer)
+  def cacheProducer(producer: KafkaProducer[Any, Any]): Unit = producerOpt = Some(producer)
 
   def isCached: Boolean = producerOpt.isDefined
 }

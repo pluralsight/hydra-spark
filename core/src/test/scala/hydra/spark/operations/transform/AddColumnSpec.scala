@@ -28,7 +28,7 @@ class AddColumnSpec extends Matchers with FunSpecLike with SharedSparkContext {
 
   describe("It should add  a column") {
     it("Should add a column") {
-      val sqlContext = new SQLContext(sc)
+      val sqlContext =  ss.sqlContext
       val df = AddColumn("newColumn", 10).transform(StaticJsonSource.createDF(sqlContext))
       df.first().getInt(3) shouldBe 10
 
@@ -37,7 +37,7 @@ class AddColumnSpec extends Matchers with FunSpecLike with SharedSparkContext {
     }
 
     it("Should add a dynamic column") {
-      val sqlContext = new SQLContext(sc)
+      val sqlContext =  ss.sqlContext
       val df = AddColumn("newColumn", "${10+20}").transform(StaticJsonSource.createDF(sqlContext))
       df.first().getInt(3) shouldBe 30
 

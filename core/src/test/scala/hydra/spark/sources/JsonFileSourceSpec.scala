@@ -44,7 +44,7 @@ class JsonFileSourceSpec extends Matchers with FunSpecLike with ScalaFutures wit
   override def beforeAll() = {
     super.beforeAll()
     ssc = new StreamingContext(sc, Durations.seconds(10))
-    ctx = new SQLContext(sc)
+    ctx = ss.sqlContext
   }
 
   override def afterAll() = {

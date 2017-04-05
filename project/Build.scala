@@ -32,7 +32,7 @@ object HydraSparkBuild extends Build with BuildInfoKeys {
     .dependsOn(api)
     .settings(
       name := "hydra-spark-core",
-      libraryDependencies ++= Seq(log4J, spark, guava, postgres, kafka08, confluent, jackson, slf4j, sprayJson,
+      libraryDependencies ++= Seq(logging, spark, guava, postgres, kafka, confluent, jackson, slf4j, sprayJson,
         reflections, springCore, spEL, scopt, coreTestDeps, dbTesting).flatten
     )
 
@@ -40,17 +40,17 @@ object HydraSparkBuild extends Build with BuildInfoKeys {
     .settings(commonSettings: _*).
     settings(
       name := "hydra-spark-api",
-      libraryDependencies ++= Seq(log4J, spark, guava, postgres, kafka08, confluent, jackson, typesafeConfig,
+      libraryDependencies ++= Seq(logging, spark, guava, postgres, kafka, confluent, jackson, typesafeConfig,
         reflections, springCore, spEL, scopt, coreTestDeps, dbTesting).flatten
     )
 
-  lazy val extras = (project in file("extras"))
-    .settings(commonSettings: _*)
-    .dependsOn(core)
-    .settings(
-      name := "hydra-spark-extras",
-      libraryDependencies ++= Seq(log4J, spark, guava, extraSparkDeps, coreTestDeps).flatten
+  lazy val `http` = (project in file("http"))
+    .settings(commonSettings: _*).
+    settings(
+      name := "hydra-spark-http",
+      libraryDependencies ++= Seq(logging, spark, typesafeConfig, akkaHttp, coreTestDeps, httpTest).flatten
     )
+
 
   lazy val buildTag = scala.util.Properties.envOrNone("version").map(v => "." + v).getOrElse("")
 
@@ -62,9 +62,9 @@ object HydraSparkBuild extends Build with BuildInfoKeys {
     parallelExecution in ThisBuild := false,
     concurrentRestrictions in Global += Tags.limit(Tags.Test, 1),
     scalaVersion := "2.11.8",
-    crossScalaVersions := Seq("2.10.6", "2.11.8"),
     excludeDependencies += "org.slf4j" % "slf4j-log4j12",
     excludeDependencies += "log4j" % "log4j",
+    excludeDependencies += "log4j" % "apache-log4j-extras",
     dependencyOverrides += "org.scala-lang" % "scala-compiler" % scalaVersion.value,
     publishArtifact in Test := false,
     publishMavenStyle := true,
@@ -99,9 +99,9 @@ object HydraSparkBuild extends Build with BuildInfoKeys {
 
   lazy val dockerSettings = Seq(
     // Make the docker task depend on the assembly task, which generates a fat JAR file
-    docker <<= (docker dependsOn (assembly in extras)),
+    docker <<= (docker dependsOn (assembly in core)),
     dockerfile in docker := {
-      val artifact = (assemblyOutputPath in assembly in extras).value
+      val artifact = (assemblyOutputPath in assembly in core).value
       val artifactTargetPath = s"/app/${artifact.name}"
 
       val sparkBuild = s"spark-$sparkVersion"

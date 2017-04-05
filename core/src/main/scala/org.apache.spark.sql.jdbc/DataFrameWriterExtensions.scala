@@ -17,9 +17,9 @@ package org.apache.spark.sql.jdbc
 
 import java.util.Properties
 
-import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
+import org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JdbcUtils}
 import org.apache.spark.sql.types.StructField
-import org.apache.spark.sql.{ DataFrame, DataFrameWriter, SaveMode }
+import org.apache.spark.sql.{DataFrame, DataFrameWriter, Row, SaveMode}
 
 /**
  * Created by alexsilva on 6/19/16.
@@ -27,18 +27,14 @@ import org.apache.spark.sql.{ DataFrame, DataFrameWriter, SaveMode }
 
 object DataFrameWriterExtensions {
 
-  implicit class Upsert(w: DataFrameWriter) {
-    def upsert(url: String, table: String, idColumn: Option[StructField], connectionProperties: Properties,
+  implicit class Upsert(w: DataFrameWriter[Row]) {
+    def upsert(url: String, table: String, idColumn: Option[StructField], jdbcOptions:JDBCOptions,
       df: DataFrame): Unit = {
-
-      val props = new Properties()
 
       val modeF = w.getClass.getDeclaredField("mode")
       modeF.setAccessible(true)
       val mode = modeF.get(w).asInstanceOf[SaveMode]
-
-      props.putAll(connectionProperties)
-      val conn = JdbcUtils.createConnectionFactory(url, props)()
+      val conn = JdbcUtils.createConnectionFactory(jdbcOptions)()
 
       try {
         var tableExists = JdbcUtils.tableExists(conn, url, table)
@@ -58,7 +54,7 @@ object DataFrameWriterExtensions {
 
         // Create the table if the table didn't exist.
         if (!tableExists) {
-          val schema = JdbcUtils.schemaString(df, url)
+          val schema = JdbcUtils.schemaString(df.schema, url)
 //          val pk = idColumn.map(id => id.name) match {
 //            case Some(s: String) => s", primary key($s)"
 //            case _ => ""
@@ -78,8 +74,8 @@ object DataFrameWriterExtensions {
 
       //todo: make this a single method
       idColumn match {
-        case Some(id) => UpsertUtils.upsert(df, idColumn, url, table, props)
-        case None => JdbcUtils.saveTable(df, url, table, props)
+        case Some(id) => UpsertUtils.upsert(df, idColumn, jdbcOptions)
+        case None => JdbcUtils.saveTable(df, url, table, jdbcOptions)
       }
 
     }

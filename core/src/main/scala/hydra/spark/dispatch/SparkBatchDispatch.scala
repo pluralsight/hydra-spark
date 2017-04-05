@@ -17,24 +17,23 @@ package hydra.spark.dispatch
 
 import com.typesafe.config.Config
 import hydra.spark.api._
-import org.apache.spark.sql.SQLContext
+import org.apache.spark.sql.SparkSession
 
 /**
   * Created by alexsilva on 6/20/16.
   */
 case class SparkBatchDispatch[S](override val name: String, source: Source[S], operations: Operations,
-                                 dsl: Config, ctx: ContextLike)
-  extends SparkDispatch[S](name, source, operations, dsl, ctx) {
+                                 dsl: Config, sparkSession: SparkSession)
+  extends SparkDispatch[S](name, source, operations, dsl, sparkSession) {
 
 
   override def run(): Unit = {
-    val sqlContext = SQLContext.getOrCreate(ctx.sparkContext)
+    val sqlContext = sparkSession.sqlContext
     val ops = operations.steps
     val initialDf = source.createDF(sqlContext)
     ops.foldLeft(initialDf)((df, trans) => trans.transform(df))
     source.checkpoint(None)
   }
 
-  override def stop(): Unit = ctx.sparkContext.stop()
-
+  override def stop(): Unit = sparkSession.stop()
 }
