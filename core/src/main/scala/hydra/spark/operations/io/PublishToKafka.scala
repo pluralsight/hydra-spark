@@ -66,9 +66,7 @@ case class PublishToKafka(topic: String, format: String = "json", orderBy: Optio
 
       val key = getKey(json)
       val msg = kafkaMessage(format, key, dropKey(json))
-      val x = producer.send(new ProducerRecord[Any, Any](topic, msg.key, msg.payload))
-      val y=(x.get)
-      println(y)
+      producer.send(new ProducerRecord[Any, Any](topic, msg.key, msg.payload))
     })
 
     df
