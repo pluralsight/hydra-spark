@@ -21,8 +21,8 @@ object Dependencies {
 
   lazy val postgres = Seq("org.postgresql" % "postgresql" % postgresVersion)
 
-  lazy val dbTesting = Seq("com.typesafe.slick" %% "slick" % "3.1.1" % "test",
-    "com.typesafe.slick" %% "slick-testkit" % "3.1.1" % "test",
+  lazy val dbTesting = Seq("com.typesafe.slick" %% "slick" % "3.2.0" % "test",
+    "com.typesafe.slick" %% "slick-testkit" % "3.2.0" % "test",
     "ru.yandex.qatools.embed" % "postgresql-embedded" % "1.19" % "test",
     "com.h2database" % "h2" % "1.4.192" % "test") ++ postgres.map(_ % "test")
 
@@ -51,14 +51,17 @@ object Dependencies {
 
   lazy val spEL = Seq("org.springframework" % "spring-expression" % springVersion)
 
+  val scalaConfigs = Seq("com.github.kxbmap" %% "configs" % kxbmapConfigVersion)
+
   lazy val coreTestDeps = Seq(
-    "org.scalactic" %% "scalactic" % scalaTestVersion % "test",
-    "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
-    "org.scalamock" %% "scalamock-scalatest-support" % scalaMockVersion % "test")
+  //  "org.scalactic" %% "scalactic" % scalaTestVersion % "test",
+    "org.scalatest" %% "scalatest" % scalaTestVersion % "test")
 
   lazy val httpTest = Seq("com.typesafe.akka" %% "akka-http-testkit" % akkaHttpVersion % "test")
 
-  lazy val confluent = Seq("io.confluent" % "kafka-avro-serializer" % confluentVersion)
+  lazy val confluent = Seq(
+    "io.confluent" % "kafka-avro-serializer" % confluentVersion,
+    "io.confluent" % "kafka-schema-registry" % confluentVersion % "test")
 
   lazy val avro = Seq("org.apache.avro" % "avro" % avroVersion)
 
@@ -83,9 +86,11 @@ object Dependencies {
     "org.apache.spark" %% "spark-hive" % sparkVersion % "provided",
     "org.apache.spark" %% "spark-yarn" % sparkVersion % "provided",
     "com.databricks" %% "spark-avro" % avroSparkVersion,
-    sparkStreamingKafka)
+    sparkStreamingKafka, sparkTags)
 
   lazy val sparkStreamingKafka = "org.apache.spark" %% "spark-streaming-kafka-0-10" % sparkVersion
+
+  lazy val sparkTags = ("org.apache.spark" %% "spark-tags" % sparkVersion) exclude("org.scalatest", "scalatest")
 
   lazy val scopt = Seq("com.github.scopt" %% "scopt" % scoptVersion)
 

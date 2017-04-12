@@ -28,14 +28,14 @@ class SelectColumnsSpec extends Matchers with FunSpecLike with SharedSparkContex
   describe("It should select column") {
     it("selects one column") {
       val sqlContext =  ss.sqlContext
-      val df = SelectColumns(Seq("msg-no")).transform(StaticJsonSource.createDF(sqlContext))
-      df.columns shouldBe Array("msg-no")
+      val df = SelectColumns(Seq("msg_no")).transform(StaticJsonSource.createDF(sqlContext))
+      df.columns shouldBe Array("msg_no")
     }
 
     it("selects multiple column") {
       val sqlContext =  ss.sqlContext
-      val df = SelectColumns(Seq("msg-no","data")).transform(StaticJsonSource.createDF(sqlContext))
-      df.columns shouldBe Array("msg-no","data")
+      val df = SelectColumns(Seq("msg_no","data")).transform(StaticJsonSource.createDF(sqlContext))
+      df.columns shouldBe Array("msg_no","data")
     }
 
     it("validates") {

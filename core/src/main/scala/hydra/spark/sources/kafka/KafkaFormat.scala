@@ -15,11 +15,10 @@
 
 package hydra.spark.sources.kafka
 
-import com.databricks.spark.avro.SchemaConvertersWrapper
+import com.databricks.spark.avro.SchemaConverters
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.node.ObjectNode
-import io.confluent.kafka.serializers.KafkaAvroDecoder
-import kafka.serializer.StringDecoder
+import hydra.spark.avro.SchemaRegistrySupport
 import org.apache.avro.Schema
 import org.apache.avro.Schema.Field
 import org.apache.avro.generic.{GenericData, GenericRecord}
@@ -47,7 +46,7 @@ abstract class KafkaFormat[K: ClassTag, V: ClassTag]
 
     val fxn = rdd.map(_.value.toString)
 
-    schema(topicProps).map(s => ctx.read.schema(s).json(fxn)) getOrElse ctx.read.json(fxn)
+    schemaOpt(topicProps).map(s => ctx.read.schema(s).json(fxn)) getOrElse ctx.read.json(fxn)
   }
 
   def createRDD(
@@ -58,8 +57,7 @@ abstract class KafkaFormat[K: ClassTag, V: ClassTag]
                  key: Option[K]
                ): RDD[ConsumerRecord[K, V]] = {
 
-    SparkKafkaUtils
-      .createRDD[K, V](ctx, topic, topicProps, properties, format)
+    SparkKafkaUtils.createRDD[K, V](ctx, topic, topicProps.map(kv => kv._1 -> kv._2.toString), properties, format)
       .map(m => key.map(k => addKey(m, k)).getOrElse(m))
   }
 
@@ -71,12 +69,21 @@ abstract class KafkaFormat[K: ClassTag, V: ClassTag]
                      key: Option[K]
                    ): DStream[ConsumerRecord[K, V]] = {
 
-    SparkKafkaUtils.createDStream[K, V](ctx, topic, topicProps, properties)
+
+    SparkKafkaUtils.createDStream[K, V](ctx, topic, topicProps.map(kv => kv._1 -> kv._2.toString), properties, format)
       .transform(rdd => rdd.map(m => key.map(k => addKey(m, k)).getOrElse(m)))
 
   }
 
-  def schema(props: Map[String, Any]): Option[StructType] = None
+  def schemaOpt(props: Map[String, Any]): Option[StructType] = {
+    props.get("schema").map { name =>
+      val schemaResolver = new SchemaRegistrySupport {
+        override val properties: Map[String, String] = props.map(kv => kv._1 -> kv._2.toString)
+      }
+      val schemaType = SchemaConverters.toSqlType(schemaResolver.getValueSchema(name.toString)).dataType
+      schemaType.asInstanceOf[StructType]
+    }
+  }
 
   def addKey(mmd: ConsumerRecord[K, V], key: K): ConsumerRecord[K, V]
 
@@ -118,14 +125,6 @@ object KafkaAvroFormat extends KafkaFormat[String, Object] {
     val ns = Schema.createRecord(name, "New schema with the message key", namespace, false)
     ns.setFields(newFields.map(f => new Field(f.name(), f.schema(), f.doc(), f.defaultValue())).asJava)
     ns
-  }
-
-  override def schema(props: Map[String, Any]): Option[StructType] = {
-    props.get("schema").map { schema =>
-      val smap: Map[String, String] = props.map(k => k._1 -> k._2.toString)
-      val schemaType = SchemaConvertersWrapper.convert(schema.toString, smap)
-      schemaType.asInstanceOf[StructType]
-    }
   }
 }
 

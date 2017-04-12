@@ -34,9 +34,10 @@ case class DispatchDetails[S](name: String, source: Source[S], operations: Opera
                               dsl: Config) {
 
   val conf: SparkConf = {
+    import configs.syntax._
     import hydra.spark.configs._
     val sparkRefConf = dsl.getConfig("transport").flattenAtKey("spark")
-    val jars = dsl.get[List[String]]("spark.jars").getOrElse(List.empty)
+    val jars = dsl.get[List[String]]("spark.jars").valueOrElse(List.empty)
     val appName = sparkRefConf.get("spark.app.name").getOrElse(name)
     new SparkConf().setAll(sparkRefConf).setAppName(appName).setJars(jars)
   }

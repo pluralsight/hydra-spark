@@ -17,7 +17,7 @@ package hydra.spark.dispatch
 
 import com.typesafe.config.Config
 import hydra.spark.api._
-import hydra.spark.configs._
+import configs.syntax._
 import hydra.spark.dsl.parser.TypesafeDSLParser
 import org.apache.spark.sql.SparkSession
 
@@ -27,7 +27,7 @@ import org.apache.spark.sql.SparkSession
 abstract class SparkDispatch[S](name: String, source: Source[S], operations: Operations,
                                 dsl: Config, session: SparkSession) extends Dispatch[S] {
 
-  val author = dsl.get[String]("author").getOrElse("The Tooth Fairy")
+  val author = dsl.get[String]("author").valueOrElse("The Tooth Fairy")
 }
 
 object SparkDispatch {

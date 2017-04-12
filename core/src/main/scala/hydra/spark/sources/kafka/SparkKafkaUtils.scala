@@ -17,7 +17,7 @@ package hydra.spark.sources.kafka
 
 import java.util.Properties
 
-import com.typesafe.config.{ConfigFactory, ConfigObject}
+import com.typesafe.config.{Config, ConfigFactory}
 import kafka.api.OffsetRequest
 import kafka.consumer.ConsumerConfig
 import org.apache.kafka.clients.consumer.ConsumerRecord
@@ -34,7 +34,7 @@ import scala.reflect.ClassTag
   */
 object SparkKafkaUtils {
 
-  import hydra.spark.configs._
+  import configs.syntax._
   import hydra.spark.util.Collections._
 
   import scala.collection.JavaConverters._
@@ -42,41 +42,47 @@ object SparkKafkaUtils {
   val config = ConfigFactory.load("reference")
 
   def createRDD[K: ClassTag, V: ClassTag]
-  (ctx: SparkContext, topic: String, topicProps: Map[String, Any], properties: Map[String, String], format: String): RDD[ConsumerRecord[K, V]] = {
+  (ctx: SparkContext, topic: String, topicProps: Map[String, String], properties: Map[String, String], format: String):
+  RDD[ConsumerRecord[K, V]] = {
 
-    val cfg = new ConsumerConfig(consumerConfig(format, properties))
+    val consumerDefaults = consumerConfig(format, properties)
     val start = Offsets.stringToNumber(topicProps.get("start"), OffsetRequest.EarliestTime)
     val stop = Offsets.stringToNumber(topicProps.get("stop"), OffsetRequest.LatestTime)
-    val offsets: Array[OffsetRange] = Offsets.offsetRange(topic, start, stop, cfg).map(o => OffsetRange(o._1, o._2._1, o._2._2)).toArray
-    val kafkaParams: Map[String, Object] = (topicProps ++ properties).map(v => v._1 -> v._2.asInstanceOf[AnyRef])
+    val offsets: Array[OffsetRange] = Offsets.offsetRange(topic, start, stop, consumerDefaults)
+      .map(o => OffsetRange(o._1, o._2._1, o._2._2)).toArray
+    val kafkaParams: Map[String, Object] = (consumerDefaults ++ topicProps ++ properties)
+      .map(v => v._1 -> v._2.asInstanceOf[AnyRef])
     KafkaUtils.createRDD[K, V](ctx, kafkaParams.asJava, offsets, LocationStrategies.PreferConsistent)
   }
 
-  def createDStream[K: ClassTag, V: ClassTag](ctx: StreamingContext, topic: String, topicProps: Map[String, Any],
-                                              properties: Map[String, String]): DStream[ConsumerRecord[K, V]] = {
+  def createDStream[K: ClassTag, V: ClassTag](ctx: StreamingContext, topic: String, topicProps: Map[String, String],
+                                              properties: Map[String, String], format: String): DStream[ConsumerRecord[K, V]] = {
+    val consumerDefaults = consumerConfig(format, properties)
+    val startOffset = Offsets.stringToNumber(topicProps.get("start"), OffsetRequest.EarliestTime)
 
-    val cfg = new ConsumerConfig(consumerConfig("avro", properties))
-    val start = Offsets.stringToNumber(topicProps.get("start"), OffsetRequest.EarliestTime)
-    val startOffsets = hydra.spark.util.KafkaUtils.getStartOffsets(topic, start, cfg)
-    val kafkaParams: Map[String, Object] = (topicProps ++ properties).map(v => v._1 -> v._2.asInstanceOf[AnyRef])
+    val offsets = hydra.spark.util.KafkaUtils.getStartOffsets(topic, startOffset, new ConsumerConfig(consumerDefaults))
+    val kafkaParams = (consumerDefaults ++ topicProps ++ properties).map(v => v._1 -> v._2.asInstanceOf[AnyRef])
 
     val stream = KafkaUtils.createDirectStream[K, V](
       ctx,
       LocationStrategies.PreferConsistent,
-      ConsumerStrategies.Subscribe[K, V](Seq(topic), kafkaParams)
+      ConsumerStrategies.Assign[K, V](offsets.keys, kafkaParams, offsets)
     )
 
     stream
   }
 
-  def consumerConfig(topicFormat: String, overrideProps: Map[String, String]): Properties = {
-    val props = config.getObject("hydra.kafka.formats").entrySet.asScala.filter(c => c.getKey == topicFormat)
-    require(props.size == 1)
-    val cfgObj = props.head.getValue.asInstanceOf[ConfigObject].toConfig
-    val kafkaCfg = Map(cfgObj.entrySet.asScala.toSeq.map(k => k.getKey -> k.getValue.unwrapped.toString): _*)
-    val baseKafkaConfig = config.get[Map[String, String]]("kafka.consumer").getOrElse(Map.empty)
-    val kafkaConfig: Map[String, AnyRef] = baseKafkaConfig ++ kafkaCfg ++ overrideProps
+  def consumerConfig(topicFormat: String, overrideProps: Map[String, String]): Map[String, String] = {
+    import hydra.spark.configs._
+    val topicDefaultProps = config.get[Config](s"hydra.kafka.formats.$topicFormat")
+      .valueOrElse(ConfigFactory.empty).to[Map[String, String]]
+    val baseKafkaConfig = config.get[Map[String, String]]("kafka.consumer").valueOrElse(Map.empty)
+    val kafkaConfig: Map[String, String] = baseKafkaConfig ++ topicDefaultProps ++ overrideProps
     kafkaConfig
+  }
+
+  def consumerProps(topicFormat: String, overrideProps: Map[String, String]): Properties = {
+    consumerConfig(topicFormat, overrideProps)
   }
 
 }

@@ -20,7 +20,6 @@ package hydra.spark.dsl.parser
   */
 
 import com.typesafe.config.ConfigFactory
-import hydra.spark.configs._
 import hydra.spark.operations.filters.{RegexFilter, ValueFilter}
 import hydra.spark.operations.io.SaveAsJson
 import hydra.spark.operations.jdbc.{ColumnMapping, DatabaseUpsert}
@@ -100,6 +99,7 @@ class DslParserSpec extends Matchers with FunSpecLike with BeforeAndAfterEach wi
 
   describe("When parsing the dsl") {
     it("Should load sources") {
+      import configs.syntax._
       val d = TypesafeDSLParser().parse(dsl)
 
       d.name shouldBe "test-job"
@@ -108,7 +108,7 @@ class DslParserSpec extends Matchers with FunSpecLike with BeforeAndAfterEach wi
 
       val cfg = d.dsl.getConfig("transport")
 
-      cfg.get[FiniteDuration]("streaming.interval").get shouldBe 5.seconds
+      cfg.get[FiniteDuration]("streaming.interval").value shouldBe 5.seconds
 
       cfg.getString("spark.local.dir") shouldBe "/tmp/hydra"
 

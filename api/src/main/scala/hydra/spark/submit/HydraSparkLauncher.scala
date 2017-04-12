@@ -3,7 +3,7 @@ package hydra.spark.submit
 import java.util.UUID
 
 import com.typesafe.config.{Config, ConfigFactory}
-import hydra.spark.configs._
+import configs.syntax._
 import hydra.spark.internal.Logging
 import org.apache.spark.launcher.SparkLauncher
 
@@ -16,6 +16,7 @@ object HydraSparkLauncher extends Logging {
 
 
   def buildEnv(dispatchConfig: Config, sparkInfo: SparkSubmitInfo): Map[String, String] = {
+    import hydra.spark.configs._
     val env: Map[String, String] = Map(
       "HADOOP_CONF_DIR" -> sparkInfo.hadoopConfDir,
       "YARN_CONF_DIR" -> sparkInfo.yarnConfDir
@@ -29,7 +30,7 @@ object HydraSparkLauncher extends Logging {
 
   def createLauncher(baseSparkConfig: Config, sparkInfo: SparkSubmitInfo, dsl: String,
                      containerElem: String = "transport"): SparkLauncher = {
-
+    import hydra.spark.configs._
     val dslC = ConfigFactory.parseString(dsl).getConfig(containerElem)
 
     val sparkConf = ConfigFactory.parseMap(dslC.flattenAtKey("spark").asJava)
@@ -39,7 +40,7 @@ object HydraSparkLauncher extends Logging {
     val launcher = new SparkLauncher(buildEnv(dslC, sparkInfo).asJava)
       .setSparkHome(sparkInfo.sparkHome)
       .setAppResource(sparkInfo.hydraSparkJar)
-      .setAppName(dslC.get[String]("name").getOrElse(UUID.randomUUID().toString))
+      .setAppName(dslC.get[String]("name").valueOrElse(UUID.randomUUID().toString))
       .setMainClass("hydra.spark.dsl.DslRunner")
       .addAppArgs(dsl)
       .setMaster(sparkConf.getString("spark.master"))

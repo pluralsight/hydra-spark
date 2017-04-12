@@ -21,8 +21,6 @@ object Versions {
   lazy val typeSafeConfigVersion = if (jdkVersion) "1.3.0" else "1.2.1"
   lazy val kxbmapConfigVersion = "0.4.2"
   lazy val scalaTestVersion = "3.0.1"
-  lazy val scalaMockVersion = "3.2.2"
-  lazy val scalaticVersion = "3.0.1"
   lazy val kafkaVersion = "0.10.2.0"
   lazy val confluentVersion = "3.2.0"
   lazy val springVersion = "4.2.2.RELEASE"

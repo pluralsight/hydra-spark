@@ -3,6 +3,9 @@ package hydra.spark.testutils
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream, DataInputStream}
 import java.util
 
+import io.confluent.kafka.schemaregistry.avro.AvroCompatibilityLevel
+import io.confluent.kafka.schemaregistry.client.CachedSchemaRegistryClient
+import io.confluent.kafka.schemaregistry.rest.SchemaRegistryConfig
 import kafka.api.OffsetRequest
 import kafka.serializer.Encoder
 import kafka.utils.VerifiableProperties
@@ -11,53 +14,97 @@ import org.apache.avro.Schema
 import org.apache.avro.generic.{GenericDatumReader, GenericRecord}
 import org.apache.avro.io.{BinaryEncoder, DatumWriter, DecoderFactory, EncoderFactory}
 import org.apache.avro.specific.SpecificDatumWriter
-import org.apache.kafka.common.serialization.Serializer
-import org.scalatest.{BeforeAndAfterAll, Suite}
+import org.apache.kafka.common.serialization.{Serializer, StringSerializer}
+import org.scalatest.Suite
 
-import scala.collection.mutable.ArrayBuffer
 import scala.io.Source
 
 /**
   * Created by alexsilva on 4/5/17.
   */
-trait KafkaTestSupport extends EmbeddedKafka with BeforeAndAfterAll {
+trait KafkaTestSupport extends EmbeddedKafka {
 
   this: Suite =>
 
-  val avroTopic = Map("format" -> "json", "start" -> OffsetRequest.EarliestTime)
-  val jsonTopic = Map("format" -> "string", "start" -> OffsetRequest.EarliestTime)
-  val jsonMessages = new ArrayBuffer[String]()
+  val bootstrapServers = "localhost:6001"
 
-  val topics: Map[String, Map[String, Any]] = Map(
-    "testJson" -> avroTopic,
-    "testAvro" -> jsonTopic
-  )
+  val zkConnect = "localhost:6000"
+
+  val avroProps = Map("format" -> "avro", "start" -> OffsetRequest.EarliestTime)
+
+  val jsonProps = Map("format" -> "string", "start" -> OffsetRequest.EarliestTime)
+
+  val schemaRegistry = new RestApp(8081, zkConnect,
+    SchemaRegistryConfig.DEFAULT_KAFKASTORE_TOPIC, AvroCompatibilityLevel.BACKWARD.name, true)
+
+  val schemaRegistryClient = new CachedSchemaRegistryClient("http://localhost:8081", 10)
+
   val schema = new Schema.Parser parse Source.fromInputStream(getClass.getResourceAsStream("/schema.avsc")).mkString
 
-  val bootstrapServers = "localhost:5001"
-
-  val zkConnect = "localhost:5000"
-
-  override def beforeAll() {
+  def startKafka() = {
     EmbeddedKafka.start()
+    schemaRegistry.start()
+    schemaRegistryClient.register("test-schema-value", schema)
+    publishAvro("testAvro")
+    publishJson("testJson")
+  }
 
-    EmbeddedKafka.createCustomTopic("testJson")
-    EmbeddedKafka.createCustomTopic("testAvro")
-    EmbeddedKafka.createCustomTopic("__consumer_offsets")
+  def stopKafka() = {
+    EmbeddedKafka.stop()
+    schemaRegistry.stop()
+  }
+
+  def publishJson(topic: String, n: Int = 10): Seq[String] = {
+    val msgs: Seq[String] = for (i <- 0 to n) yield {
+      s"""{"messageId": $i,"messageValue":"hello"}"""
+    }
+
+    msgs.foreach(EmbeddedKafka.publishStringMessageToKafka(topic, _))
+
+    msgs
+  }
+
+  def publishJsonWithKeys(topic: String, n: Int = 10): Seq[String] = {
+    val msgs: Seq[String] = for (i <- 0 to n) yield {
+      s"""{"messageId": $i,"messageValue":"hello"}"""
+    }
+    msgs.zipWithIndex.foreach { x =>
+      EmbeddedKafka.publishToKafka(topic, x._2.toString, x._1)(implicitly[EmbeddedKafkaConfig], new StringSerializer, new StringSerializer)
+    }
+    msgs
+  }
+
+  def publishAvro(topic: String, n: Int = 10): Seq[GenericRecord] = {
     val cfg = implicitly[EmbeddedKafkaConfig]
-
     val reader = new GenericDatumReader[Object](schema)
-    for (i <- 0 to 10) {
-      val json = s"""{"no": "$i","value":"hello"}"""
-      jsonMessages += json
-
-      EmbeddedKafka.publishStringMessageToKafka("testJson", json)
+    val msgs: Seq[GenericRecord] = for (i <- 0 to n) yield {
+      val json = s"""{"messageId": $i,"messageValue":"hello"}"""
       val in = new ByteArrayInputStream(json.getBytes)
       val din = new DataInputStream(in)
       val decoder = DecoderFactory.get().jsonDecoder(schema, din)
-      val rec = reader.read(null, decoder).asInstanceOf[GenericRecord]
-      EmbeddedKafka.publishToKafka("testAvro", rec)(cfg, new TestKafkaAvroSerializer)
+      reader.read(null, decoder).asInstanceOf[GenericRecord]
     }
+
+    msgs.foreach(EmbeddedKafka.publishToKafka(topic, _)(cfg, new TestKafkaAvroSerializer))
+
+    msgs
+  }
+
+  def publishAvroWithKeys(topic: String, n: Int = 10): Seq[GenericRecord] = {
+    val reader = new GenericDatumReader[Object](schema)
+    val msgs: Seq[GenericRecord] = for (i <- 0 to n) yield {
+      val json = s"""{"messageId": $i,"messageValue":"hello"}"""
+      val in = new ByteArrayInputStream(json.getBytes)
+      val din = new DataInputStream(in)
+      val decoder = DecoderFactory.get().jsonDecoder(schema, din)
+      reader.read(null, decoder).asInstanceOf[GenericRecord]
+    }
+
+    msgs.zipWithIndex.foreach { x =>
+      EmbeddedKafka.publishToKafka(topic, x._2.toString, x._1)(implicitly[EmbeddedKafkaConfig], new StringSerializer,
+        new TestKafkaAvroSerializer)
+    }
+    msgs
   }
 }
 

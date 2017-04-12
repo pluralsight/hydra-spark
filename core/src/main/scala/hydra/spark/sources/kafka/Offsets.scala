@@ -18,6 +18,7 @@ package hydra.spark.sources.kafka
 import hydra.spark.api.InvalidDslException
 import hydra.spark.util.KafkaUtils
 import kafka.api.OffsetRequest
+import kafka.consumer.ConsumerConfig
 import org.apache.kafka.common.TopicPartition
 
 import scala.util.Try
@@ -34,20 +35,26 @@ object Offsets {
     */
   val LastTimeString = "last"
 
-  val LastTime = -3L
+  val LastSeen = -3L
 
   def stringToNumber(value: Option[Any], defaultValue: Long): Long = {
     value.map(x => x match {
       case OffsetRequest.SmallestTimeString => OffsetRequest.EarliestTime
       case OffsetRequest.LargestTimeString => OffsetRequest.LatestTime
-      case LastTimeString => LastTime
+      case LastTimeString => LastSeen
       case time => Try(time.toString.toLong)
         .recover { case t: Throwable => throw InvalidDslException(s"$time is not a valid offset.") }.get
     }).getOrElse(defaultValue)
   }
 
-  def offsetRange(topic: String, start: Long, stop: Long, cfg: kafka.consumer.ConsumerConfig): TPO = {
-    if (start == LastTime) //-3 is a special case
+  def offsetRange(topic: String, start: Long, stop: Long, params: Map[String, String]): TPO = {
+    import hydra.spark.util.Collections._
+    val cfg = new ConsumerConfig(params)
+    offsetRange(topic, start, stop, cfg)
+  }
+
+  def offsetRange(topic: String, start: Long, stop: Long, cfg: ConsumerConfig): TPO = {
+    if (start == LastSeen) //-3 is a special case
       KafkaUtils.lastGroupOffsets(topic, cfg, stop)
     else
       KafkaUtils.offsetRange(topic, start, stop, cfg)

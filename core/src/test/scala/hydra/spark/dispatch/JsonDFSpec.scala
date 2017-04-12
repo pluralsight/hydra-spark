@@ -35,7 +35,7 @@ class JsonDFSpec extends Matchers with FunSpecLike with ScalaFutures with Patien
 
   var ldf: Option[DataFrame] = None
   val add100 = (df: DataFrame) => {
-    val ndf = df.withColumn("msg-no", df("msg-no") + 100)
+    val ndf = df.withColumn("msg_no", df("msg_no") + 100)
     ldf = Some(ndf)
     ndf
   }
@@ -54,11 +54,11 @@ class JsonDFSpec extends Matchers with FunSpecLike with ScalaFutures with Patien
 
     it("Should call the json implicit type class") {
 
-      val msgNos = StaticJsonSource.msgs.map(_.parseJson.asJsObject.fields("msg-no").toString.toLong + 100)
+      val msgNos = StaticJsonSource.msgs.map(_.parseJson.asJsObject.fields("msg_no").toString.toLong + 100)
 
       disp.run()
       eventually {
-        val msgs = ldf.get.take(11).map(c => c.getLong(c.fieldIndex("msg-no")))
+        val msgs = ldf.get.take(11).map(c => c.getLong(c.fieldIndex("msg_no")))
         msgs shouldBe msgNos
       }
 

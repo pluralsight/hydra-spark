@@ -24,7 +24,7 @@ import hydra.spark.avro.SchemaRegistrySupport
 import hydra.spark.internal.Logging
 import org.apache.avro.Schema
 import org.apache.hadoop.fs.Path
-import org.apache.spark.sql.{DataFrame, Dataset, Row}
+import org.apache.spark.sql.{DataFrame, Dataset, Row, SaveMode}
 
 import scala.reflect.ClassTag
 import scala.util.Try
@@ -32,7 +32,8 @@ import scala.util.Try
 /**
   * Created by alexsilva on 6/21/16.
   */
-case class SaveAsAvro(directory: String, schema: String, codec: Option[String], properties: Map[String, String])
+case class SaveAsAvro(directory: String, schema: String, codec: Option[String],
+                      properties: Map[String, String], overwrite: Boolean = false)
   extends DFOperation with SchemaRegistrySupport with Logging {
 
   override val id: String = s"save-as-avro-$directory-$codec"
@@ -40,14 +41,13 @@ case class SaveAsAvro(directory: String, schema: String, codec: Option[String], 
   private lazy val avroSchema: Schema = getValueSchema(schema)
 
   override def transform(df: DataFrame): DataFrame = {
-    val path = new File(directory, System.currentTimeMillis.toString)
-    saveHadoopAvro[Row](df, new Path(directory, System.currentTimeMillis().toString))
+    df.write.option("compression", codec.getOrElse("none"))
+      .mode(if (overwrite) SaveMode.Overwrite else SaveMode.ErrorIfExists)
+      .option("avroSchema", schema.toString)
+      .avro(directory)
     df
   }
 
-  private def saveHadoopAvro[A: ClassTag](ds: Dataset[A], path: Path): Unit = {
-    ds.write.avro(path.toString)
-  }
 
   override def validate: ValidationResult = {
     Try {
@@ -61,8 +61,12 @@ case class SaveAsAvro(directory: String, schema: String, codec: Option[String], 
 
 object SaveAsAvro {
   def apply(cfg: Config): SaveAsAvro = {
-    import hydra.spark.configs._
-    val props = cfg.get[Map[String, String]]("properties").getOrElse(Map.empty)
-    SaveAsAvro(cfg.getString("directory"), cfg.getString("schema"), cfg.get[String]("codec"), props)
+    import configs.syntax._
+    val props = cfg.get[Map[String, String]]("properties").valueOrElse(Map.empty)
+    SaveAsAvro(
+      cfg.getString("directory"),
+      cfg.getString("schema"),
+      cfg.get[String]("codec").toOption,
+      props, cfg.get[Boolean]("overwrite").valueOrElse(false))
   }
 }

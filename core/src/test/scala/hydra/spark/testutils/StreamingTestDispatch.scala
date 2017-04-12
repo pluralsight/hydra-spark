@@ -34,7 +34,7 @@ case class StreamingTestDispatch[S: TypeTag](source: Source[S], operations: Oper
       |spark.default.parallelism	= 1
       |spark.ui.enabled = false
       |spark.driver.allowMultipleContexts = false
-      |batchDuration = 1s
+      |streaming.interval = 1s
       |spark.checkpoint = false
     """.stripMargin
   )

@@ -36,7 +36,7 @@ import scala.collection.JavaConverters._
   */
 class SparkStreamingDispatchTest extends Matchers with FunSpecLike with SharedSparkContext {
 
-  val props = Map("batchDuration" -> "5s", "spark.local.dir" -> "/tmp/hydra", "spark.master" -> "local[*]")
+  val props = Map("streaming.interval" -> "5s", "spark.local.dir" -> "/tmp/hydra", "spark.master" -> "local[*]")
 
   var ssc: StreamingContext = _
 
@@ -49,11 +49,6 @@ class SparkStreamingDispatchTest extends Matchers with FunSpecLike with SharedSp
       val conf = sd.ssc.sparkContext.getConf
 
     }
-  }
-
-  override def afterAll() = {
-    super.afterAll()
-    ssc.stop()
   }
 }
 

@@ -15,12 +15,13 @@
 
 package hydra.spark.operations.hadoop
 
-import com.typesafe.config.Config
-import hydra.spark.api.{ DFOperation, ValidationResult }
+import com.sun.xml.internal.ws.policy.privateutil.PolicyUtils.ConfigFile
+import com.typesafe.config.{Config, ConfigFactory}
+import hydra.spark.api.{DFOperation, ValidationResult}
 import org.apache.spark.sql.functions.lit
 import org.apache.spark.sql.hive.HiveContext
-import org.apache.spark.sql.types.{ DataType, StructField, StructType }
-import org.apache.spark.sql.{ AnalysisException, Column, DataFrame, SaveMode }
+import org.apache.spark.sql.types.{DataType, StructField, StructType}
+import org.apache.spark.sql.{AnalysisException, Column, DataFrame, SaveMode}
 
 import scala.util.Try
 
@@ -34,8 +35,7 @@ case class HiveTable(table: String, properties: Map[String, String], columns: Se
 
   override def transform(df: DataFrame): DataFrame = {
     val targetDf = mapping.targetDf(df)
-    val ctx = targetDf.sqlContext
-    val hiveCtx = if (ctx.isInstanceOf[HiveContext]) ctx.asInstanceOf[HiveContext] else new HiveContext(ctx.sparkContext)
+    val hiveCtx = targetDf.sqlContext
     val format = properties.get("format").getOrElse("parquet")
     val hiveDf = hiveCtx.createDataFrame(targetDf.rdd, targetDf.schema)
     val writer = hiveDf.write.format(format).mode(SaveMode.Append)
@@ -98,18 +98,19 @@ private[hadoop] case class HiveTableMapping(mapping: Seq[HiveColumnMapping]) {
 
 object HiveTable {
   def apply(cfg: Config): HiveTable = {
-    import hydra.spark.configs._
+    import configs.syntax._
     import hydra.spark.util.DataTypes._
+    import hydra.spark.configs._
     def mapping(cfg: Config): HiveColumnMapping = {
-      val name = cfg.get[String]("name").getOrElse(throw new IllegalArgumentException("A column name is required."))
-      val source = cfg.get[String]("source").getOrElse(name)
-      val theType = cfg.get[String]("type").getOrElse("string")
+      val name = cfg.get[String]("name").valueOrThrow(_=> new IllegalArgumentException("A column name is required."))
+      val source = cfg.get[String]("source").valueOrElse(name)
+      val theType = cfg.get[String]("type").valueOrElse("string")
       HiveColumnMapping(source, name, theType)
     }
 
-    val properties = cfg.get[Map[String, String]]("properties").getOrElse(Map.empty[String, String])
-    val table = cfg.get[String]("table").getOrElse(throw new IllegalArgumentException("Table is required for Hive"))
-    val columns = cfg.get[List[Config]]("columns").getOrElse(Seq.empty).map(mapping)
+    val properties = cfg.get[Config]("properties").valueOrElse(ConfigFactory.empty).to[Map[String,String]]
+    val table = cfg.get[String]("table").valueOrElse(throw new IllegalArgumentException("Table is required for Hive"))
+    val columns = cfg.get[List[Config]]("columns").valueOrElse(Seq.empty).map(mapping)
 
     HiveTable(table, properties, columns)
   }

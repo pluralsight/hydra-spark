@@ -33,18 +33,18 @@ class RenameColumnSpec extends Matchers with FunSpecLike with SharedSparkContext
 
   describe("It should rename a column") {
     it("Should rename a column") {
-      val df = RenameColumn("msg-no", "message-number").transform(StaticJsonSource.createDF(sqlContext))
+      val df = RenameColumn("msg_no", "message-number").transform(StaticJsonSource.createDF(sqlContext))
       df.show
       val row = df.first()
       intercept[IllegalArgumentException] {
-        row.fieldIndex("msg-no")
+        row.fieldIndex("msg_no")
       }
       row.fieldIndex("message-number") shouldBe 2
     }
     it("Skip if column doesn't exist") {
       val df = RenameColumn("msgno", "message-number").transform(StaticJsonSource.createDF(sqlContext))
       val row = df.first()
-      row.fieldIndex("msg-no") should be > 0
+      row.fieldIndex("msg_no") should be > 0
     }
 
   }

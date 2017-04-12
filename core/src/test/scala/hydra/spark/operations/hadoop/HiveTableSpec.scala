@@ -40,29 +40,26 @@ class HiveTableSpec extends Matchers with FunSpecLike with BeforeAndAfterAll wit
     .setAppName("hydra-spark-hive-test")
     .set("spark.ui.enabled", "false")
     .set("spark.local.dir", "/tmp")
-    .set("spark.driver.allowMultipleContexts", "true")
-    .set("spark.sql.test", "")
     .set("spark.sql.warehouse.dir", warehouseDir.toURI.getPath)
-    .set(HiveConf.ConfVars.METASTOREWAREHOUSE.varname, warehouseDir.toURI.getPath)
 
-
-  val hive = SparkSession.builder().config(sparkConf).enableHiveSupport().getOrCreate()
-
+  override def beforeAll() = super.beforeAll()
 
   override def afterAll(): Unit = {
     super.afterAll()
     warehouseDir.delete()
     FileUtils.deleteDirectory(new File("metastore_db"))
-    hive.close()
-    //  sparkContext.stop()
   }
 
   describe("When writing to Hive") {
+
+    val hive = SparkSession.builder().config(sparkConf).enableHiveSupport().getOrCreate()
+
     it("should save") {
       val df = StaticJsonSource.createDF(hive.sqlContext)
       HiveTable("test", Map("option.path" -> warehouseDir.toURI.getPath), Seq.empty).transform(df)
       val dfHive = hive.sql("SELECT * from test")
 
+      dfHive.toJSON.foreach(x=>println(x))
       val hiveDf = dfHive.toJSON.collect()
         .map(_.parseJson.asJsObject.fields.filter(!_._1.startsWith("data"))).map(new JsObject(_))
       val datelessDf = df.toJSON.collect()

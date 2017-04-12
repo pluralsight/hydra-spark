@@ -128,6 +128,7 @@ object KafkaUtils extends Logging {
 
   def offsetRange(topic: String, startTime: Long, stopTime: Long,
                   config: ConsumerConfig): Map[TopicPartition, (Long, Long)] = {
+
     val brokers = brokerList(config)
 
     val (startOffsets, stopOffsets) = retryIfNoLeader({
@@ -140,7 +141,7 @@ object KafkaUtils extends Logging {
     }
   }
 
-  def getStartOffsets(topic: String, startTime: Long, config: ConsumerConfig): Map[TopicPartition, Long] = {
+  def getStartOffsets(topic: String, startTime: Long,  config: ConsumerConfig): Map[TopicPartition, Long] = {
     val brokers = brokerList(config)
 
     val startOffsets = retryIfNoLeader({

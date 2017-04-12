@@ -35,7 +35,7 @@ class ValueFilterSpec extends Matchers with FunSpecLike with BeforeAndAfterEach 
     """.stripMargin
   )
 
-  val t = ValueFilter("msg-no", 0)
+  val t = ValueFilter("msg_no", 0)
 
   describe("When Filtering by a value") {
     it("Should only include matching rows") {

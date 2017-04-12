@@ -20,7 +20,7 @@ import hydra.spark.api._
 import hydra.spark.internal.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{DataFrame, SparkSession}
-import org.apache.spark.streaming.{Duration, Seconds, StreamingContext}
+import org.apache.spark.streaming.{Seconds, StreamingContext}
 
 import scala.concurrent.duration.FiniteDuration
 import scala.reflect.runtime.universe._
@@ -32,18 +32,19 @@ case class SparkStreamingDispatch[S: TypeTag](override val name: String, source:
                                               dsl: Config, sparkSession: SparkSession)
   extends SparkDispatch[S](name, source, operations, dsl, sparkSession) with Logging {
 
+  import configs.syntax._
   import hydra.spark.configs._
 
   import scala.collection.JavaConverters._
 
   val streamingConf = ConfigFactory.parseMap(dsl.flattenAtKey("streaming").asJava)
-  val stopGracefully = streamingConf.get[Boolean]("streaming.stopGracefully").getOrElse(true)
-  val stopSparkContext = streamingConf.get[Boolean]("streaming.stopSparkContext").getOrElse(true)
+  val stopGracefully = streamingConf.get[Boolean]("streaming.stopGracefully").valueOrElse(true)
+  val stopSparkContext = streamingConf.get[Boolean]("streaming.stopSparkContext").valueOrElse(true)
 
   lazy val ssc = StreamingContext.getActiveOrCreate { () =>
     val streamingConf = ConfigFactory.parseMap(dsl.flattenAtKey("streaming").asJava)
     val interval = streamingConf.get[FiniteDuration]("streaming.interval").map(d => Seconds(d.toSeconds))
-      .getOrElse(throw new IllegalArgumentException("No streaming interval was defined for a streaming job."))
+      .valueOrThrow(_ => throw new IllegalArgumentException("No streaming interval was defined for a streaming job."))
     new StreamingContext(sparkSession.sparkContext, interval)
   }
 

@@ -48,8 +48,3 @@ case class JsonFileSource(val path: String, val properties: Map[String, Any])
    */
   override def toDF(rdd: RDD[Text]): DataFrame = rdd.toDF
 }
-
-/**
- * Just a marker class for RDDConversion purposes
- */
-class JsonText extends Text

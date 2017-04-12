@@ -21,7 +21,6 @@ import hydra.spark.internal.Logging
 import hydra.spark.operations.http.AkkaHttpService
 import org.apache.spark.sql.DataFrame
 
-import scala.concurrent.Await
 import scala.concurrent.duration._
 
 /**
@@ -51,14 +50,11 @@ case class PublishToWebhook(url: String, timeout: FiniteDuration = 1.minute) ext
 
 object PublishToWebhook {
 
-  import hydra.spark.configs._
+  import configs.syntax._
 
   def apply(cfg: Config): PublishToWebhook = {
-    val url = cfg.get[String]("url").getOrElse(throw new InvalidDslException("Url is a required property"))
-    val duration: Option[Duration] = cfg.get[String]("timeout").map((Duration(_))).orElse(Option(1.minute))
-
-    val timeout: FiniteDuration = duration.collect { case d: FiniteDuration => d }
-      .getOrElse(throw new InvalidDslException("Not a valid duration."))
+    val url = cfg.get[String]("url").valueOrThrow(_ => new InvalidDslException("Url is a required property"))
+    val timeout = cfg.get[FiniteDuration]("timeout").valueOrElse(1.minute)
 
     PublishToWebhook(url, timeout)
   }

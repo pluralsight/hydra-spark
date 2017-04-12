@@ -18,6 +18,7 @@ package hydra.spark.dsl.parser
 import java.util.UUID
 
 import com.typesafe.config._
+import configs.syntax._
 import hydra.spark.api._
 import hydra.spark.configs._
 import hydra.spark.dsl.factories.ClasspathDslElementFactory
@@ -39,17 +40,15 @@ case class TypesafeDSLParser(sourcesPkg: Seq[String] = Seq("hydra.spark.sources"
 
     val transport = dsl.getConfig("transport").resolve()
 
-    val source = transport.get[ConfigObject]("source") match {
-      case Some(source) => factory.createSource(source, transport)
-      case None => throw InvalidDslException("Invalid DSL: A source is required.")
-    }
+    val source = transport.get[ConfigObject]("source")
+      .map(s => factory.createSource(s, transport))
+      .valueOrThrow(_ => InvalidDslException("Invalid DSL: A source is required."))
 
-    val operations: Seq[DFOperation] = transport.get[ConfigObject]("operations") match {
-      case Some(ops) => factory.createOperations(ops, transport)
-      case None => throw InvalidDslException("Invalid DSL: At least one target/operation is required.")
-    }
+    val operations: Seq[DFOperation] = transport.get[ConfigObject]("operations")
+      .map(ops => factory.createOperations(ops, transport))
+      .valueOrThrow(_ => InvalidDslException("Invalid DSL: At least one target/operation is required."))
 
-    val name = transport.get[String]("name").getOrElse(UUID.randomUUID().toString)
+    val name = transport.get[String]("name").valueOrElse(UUID.randomUUID().toString)
 
     val streamingProps = transport.flattenAtKey("streaming")
 
