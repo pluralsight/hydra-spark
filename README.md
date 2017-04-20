@@ -49,26 +49,11 @@ If you are using a Scala IDE (such as IntelliJ), you can import the project and 
 ### WordCountExample walk-through
 
 #### Package Jar - Send to Cluster
+Docs coming
 
 ## Contribution and Development
 Contributions via Github Pull Request are welcome.  See the TODO for some ideas.
 
-Profiling software provided by ![](https://www.yourkit.com/images/yklogo.png)
-
-YourKit supports open source projects with its full-featured [Java Profiler](https://www.yourkit.com/java/profiler/index.jsp).
-
-
-## Contact
-
-For user/dev questions, we are  for discussions:
-<https://groups.google.com/forum/#!forum/spark-jobserver>
-
-Please report bugs/problems to:
-<https://github.com/pluralsight/hydra-spark/issues>
-
 ## License
 Apache 2.0, see LICENSE.md
 
-## TODO
-
-- More debugging for classpath issues
