@@ -23,7 +23,7 @@ object Dependencies {
 
   lazy val dbTesting = Seq("com.typesafe.slick" %% "slick" % "3.2.0" % "test",
     "com.typesafe.slick" %% "slick-testkit" % "3.2.0" % "test",
-    "ru.yandex.qatools.embed" % "postgresql-embedded" % "1.19" % "test",
+    "ru.yandex.qatools.embed" % "postgresql-embedded" % "1.22" % "test",
     "com.h2database" % "h2" % "1.4.192" % "test") ++ postgres.map(_ % "test")
 
   lazy val slick = Seq("com.typesafe.slick" %% "slick" % slickVersion,
