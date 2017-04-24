@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-package hydra.spark.dsl.jdbc
+package hydra.spark.operations.jdbc
 
 import org.scalatest.{ BeforeAndAfterAll, Suite }
 import slick.jdbc.JdbcBackend.Database

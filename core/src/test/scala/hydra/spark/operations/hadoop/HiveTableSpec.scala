@@ -18,54 +18,57 @@ package hydra.spark.operations.hadoop
 import java.io.File
 import java.nio.file.Files
 
-import hydra.spark.testutils.{SharedSparkContext, StaticJsonSource}
+import hydra.spark.testutils.{LocalSparkContext, StaticJsonSource}
 import org.apache.commons.io.FileUtils
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.SparkSession
-import org.scalatest.{BeforeAndAfterEach, FunSpecLike, Matchers}
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, FunSpecLike, Matchers}
 import spray.json._
 
 /**
   * Created by alexsilva on 1/4/17.
   */
 class HiveTableSpec extends Matchers with FunSpecLike with BeforeAndAfterEach with DefaultJsonProtocol
-  with SharedSparkContext {
-  var warehouseDir: File = _
+  with BeforeAndAfterAll {
 
+  val warehouseDir: File = makeWarehouseDir()
 
-  override def beforeEach(): Unit = {
-    warehouseDir = makeWarehouseDir()
+  var hive: SparkSession = _
+
+  override def beforeAll() = {
+
+    val sparkConf = new SparkConf()
+      .setMaster("local")
+      .setAppName("hydra-spark-hive-test")
+      .set("spark.ui.enabled", "false")
+      .set("spark.local.dir", "/tmp")
+      .set("spark.sql.warehouse.dir", warehouseDir.toURI.getPath)
+
+    //prevent spark context from being created, because we need to add hive support
+    hive = SparkSession.builder().config(sparkConf).enableHiveSupport().getOrCreate()
   }
 
-  override def afterEach(): Unit = {
+  override def afterAll() = {
+    //prevent spark context from being created, because we need to add hive support
+    LocalSparkContext.stop(hive.sparkContext)
     warehouseDir.delete()
     FileUtils.deleteDirectory(new File("metastore_db"))
   }
+
 
   describe("When writing to Hive") {
 
     it("should save") {
 
-      val sparkConf = new SparkConf()
-        .setMaster("local")
-        .setAppName("hydra-spark-hive-test")
-        .set("spark.ui.enabled", "false")
-        .set("spark.local.dir", "/tmp")
-        .set("spark.sql.warehouse.dir", warehouseDir.toURI.getPath)
-
-      val hive = SparkSession.builder().config(sparkConf).enableHiveSupport().getOrCreate()
-
 
       val df = StaticJsonSource.createDF(hive.sqlContext)
-      HiveTable("test", Map("option.path" -> warehouseDir.toURI.getPath), Seq.empty).transform(df)
-      val dfHive = hive.sql("SELECT * from test")
-
-      dfHive.toJSON.foreach(x => println(x))
+      HiveTable("my_table", Map("option.path" -> warehouseDir.toURI.getPath), Seq.empty).transform(df)
+      hive.catalog.refreshTable("my_table")
+      val dfHive = hive.sql("SELECT * from my_table")
       val hiveDf = dfHive.toJSON.collect()
         .map(_.parseJson.asJsObject.fields.filter(!_._1.startsWith("data"))).map(JsObject(_))
       val datelessDf = df.toJSON.collect()
         .map(_.parseJson.asJsObject.fields.filter(!_._1.startsWith("data"))).map(JsObject(_))
-
       datelessDf.foreach { json =>
         hiveDf should contain(json)
       }

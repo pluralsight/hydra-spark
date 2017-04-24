@@ -69,4 +69,5 @@ trait SharedSparkContext extends BeforeAndAfterAll with BeforeAndAfterEach {
   object TestImplicits extends SQLImplicits {
     protected override def _sqlContext: SQLContext = self.ss.sqlContext
   }
+
 }

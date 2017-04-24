@@ -20,9 +20,10 @@ package hydra.spark.dsl.parser
   */
 
 import com.typesafe.config.ConfigFactory
+import hydra.spark.operations.common.ColumnMapping
 import hydra.spark.operations.filters.{RegexFilter, ValueFilter}
 import hydra.spark.operations.io.SaveAsJson
-import hydra.spark.operations.jdbc.{ColumnMapping, DatabaseUpsert}
+import hydra.spark.operations.jdbc.DatabaseUpsert
 import hydra.spark.sources.kafka.KafkaSource
 import kafka.api.OffsetRequest
 import org.apache.spark.sql.types.{LongType, StringType}

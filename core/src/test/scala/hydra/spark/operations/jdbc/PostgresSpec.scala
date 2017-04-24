@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-package hydra.spark.dsl.jdbc
+package hydra.spark.operations.jdbc
 
 import hydra.spark.internal.Logging
 import org.scalatest.{ BeforeAndAfterAll, Suite }

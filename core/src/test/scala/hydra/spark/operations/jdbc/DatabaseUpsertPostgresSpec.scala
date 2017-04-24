@@ -13,9 +13,9 @@
  * limitations under the License.
  */
 
-package hydra.spark.dsl.jdbc
+package hydra.spark.operations.jdbc
 
-import hydra.spark.operations.jdbc.{ColumnMapping, DatabaseUpsert}
+import hydra.spark.operations.common.ColumnMapping
 import hydra.spark.testutils.SharedSparkContext
 import hydra.spark.util.DataTypes._
 import org.scalatest.concurrent.{Eventually, PatienceConfiguration, ScalaFutures}

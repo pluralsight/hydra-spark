@@ -16,22 +16,20 @@
 package hydra.spark.sources
 
 import hydra.spark.api._
-import hydra.spark.dispatch.SparkDispatch
-import hydra.spark.dsl.jdbc.H2Spec
 import hydra.spark.dsl.parser.TypesafeDSLParser
+import hydra.spark.operations.jdbc.H2Spec
 import hydra.spark.testutils.SharedSparkContext
 import org.apache.spark.sql.{Row, SQLContext, SparkSession}
 import org.apache.spark.streaming.StreamingContext
-import org.apache.spark.{SparkConf, SparkContext}
 import org.scalatest.concurrent.{Eventually, PatienceConfiguration, ScalaFutures}
 import org.scalatest.time.{Seconds, Span}
 import org.scalatest.{BeforeAndAfterAll, FunSpecLike, Matchers}
 
 /**
- * Created by alexsilva on 6/2/16.
- */
+  * Created by alexsilva on 6/2/16.
+  */
 class JdbcSourceSpec extends Matchers with FunSpecLike with ScalaFutures with PatienceConfiguration
-    with Eventually with BeforeAndAfterAll with H2Spec with SharedSparkContext {
+  with Eventually with BeforeAndAfterAll with H2Spec with SharedSparkContext {
 
   import TestImplicits._
 
@@ -97,7 +95,7 @@ class JdbcSourceSpec extends Matchers with FunSpecLike with ScalaFutures with Pa
       val source = new JdbcSource(table, Map("url" -> h2Url))
       source.validate shouldBe Valid
       val rows = source.createDF(ctx)
-      rows.map(r => r.getInt(0)).collect() should contain allOf (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+      rows.map(r => r.getInt(0)).collect() should contain allOf(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
     }
 
     it("Should create an RDD from a query") {

@@ -13,13 +13,13 @@
  * limitations under the License.
  */
 
-package hydra.spark.dsl.jdbc
+package hydra.spark.operations.jdbc
 
 import java.security.MessageDigest
 
 import hydra.spark.api.{Invalid, Valid}
 import hydra.spark.dsl.parser.TypesafeDSLParser
-import hydra.spark.operations.jdbc.{ColumnMapping, DatabaseUpsert}
+import hydra.spark.operations.common.ColumnMapping
 import hydra.spark.testutils.SharedSparkContext
 import hydra.spark.util.DataTypes._
 import org.apache.spark.sql.Row
@@ -45,10 +45,11 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
 
   override def beforeEach(): Unit = {
     super.beforeEach()
-    val f: Future[Int] = database.run(basicUpdate(s"CREATE TABLE $table (user_id integer,username varchar(100)," +
-      s"ip_address varchar(10))"))
-    val f2: Future[Int] = database.run(basicUpdate(s"CREATE TABLE $inferredTable (user_id integer,user_handle varchar(100)," +
-      s"context_ip varchar(10))"))
+    val f: Future[Int] = database.run(basicUpdate(
+      s"""CREATE TABLE $table ("user_id" integer,"username" varchar(100),"ip_address" varchar(10))"""))
+
+    val f2: Future[Int] = database.run(basicUpdate(s"""CREATE TABLE $inferredTable ("user_id" integer,"user_handle"
+      varchar(100), "context_ip" varchar(10))"""))
 
     eventually(f.value.get.get shouldBe 0)
     eventually(f2.value.get.get shouldBe 0)
@@ -127,7 +128,7 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
 
     it("Should perform inserts w/o a PK") {
 
-      import slick.driver.H2Driver.api._
+      import slick.jdbc.H2Profile.api._
 
       val url = s"jdbc:h2:mem:$dbname;DB_CLOSE_DELAY=-1"
 
@@ -182,7 +183,7 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
     }
 
     it("Should create the table with PK") {
-      import slick.driver.H2Driver.api._
+      import slick.jdbc.H2Profile.api._
 
       val url = s"jdbc:h2:mem:$dbname;DB_CLOSE_DELAY=-1"
 
@@ -203,7 +204,7 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
       dbUpsert.transform(df)
 
       whenReady(database.run(sql"SELECT SQL FROM INFORMATION_SCHEMA.CONSTRAINTS WHERE TABLE_NAME = 'NEW_TABLE'".as[String])) { r =>
-        r.toString should include("PRIMARY KEY(USER_ID)")
+        r.toString should include("PRIMARY KEY(\"user_id\")")
         val f: Future[Int] = database.run(basicUpdate(s"DROP TABLE NEW_TABLE"))
         eventually(f.value.get.get shouldBe 0)
       }
@@ -211,7 +212,7 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
 
     it("Should upsert with a PK") {
 
-      import slick.driver.H2Driver.api._
+      import slick.jdbc.H2Profile.api._
 
       val url = s"jdbc:h2:mem:$dbname;DB_CLOSE_DELAY=-1"
 
@@ -245,7 +246,7 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
     it("Should upsert with a string PK") {
       val sjson = """{ "context": { "ip": "127.0.0.1" }, "user": { "handle": "alex", "id": "123" } }"""
 
-      import slick.driver.H2Driver.api._
+      import slick.jdbc.H2Profile.api._
 
       val url = s"jdbc:h2:mem:$dbname;DB_CLOSE_DELAY=-1"
 
@@ -298,7 +299,7 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
 
     it("Should create table and insert using all source fields if no columns are specified") {
 
-      import slick.driver.H2Driver.api._
+      import slick.jdbc.H2Profile.api._
 
       val json = """{ "context": { "ip": "127.0.0.1" }, "user": { "handle": "alex", "id": "123" } }"""
       val url = s"jdbc:h2:mem:$dbname;DB_CLOSE_DELAY=-1"
@@ -315,7 +316,7 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
 
       dbUpsert.transform(df)
 
-      whenReady(database.run(sql"select user_id, user_handle, context_ip from INFERRED_NEW_TABLE"
+      whenReady(database.run(sql"""select "user_id", "user_handle", "context_ip" from INFERRED_NEW_TABLE"""
         .as[(Int, String, String)])) { r =>
         r shouldBe Seq((123, "alex", "127.0.0.1"))
         val f: Future[Int] = database.run(basicUpdate(s"DROP TABLE INFERRED_NEW_TABLE"))
@@ -324,7 +325,7 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
     }
 
     it("Should upsert with a PK using source fields if no columns specified") {
-      import slick.driver.H2Driver.api._
+      import slick.jdbc.H2Profile.api._
       val sjson = """{ "context": { "ip": "127.0.0.1" }, "user": { "handle": "alex", "id": 123 } }"""
       val url = s"jdbc:h2:mem:$dbname;DB_CLOSE_DELAY=-1"
 
@@ -337,7 +338,7 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
 
       dbUpsert.transform(df)
 
-      whenReady(database.run(sql"select user_id, user_handle, context_ip from INFERRED_TEST_TABLE".as[(Int, String, String)])) { r =>
+      whenReady(database.run(sql"""select "user_id", "user_handle", "context_ip" from INFERRED_TEST_TABLE""".as[(Int, String, String)])) { r =>
         r shouldBe Seq((123, "alex", "127.0.0.1"))
       }
 
@@ -346,7 +347,7 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
 
       dbUpsert.transform(ndf)
 
-      whenReady(database.run(sql"select user_id, user_handle, context_ip from INFERRED_TEST_TABLE".as[(Int, String, String)])) { r =>
+      whenReady(database.run(sql"""select "user_id", "user_handle", "context_ip" from INFERRED_TEST_TABLE""".as[(Int, String, String)])) { r =>
         r shouldBe Seq((123, "alex_updated", "127.0.0.1"))
       }
     }
@@ -412,7 +413,7 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
     }
 
     it("does not fail with null values") {
-      import slick.driver.H2Driver.api._
+      import slick.jdbc.H2Profile.api._
       val url = s"jdbc:h2:mem:$dbname;DB_CLOSE_DELAY=-1"
       val json = """{ "context": { "ip": null }, "user": { "handle": "alex", "id": null } }"""
 

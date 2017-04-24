@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-package hydra.spark.operations.jdbc
+package hydra.spark.operations.common
 
 import hydra.spark.testutils.SharedSparkContext
 import org.apache.spark.sql.types.{LongType, StringType, StructField, StructType}

@@ -258,10 +258,11 @@ object H2UpsertBuilder extends UpsertBuilder {
                       schema: StructType) = {
     idField match {
       case Some(id) => {
-        val columns = schema.fields.map(_.name).mkString(",")
+        val columns = schema.fields.map(c => dialect.quoteIdentifier(c.name)).mkString(",")
         val placeholders = schema.fields.map(_ => "?").mkString(",")
+        val pk = dialect.quoteIdentifier(id.name)
         val sql =
-          s"""merge into ${table} ($columns) key(${id.name}) values ($placeholders);"""
+          s"""merge into ${table} ($columns) key($pk) values ($placeholders);"""
             .stripMargin
         //H2 is nice enough to keep the same parameter list
         UpsertInfo(conn.prepareStatement(sql), schema)

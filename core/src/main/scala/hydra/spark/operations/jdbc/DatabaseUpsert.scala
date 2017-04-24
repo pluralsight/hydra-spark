@@ -20,6 +20,7 @@ import java.security.MessageDigest
 import com.typesafe.config.Config
 import hydra.spark.api._
 import hydra.spark.internal.Logging
+import hydra.spark.operations.common.{ColumnMapping, TableMapping}
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions
 import org.apache.spark.sql.jdbc.DataFrameWriterExtensions._
@@ -41,8 +42,8 @@ case class DatabaseUpsert(table: String, properties: Map[String, String],
 
       val idField = idColumn.map(id => StructField(id.target, id.`type`, nullable = false))
 
-      ndf.write.mode(properties.get("savemode").getOrElse("append")).upsert(properties("url"), table, idField,
-        new JDBCOptions(properties), ndf)
+      ndf.write.mode(properties.get("savemode").getOrElse("append")).upsert(idField,
+        new JDBCOptions(properties("url"), table, properties), ndf)
       ndf
     }
   }
@@ -86,5 +87,5 @@ object DatabaseUpsert {
   }
 }
 
-case class ColumnMapping(source: String, target: String, `type`: DataType)
+
 

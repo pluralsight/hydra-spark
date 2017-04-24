@@ -15,100 +15,45 @@
 
 package hydra.spark.operations.hadoop
 
-import com.sun.xml.internal.ws.policy.privateutil.PolicyUtils.ConfigFile
 import com.typesafe.config.{Config, ConfigFactory}
 import hydra.spark.api.{DFOperation, ValidationResult}
-import org.apache.spark.sql.functions.lit
-import org.apache.spark.sql.hive.HiveContext
-import org.apache.spark.sql.types.{DataType, StructField, StructType}
-import org.apache.spark.sql.{AnalysisException, Column, DataFrame, SaveMode}
-
-import scala.util.Try
+import hydra.spark.operations.common.{ColumnMapping, TableMapping}
+import org.apache.spark.sql.DataFrame
 
 /**
- * Created by alexsilva on 1/4/17.
- */
-case class HiveTable(table: String, properties: Map[String, String], columns: Seq[HiveColumnMapping])
-    extends DFOperation {
+  * Created by alexsilva on 1/4/17.
+  */
+case class HiveTable(table: String, properties: Map[String, String], columns: Seq[ColumnMapping])
+  extends DFOperation {
 
-  val mapping = HiveTableMapping(columns)
+  val mapping = TableMapping(None, columns)
 
   override def transform(df: DataFrame): DataFrame = {
-    val targetDf = mapping.targetDf(df)
+    val targetDf = mapping.targetDF(df)
     val hiveCtx = targetDf.sqlContext
-    val format = properties.get("format").getOrElse("parquet")
     val hiveDf = hiveCtx.createDataFrame(targetDf.rdd, targetDf.schema)
-    val writer = hiveDf.write.format(format).mode(SaveMode.Append)
-    val optionWriter = properties.filter(_._1.startsWith("option."))
-      .foldLeft(writer)((writer, o) => writer.option(o._1.substring(7), o._2))
-
-    optionWriter.saveAsTable(table)
+    hiveDf.createOrReplaceTempView(s"${table}_tmp")
+    hiveCtx.sql(s"create table $table as select * from ${table}_tmp")
     hiveDf
   }
 
   override def validate: ValidationResult = checkRequiredParams(Seq("Hive table" -> table))
 }
 
-case class HiveColumnMapping(source: String, target: String, `type`: DataType)
-
-private[hadoop] case class HiveTableMapping(mapping: Seq[HiveColumnMapping]) {
-
-  val mappingByTarget: Map[String, HiveColumnMapping] = mapping.map(m => m.target -> m).toMap
-
-  val targetSchema: Seq[StructField] = mapping.map(m => StructField(m.target, m.`type`))
-
-  /**
-   * Converts the source data frame into the target dataframe given the mapping
-   *
-   * @param df
-   */
-  def targetDf(df: DataFrame): DataFrame = {
-    val tdf = targetCols(df)
-    df.select(tdf: _*)
-  }
-
-  private def targetCols(df: DataFrame): Seq[Column] = {
-    val target = targetSchema.map { f =>
-      val mapping = mappingByTarget(f.name)
-      Try(df(mapping.source)).recover { case t: AnalysisException => lit(null) }
-        .get.as(mapping.target).cast(mapping.`type`)
-    }
-
-    if (target.isEmpty) inferTargetColumns(df) else target
-  }
-
-  private def inferTargetColumns(df: DataFrame): Seq[Column] = {
-    val fcols = flattenSchema(df.schema)
-    val fs = fcols.map(c => df(c.toString()).as(c.toString().replace(".", "_")))
-    fs
-  }
-
-  private def flattenSchema(schema: StructType, prefix: String = null): Array[Column] = {
-    import org.apache.spark.sql.functions._
-    schema.fields.flatMap(f => {
-      val colName = if (prefix == null) f.name else (prefix + "." + f.name)
-
-      f.dataType match {
-        case st: StructType => flattenSchema(st, colName)
-        case _ => Array(col(colName))
-      }
-    })
-  }
-}
 
 object HiveTable {
   def apply(cfg: Config): HiveTable = {
     import configs.syntax._
-    import hydra.spark.util.DataTypes._
     import hydra.spark.configs._
-    def mapping(cfg: Config): HiveColumnMapping = {
-      val name = cfg.get[String]("name").valueOrThrow(_=> new IllegalArgumentException("A column name is required."))
+    import hydra.spark.util.DataTypes._
+    def mapping(cfg: Config): ColumnMapping = {
+      val name = cfg.get[String]("name").valueOrThrow(_ => new IllegalArgumentException("A column name is required."))
       val source = cfg.get[String]("source").valueOrElse(name)
       val theType = cfg.get[String]("type").valueOrElse("string")
-      HiveColumnMapping(source, name, theType)
+      ColumnMapping(source, name, theType)
     }
 
-    val properties = cfg.get[Config]("properties").valueOrElse(ConfigFactory.empty).to[Map[String,String]]
+    val properties = cfg.get[Config]("properties").valueOrElse(ConfigFactory.empty).to[Map[String, String]]
     val table = cfg.get[String]("table").valueOrElse(throw new IllegalArgumentException("Table is required for Hive"))
     val columns = cfg.get[List[Config]]("columns").valueOrElse(Seq.empty).map(mapping)
 
