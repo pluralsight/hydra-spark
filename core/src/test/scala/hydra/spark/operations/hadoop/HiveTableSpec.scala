@@ -52,7 +52,7 @@ class HiveTableSpec extends Matchers with FunSpecLike with BeforeAndAfterEach wi
     //prevent spark context from being created, because we need to add hive support
     LocalSparkContext.stop(hive.sparkContext)
     warehouseDir.delete()
-    FileUtils.deleteDirectory(new File("metastore_db"))
+    FileUtils.deleteDirectory(new File("spark_warehouse"))
   }
 
 

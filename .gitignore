@@ -63,3 +63,4 @@ build
 *.log
 
 metastore_db
+spark_warehouse
