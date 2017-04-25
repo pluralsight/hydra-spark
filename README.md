@@ -53,9 +53,13 @@ If you are using a Scala IDE (such as IntelliJ), you can import the project and 
 ## Contribution and Development
 Contributions via Github Pull Request are welcome.  See the TODO for some ideas.
 
+
 Profiling software provided by ![](https://www.yourkit.com/images/yklogo.png)
 
-YourKit supports open source projects with its full-featured [Java Profiler](https://www.yourkit.com/java/profiler/index.jsp).
+YourKit supports open source projects with its full-featured Java Profiler.
+YourKit, LLC is the creator of <a href="https://www.yourkit.com/java/profiler/">YourKit Java Profiler</a>
+and <a href="https://www.yourkit.com/.net/profiler/">YourKit .NET Profiler</a>,
+innovative and intelligent tools for profiling Java and .NET applications.
 
 
 ## Contact
