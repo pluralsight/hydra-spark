@@ -57,7 +57,7 @@ class JdbcSourceSpec extends Matchers with FunSpecLike with ScalaFutures with Pa
 
     for (i <- 0 to 10) {
       whenReady(database.run(basicUpdate(s"""INSERT INTO $table VALUES ($i,'user$i','ip$i')"""))) { r =>
-        r shouldBe Seq((1))
+        r shouldBe 1
       }
     }
 
