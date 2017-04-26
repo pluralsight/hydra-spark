@@ -13,12 +13,11 @@
  * limitations under the License.
  */
 
-package hydra.spark.dsl.jdbc
+package hydra.spark.operations.jdbc
 
-import hydra.spark.operations.jdbc.{ColumnMapping, DatabaseUpsert}
+import hydra.spark.operations.common.ColumnMapping
 import hydra.spark.testutils.SharedSparkContext
 import hydra.spark.util.DataTypes._
-import org.apache.spark.sql.SQLContext
 import org.scalatest.concurrent.{Eventually, PatienceConfiguration, ScalaFutures}
 import org.scalatest.time.{Seconds, Span}
 import org.scalatest.{BeforeAndAfterEach, FunSpecLike, Matchers}
@@ -73,7 +72,7 @@ class DatabaseUpsertPostgresSpec extends Matchers with FunSpecLike with ScalaFut
 
       val rdd = sc.parallelize(json :: Nil)
 
-      val df = SQLContext.getOrCreate(sc).read.json(rdd)
+      val df = ss.sqlContext.read.json(rdd)
 
       dbUpsert.transform(df)
 
@@ -102,7 +101,7 @@ class DatabaseUpsertPostgresSpec extends Matchers with FunSpecLike with ScalaFut
 
       val rdd = sc.parallelize(json :: Nil)
 
-      val df = SQLContext.getOrCreate(sc).read.json(rdd)
+      val df = ss.sqlContext.read.json(rdd)
 
       dbUpsert.transform(df)
 
@@ -125,7 +124,7 @@ class DatabaseUpsertPostgresSpec extends Matchers with FunSpecLike with ScalaFut
 
       val rdd = sc.parallelize(json :: Nil)
 
-      val df = SQLContext.getOrCreate(sc).read.json(rdd)
+      val df = ss.sqlContext.read.json(rdd)
 
       dbUpsert.transform(df)
 
@@ -149,7 +148,7 @@ class DatabaseUpsertPostgresSpec extends Matchers with FunSpecLike with ScalaFut
       val dbUpsert = DatabaseUpsert("TEST_TABLE", Map("url" -> url),
         Some(ColumnMapping("user.id", "user_id", "long")), mappings)
 
-      val df = SQLContext.getOrCreate(sc).read.json(sc.parallelize(json :: Nil))
+      val df = ss.sqlContext.read.json(sc.parallelize(json :: Nil))
 
       dbUpsert.transform(df)
 
@@ -159,7 +158,7 @@ class DatabaseUpsertPostgresSpec extends Matchers with FunSpecLike with ScalaFut
 
       val njson = """{ "context": { "ip": "127.0.0.1" }, "user": { "handle": "alex_updated", "id": 123 } }"""
 
-      val ndf = SQLContext.getOrCreate(sc).read.json(sc.parallelize(njson :: Nil))
+      val ndf = ss.sqlContext.read.json(sc.parallelize(njson :: Nil))
 
       dbUpsert.transform(ndf)
 
@@ -176,7 +175,7 @@ class DatabaseUpsertPostgresSpec extends Matchers with FunSpecLike with ScalaFut
       val dbUpsert = DatabaseUpsert(inferredTable, Map("url" -> url),
         Some(ColumnMapping("user_id", "user_id", "int")), mappings)
 
-      val df = SQLContext.getOrCreate(sc).read.json(sc.parallelize(json :: Nil))
+      val df = ss.sqlContext.read.json(sc.parallelize(json :: Nil))
 
       dbUpsert.transform(df)
 
@@ -185,7 +184,7 @@ class DatabaseUpsertPostgresSpec extends Matchers with FunSpecLike with ScalaFut
       }
 
       val njson = """{ "context_ip": "127.0.0.1", "user_handle": "alex_updated", "user_id": 123 }"""
-      val ndf = SQLContext.getOrCreate(sc).read.json(sc.parallelize(njson :: Nil))
+      val ndf = ss.sqlContext.read.json(sc.parallelize(njson :: Nil))
 
       dbUpsert.transform(ndf)
 

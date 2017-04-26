@@ -20,14 +20,13 @@ import java.security.MessageDigest
 import com.typesafe.config.Config
 import hydra.spark.api._
 import hydra.spark.internal.Logging
-import hydra.spark.util.Collections._
-import org.apache.spark.sql.functions._
+import hydra.spark.operations.common.{ColumnMapping, TableMapping}
+import org.apache.spark.sql.DataFrame
+import org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions
 import org.apache.spark.sql.jdbc.DataFrameWriterExtensions._
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{AnalysisException, Column, DataFrame}
 
 import scala.collection.mutable
-import scala.util.{Failure, Success, Try}
 
 /**
   * Created by alexsilva on 6/18/16.
@@ -38,14 +37,14 @@ case class DatabaseUpsert(table: String, properties: Map[String, String],
   val mapping = TableMapping(idColumn, columns)
 
   override def transform(df: DataFrame): DataFrame = {
-    ifNotEmpty(df){df=>
-        val ndf = mapping.targetDF(df)
+    ifNotEmpty(df) { df =>
+      val ndf = mapping.targetDF(df)
 
-        val idField = idColumn.map(id => StructField(id.target, id.`type`, nullable = false))
+      val idField = idColumn.map(id => StructField(id.target, id.`type`, nullable = false))
 
-        ndf.write.mode(properties.get("savemode").getOrElse("append")).upsert(properties("url"), table, idField,
-          properties, ndf)
-        ndf
+      ndf.write.mode(properties.get("savemode").getOrElse("append")).upsert(idField,
+        new JDBCOptions(properties("url"), table, properties), ndf)
+      ndf
     }
   }
 
@@ -69,24 +68,24 @@ case class DatabaseUpsert(table: String, properties: Map[String, String],
 object DatabaseUpsert {
 
   def apply(cfg: Config): DatabaseUpsert = {
-    import hydra.spark.configs._
+    import configs.syntax._
     import hydra.spark.util.DataTypes._
     def mapping(cfg: Config): ColumnMapping = {
-      val name = cfg.get[String]("name").getOrElse(throw new IllegalArgumentException("A column name is required."))
-      val source = cfg.get[String]("source").getOrElse(name)
-      val theType = cfg.get[String]("type").getOrElse("string")
+      val name = cfg.get[String]("name").valueOrThrow(_ => new IllegalArgumentException("A column name is required."))
+      val source = cfg.get[String]("source").valueOrElse(name)
+      val theType = cfg.get[String]("type").valueOrElse("string")
       ColumnMapping(source, name, theType)
     }
 
-    val properties = cfg.get[Map[String, String]]("properties").getOrElse(Map.empty[String, String])
-    val table = cfg.get[String]("table").getOrElse(throw new IllegalArgumentException("Table is required for jdbc"))
-    val idColumn = cfg.get[Config]("idColumn").map(v => mapping(v))
-    val columnList = cfg.get[List[Config]]("columns").getOrElse(Seq.empty)
+    val properties = cfg.get[Map[String, String]]("properties").valueOrElse(Map.empty[String, String])
+    val table = cfg.get[String]("table").valueOrThrow(_ => new IllegalArgumentException("Table is required for jdbc"))
+    val idColumn = cfg.get[Config]("idColumn").map(v => mapping(v)).toOption
+    val columnList = cfg.get[List[Config]]("columns").valueOrElse(Seq.empty)
     val columns = columnList.map(mapping)
 
     DatabaseUpsert(table, properties, idColumn, columns)
   }
 }
 
-case class ColumnMapping(source: String, target: String, `type`: DataType)
+
 

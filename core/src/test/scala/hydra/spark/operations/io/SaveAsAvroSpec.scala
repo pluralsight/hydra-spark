@@ -17,7 +17,7 @@ package hydra.spark.operations.io
 
 import com.google.common.io.Files
 import hydra.spark.api.{Invalid, Source, Valid}
-import hydra.spark.testutils.ListOperation
+import hydra.spark.testutils.{ListOperation, SharedSparkContext}
 import org.apache.avro.Schema
 import org.apache.avro.file.DataFileReader
 import org.apache.avro.generic.{GenericDatumReader, GenericRecord}
@@ -28,7 +28,6 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{DataFrame, SQLContext}
 import org.apache.spark.streaming.StreamingContext
 import org.apache.spark.streaming.dstream.DStream
-import org.apache.spark.{SparkConf, SparkContext}
 import org.scalatest._
 
 import scala.collection.JavaConverters._
@@ -37,17 +36,13 @@ import scala.collection.mutable
 /**
   * Created by alexsilva on 6/22/16.
   */
-class SaveAsAvroSpec extends Matchers with FunSpecLike with Inside with BeforeAndAfterEach with BeforeAndAfterAll {
+class SaveAsAvroSpec extends Matchers with FunSpecLike with Inside with BeforeAndAfterAll
+  with SharedSparkContext {
 
   val tmpDir = Files.createTempDir()
 
-  val conf = new SparkConf().setMaster("local[4]").set("spark.ui.enabled", "false").setAppName("avro-spec")
-    .set("spark.driver.allowMultipleContexts", "false")
-
-  lazy val sparkCtx = new SparkContext(conf)
-
   override def afterAll(): Unit = {
-    sparkCtx.stop()
+    super.afterAll()
     tmpDir.delete()
   }
 
@@ -67,8 +62,9 @@ class SaveAsAvroSpec extends Matchers with FunSpecLike with Inside with BeforeAn
     }
 
     it("Should save a string source") {
-      val t = SaveAsAvro(tmpDir.getAbsolutePath, "classpath:schema.avsc", None, Map.empty)
-      t.transform(AvroSpecSource.createDF(new SQLContext(sparkCtx)))
+      val t = SaveAsAvro(tmpDir.getAbsolutePath, "classpath:schema.avsc", None, Map.empty,
+        overwrite = true)
+      t.transform(AvroSpecSource.createDF(ss.sqlContext))
       val output = FileUtils.listFiles(tmpDir, new RegexFileFilter("^.*.avro$"), TrueFileFilter.INSTANCE)
       val records = output.asScala.map { file =>
         val reader = DataFileReader.openReader(file, new GenericDatumReader[GenericRecord]())
@@ -90,7 +86,7 @@ object AvroSpecSource extends Source[String] {
 
   val msgs = for (i <- 0 to 10)
     yield
-      s"""{"testName": "name-${i}", "testValue": "value-${i}"}""".stripMargin
+      s"""{"messageId": $i, "messageValue": "value-${i}"}""".stripMargin
 
   val schema = new Schema.Parser().parse(Thread.currentThread()
     .getContextClassLoader.getResourceAsStream("schema.avsc"))

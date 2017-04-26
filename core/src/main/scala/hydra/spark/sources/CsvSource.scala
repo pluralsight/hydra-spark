@@ -17,15 +17,15 @@ package hydra.spark.sources
 
 import com.typesafe.config.Config
 import hydra.spark.api._
-import org.apache.spark.sql.{ DataFrame, Row, SQLContext }
+import org.apache.spark.sql.{DataFrame, Row, SQLContext}
 import org.apache.spark.streaming.StreamingContext
 import org.apache.spark.streaming.dstream.DStream
 
 import scala.util.Try
 
 /**
- * Created by alexsilva on 8/16/16.
- */
+  * Created by alexsilva on 8/16/16.
+  */
 case class CsvSource(path: String, header: Boolean = false) extends RowSource {
   override def name: String = "csv"
 
@@ -49,8 +49,8 @@ case class CsvSource(path: String, header: Boolean = false) extends RowSource {
 
 object CsvSource {
   def apply(cfg: Config): CsvSource = {
-    import hydra.spark.configs._
-    val header = cfg.get[Boolean]("header").getOrElse(false)
+    import configs.syntax._
+    val header = cfg.get[Boolean]("header").valueOrElse(false)
     CsvSource(cfg.getString("path"), header)
   }
 }

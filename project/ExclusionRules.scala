@@ -17,8 +17,6 @@ import sbt._
 
 object ExclusionRules {
   val excludeCglib = ExclusionRule(organization = "org.sonatype.sisu.inject")
-  val excludeJackson = Seq(ExclusionRule(organization = "org.codehaus.jackson"),
-    ExclusionRule(organization = "com.fasterxml.jackson.core"))
   val excludeScalaTest = ExclusionRule(organization = "org.scalatest")
   val excludeScala = ExclusionRule(organization = "org.scala-lang")
   val excludeNettyIo = ExclusionRule(organization = "io.netty", artifact = "netty-all")
@@ -27,6 +25,6 @@ object ExclusionRules {
   val excludeQQ = ExclusionRule(organization = "org.scalamacros")
   val excludeKryo = ExclusionRule(organization = "com.esotericsoftware.kryo")
 
-  val sparkExcludes = excludeJackson :+ excludeNetty
+  val sparkExcludes = excludeNetty
 }
 

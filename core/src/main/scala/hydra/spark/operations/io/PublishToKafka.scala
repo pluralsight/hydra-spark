@@ -19,13 +19,12 @@ import com.typesafe.config.{Config, ConfigFactory}
 import hydra.spark.api.{DFOperation, Invalid, Valid, ValidationResult}
 import hydra.spark.avro.SchemaRegistrySupport
 import hydra.spark.configs._
+import hydra.spark.internal.Logging
 import hydra.spark.kafka.types.{AvroMessage, JsonMessage, StringMessage}
-import hydra.spark.util.Collections._
 import hydra.spark.util.Network
-import kafka.producer.{KeyedMessage, Producer, ProducerConfig}
-import org.apache.spark.Logging
+import org.apache.kafka.clients.producer.{KafkaProducer, ProducerConfig, ProducerRecord}
 import org.apache.spark.sql.DataFrame
-
+import configs.syntax._
 import scala.util.Try
 
 /**
@@ -37,9 +36,9 @@ case class PublishToKafka(topic: String, format: String = "json", orderBy: Optio
 
   val cfg = ConfigFactory.defaultReference.withFallback(ConfigFactory.load(getClass.getClassLoader, "reference"))
 
-  val topicDefaults = cfg.get[Map[String, String]](s"hydra.common.kafka.formats.$format").getOrElse(Map.empty)
+  val topicDefaults = cfg.get[Map[String, String]](s"hydra.kafka.formats.$format").valueOrElse(Map.empty)
 
-  val kafkaDefaults = cfg.get[Map[String, String]]("kafka.producer").getOrElse(Map.empty)
+  val kafkaDefaults = cfg.get[Map[String, String]]("kafka.producer").valueOrElse(Map.empty)
 
   val opProps = topicDefaults ++ kafkaDefaults ++ properties
 
@@ -54,17 +53,20 @@ case class PublishToKafka(topic: String, format: String = "json", orderBy: Optio
 
     //TODO: allow other formats
     toOrderedDF(cdf).toJSON.foreach(json => {
-      val producer: Producer[Any, Any] = {
+      val producer: KafkaProducer[Any, Any] = {
         if (ProducerObject.isCached) ProducerObject.getCachedProducer
         else {
-          val producer = new Producer[Any, Any](new ProducerConfig(broadcastedConfig.value))
+          import scala.collection.JavaConverters._
+          val producer = new KafkaProducer[Any, Any](broadcastedConfig.value.map(k => k._1 -> k._2.asInstanceOf[AnyRef])
+            .asJava)
           ProducerObject.cacheProducer(producer)
           producer
         }
       }
 
-      val msg = kafkaMessage(format, getKey(json), dropKey(json))
-      producer.send(new KeyedMessage[Any, Any](topic, msg.key, msg.payload))
+      val key = getKey(json)
+      val msg = kafkaMessage(format, key, dropKey(json))
+      producer.send(new ProducerRecord[Any, Any](topic, msg.key, msg.payload))
     })
 
     df
@@ -99,14 +101,15 @@ case class PublishToKafka(topic: String, format: String = "json", orderBy: Optio
 
   override def validate: ValidationResult = {
     Try {
+      val bsc = ProducerConfig.BOOTSTRAP_SERVERS_CONFIG
       require(!topic.isEmpty, "A topic is required")
-      require(properties.contains("metadata.broker.list"), "Metadata broker list is required.")
-      properties("metadata.broker.list").toString.split(",").foreach { host =>
+      require(properties.contains(bsc), s"$bsc is required.")
+      properties(bsc).toString.split(",").foreach { host =>
         val url = host.split(":")
         require(Network.isAlive(url(0), url(1).toInt), s"Connection to $host refused.")
       }
       Valid
-    }.recover { case t: Throwable => Invalid("kafka", t.getMessage) }.get
+    }.recover { case t: Throwable => Invalid("publish-to-kafka", t.getMessage) }.get
   }
 
   def kafkaMessage(format: String, key: String, payload: String) = {
@@ -127,11 +130,11 @@ case class PublishToKafka(topic: String, format: String = "json", orderBy: Optio
 
 object ProducerObject {
 
-  private var producerOpt: Option[Producer[Any, Any]] = None
+  private var producerOpt: Option[KafkaProducer[Any, Any]] = None
 
-  def getCachedProducer: Producer[Any, Any] = producerOpt.get
+  def getCachedProducer: KafkaProducer[Any, Any] = producerOpt.get
 
-  def cacheProducer(producer: Producer[Any, Any]): Unit = producerOpt = Some(producer)
+  def cacheProducer(producer: KafkaProducer[Any, Any]): Unit = producerOpt = Some(producer)
 
   def isCached: Boolean = producerOpt.isDefined
 }
@@ -139,12 +142,12 @@ object ProducerObject {
 object PublishToKafka {
 
   def apply(cfg: Config): PublishToKafka = {
-    val properties = cfg.get[Map[String, String]]("properties").getOrElse(Map.empty)
-    val topic = cfg.get[String]("topic").getOrElse(throw new IllegalArgumentException("Topic is required."))
-    val orderBy = cfg.get[String]("orderBy")
-    val key = cfg.get[String]("key")
-    val format = cfg.get[String]("format").getOrElse("json")
-    val columns = cfg.get[List[String]]("columns")
+    val properties = cfg.get[Map[String, String]]("properties").valueOrElse(Map.empty)
+    val topic = cfg.get[String]("topic").valueOrElse(throw new IllegalArgumentException("Topic is required."))
+    val orderBy = cfg.get[String]("orderBy").toOption
+    val key = cfg.get[String]("key").toOption
+    val format = cfg.get[String]("format").valueOrElse("json")
+    val columns = cfg.get[List[String]]("columns").toOption
 
     PublishToKafka(topic, format, orderBy, key, columns, properties)
   }

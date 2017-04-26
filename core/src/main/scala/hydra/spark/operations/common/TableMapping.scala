@@ -1,11 +1,12 @@
-package hydra.spark.operations.jdbc
+package hydra.spark.operations.common
 
+import hydra.spark.operations.jdbc.UpsertUtils
 import org.apache.spark.sql.{Column, DataFrame}
 
 /**
   * Created by alexsilva on 3/11/17.
   */
-private[jdbc] case class TableMapping(idColumn: Option[ColumnMapping], columns: Seq[ColumnMapping]) {
+private[operations] case class TableMapping(idColumn: Option[ColumnMapping], columns: Seq[ColumnMapping]) {
 
   def targetDF(df: DataFrame): DataFrame = {
     columns.headOption.map { _ =>

@@ -4,11 +4,11 @@
   "name": "Test",
   "fields": [
     {
-      "name": "testName",
-      "type": "string"
+      "name": "messageId",
+      "type": "int"
     },
     {
-      "name": "testValue",
+      "name": "messageValue",
       "type": "string"
     }
   ]

@@ -15,76 +15,91 @@
 
 package hydra.spark.sources.kafka
 
+import com.databricks.spark.avro.SchemaConverters
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.node.ObjectNode
-import hydra.spark.kafka.serialization.JsonDecoder
-import io.confluent.kafka.serializers.KafkaAvroDecoder
-import kafka.serializer.{ Decoder, StringDecoder }
+import hydra.spark.avro.SchemaRegistrySupport
 import org.apache.avro.Schema
 import org.apache.avro.Schema.Field
-import org.apache.avro.generic.{ GenericData, GenericRecord }
+import org.apache.avro.generic.{GenericData, GenericRecord}
+import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{ DataFrame, SQLContext }
+import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.{DataFrame, SQLContext}
 import org.apache.spark.streaming.StreamingContext
 import org.apache.spark.streaming.dstream.DStream
 import org.codehaus.jackson.node.TextNode
 
 import scala.reflect.ClassTag
 
-abstract class KafkaFormat[K: ClassTag, V: ClassTag, KD <: Decoder[K]: ClassTag, VD <: Decoder[V]: ClassTag]
-    extends Serializable {
+abstract class KafkaFormat[K: ClassTag, V: ClassTag]
+  extends Serializable {
 
   def format: String
 
   def createDF(ctx: SQLContext, topic: String,
-    topicProps: Map[String, Any],
-    properties: Map[String, String],
-    key: Option[K]): DataFrame = {
+               topicProps: Map[String, Any],
+               properties: Map[String, String],
+               key: Option[K]): DataFrame = {
     val rdd = createRDD(ctx.sparkContext, topic, topicProps, properties, key)
-    ctx.read.json(rdd.map(_.value.toString))
+
+    val fxn = rdd.map(_.value.toString)
+
+    schemaOpt(topicProps).map(s => ctx.read.schema(s).json(fxn)) getOrElse ctx.read.json(fxn)
   }
 
   def createRDD(
-    ctx: SparkContext,
-    topic: String,
-    topicProps: Map[String, Any],
-    properties: Map[String, String],
-    key: Option[K]
-  ): RDD[KafkaMessageAndMetadata[K, V]] = {
+                 ctx: SparkContext,
+                 topic: String,
+                 topicProps: Map[String, Any],
+                 properties: Map[String, String],
+                 key: Option[K]
+               ): RDD[ConsumerRecord[K, V]] = {
 
-    SparkKafkaUtils
-      .createRDD[K, V, KD, VD, KafkaMessageAndMetadata[K, V]](ctx, topic, topicProps, properties, format)
+    SparkKafkaUtils.createRDD[K, V](ctx, topic, topicProps.map(kv => kv._1 -> kv._2.toString), properties, format)
       .map(m => key.map(k => addKey(m, k)).getOrElse(m))
   }
 
   def createDStream(
-    ctx: StreamingContext,
-    topic: String,
-    topicProps: Map[String, Any],
-    properties: Map[String, String],
-    key: Option[K]
-  ): DStream[KafkaMessageAndMetadata[K, V]] = {
+                     ctx: StreamingContext,
+                     topic: String,
+                     topicProps: Map[String, Any],
+                     properties: Map[String, String],
+                     key: Option[K]
+                   ): DStream[ConsumerRecord[K, V]] = {
 
-    SparkKafkaUtils.createDStream[K, V, KD, VD, KafkaMessageAndMetadata[K, V]](ctx, topic, topicProps, properties)
+
+    SparkKafkaUtils.createDStream[K, V](ctx, topic, topicProps.map(kv => kv._1 -> kv._2.toString), properties, format)
       .transform(rdd => rdd.map(m => key.map(k => addKey(m, k)).getOrElse(m)))
 
   }
 
-  def addKey(mmd: KafkaMessageAndMetadata[K, V], key: K): KafkaMessageAndMetadata[K, V]
+  def schemaOpt(props: Map[String, Any]): Option[StructType] = {
+    props.get("schema").map { name =>
+      val schemaResolver = new SchemaRegistrySupport {
+        override val properties: Map[String, String] = props.map(kv => kv._1 -> kv._2.toString)
+      }
+      val schemaType = SchemaConverters.toSqlType(schemaResolver.getValueSchema(name.toString)).dataType
+      schemaType.asInstanceOf[StructType]
+    }
+  }
+
+  def addKey(mmd: ConsumerRecord[K, V], key: K): ConsumerRecord[K, V]
 
 }
 
-object KafkaJsonFormat extends KafkaFormat[String, JsonNode, StringDecoder, JsonDecoder] {
+object KafkaJsonFormat extends KafkaFormat[String, JsonNode] {
 
   override def format = "json"
 
-  def addKey(md: KafkaMessageAndMetadata[String, JsonNode], key: String) = {
-    md.copy(value = md.value.asInstanceOf[ObjectNode].put(key, md.key))
+  def addKey(md: ConsumerRecord[String, JsonNode], key: String) = {
+    new ConsumerRecord[String, JsonNode](md.topic(), md.partition(), md.offset(), md.key(),
+      md.value().asInstanceOf[ObjectNode].put(key, md.key))
   }
 }
 
-object KafkaAvroFormat extends KafkaFormat[String, Object, StringDecoder, KafkaAvroDecoder] {
+object KafkaAvroFormat extends KafkaFormat[String, Object] {
 
   import scala.collection.JavaConverters._
 
@@ -93,7 +108,7 @@ object KafkaAvroFormat extends KafkaFormat[String, Object, StringDecoder, KafkaA
   val keyField = (key: String) =>
     new Field(key, Schema.create(org.apache.avro.Schema.Type.STRING), "The message key.", TextNode.valueOf(""))
 
-  def addKey(md: KafkaMessageAndMetadata[String, Object], key: String) = {
+  def addKey(md: ConsumerRecord[String, Object], key: String) = {
     val record = md.value.asInstanceOf[GenericRecord]
     val schema = record.getSchema
     val fields = schema.getFields.asScala
@@ -102,7 +117,7 @@ object KafkaAvroFormat extends KafkaFormat[String, Object, StringDecoder, KafkaA
     val newRecord = new GenericData.Record(newSchema)
     fields.foreach(field => newRecord.put(field.name(), record.get(field.name)))
     newRecord.put(key, md.key)
-    md.copy(value = newRecord)
+    new ConsumerRecord[String, Object](md.topic(), md.partition(), md.offset(), md.key(), newRecord)
   }
 
   def generateKeyedSchema(key: String, fields: Seq[Schema.Field], name: String, namespace: String) = {
@@ -113,16 +128,16 @@ object KafkaAvroFormat extends KafkaFormat[String, Object, StringDecoder, KafkaA
   }
 }
 
-object KafkaStringFormat extends KafkaFormat[String, String, StringDecoder, StringDecoder] {
+object KafkaStringFormat extends KafkaFormat[String, String] {
 
   import spray.json._
 
   override def format = "string"
 
-  def addKey(md: KafkaMessageAndMetadata[String, String], key: String) = {
+  def addKey(md: ConsumerRecord[String, String], key: String) = {
     val pj = md.value.parseJson.asJsObject
     val keyed = JsObject(pj.fields + (key -> JsString(md.key))).toString
-    md.copy(value = keyed)
+    new ConsumerRecord[String, String](md.topic(), md.partition(), md.offset(), md.key(), keyed)
   }
 }
 

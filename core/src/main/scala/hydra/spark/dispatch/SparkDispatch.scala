@@ -17,16 +17,17 @@ package hydra.spark.dispatch
 
 import com.typesafe.config.Config
 import hydra.spark.api._
-import hydra.spark.configs._
+import configs.syntax._
 import hydra.spark.dsl.parser.TypesafeDSLParser
+import org.apache.spark.sql.SparkSession
 
 /**
   * Created by alexsilva on 6/21/16.
   */
 abstract class SparkDispatch[S](name: String, source: Source[S], operations: Operations,
-                                dsl: Config, ctx: ContextLike) extends Dispatch[S] {
+                                dsl: Config, session: SparkSession) extends Dispatch[S] {
 
-  val author = dsl.get[String]("author").getOrElse("The Tooth Fairy")
+  val author = dsl.get[String]("author").valueOrElse("Unknown")
 }
 
 object SparkDispatch {
@@ -35,22 +36,18 @@ object SparkDispatch {
 
   val parser = TypesafeDSLParser(Seq("hydra.spark.sources"), Seq("hydra.spark.operations"))
 
-  def apply(dsl: String, ctx: Option[ContextLike] = None): SparkDispatch[_] = {
-    apply(parser.parse(dsl), ctx)
+  def apply(dsl: String): SparkDispatch[_] = {
+    apply(parser.parse(dsl))
   }
 
-  def apply(dsl: Config, ctx: Option[ContextLike]): SparkDispatch[_] = {
-    apply(parser(dsl), ctx)
-  }
+  def apply[S: TypeTag](d: DispatchDetails[S]): SparkDispatch[S] = {
 
-  def apply[S: TypeTag](d: DispatchDetails[S], ctx: Option[ContextLike]): SparkDispatch[S] = {
-
-    val ctxLike = ctx.getOrElse(d.newCtx)
+    val session = SparkSession.builder().config(d.conf).appName(d.name).getOrCreate()
 
     if (d.isStreaming)
-      SparkStreamingDispatch[S](d.name, d.source, d.operations, d.dsl, ctxLike)
+      SparkStreamingDispatch[S](d.name, d.source, d.operations, d.dsl, session)
     else
-      SparkBatchDispatch[S](d.name, d.source, d.operations, d.dsl, ctxLike)
+      SparkBatchDispatch[S](d.name, d.source, d.operations, d.dsl, session)
   }
 
 }

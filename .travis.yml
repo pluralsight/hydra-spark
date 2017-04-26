@@ -6,7 +6,6 @@ env:
     - _JAVA_OPTIONS="-Xmx1500m -XX:MaxPermSize=512m -Dakka.test.timefactor=3"
     - SPARK_HOME=/tmp/spark-1.6.2-bin-hadoop2.6
 scala:
-   - 2.10.6
    - 2.11.8
 jdk:
    - oraclejdk8

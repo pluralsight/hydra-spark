@@ -44,7 +44,7 @@ The steps below show you how to use hydra-spark with an example DSL, by running 
 You need to have [SBT](http://www.scala-sbt.org/release/docs/Getting-Started/Setup.html) installed.
 
 ### Using an IDE
-If you are using a Scala IDE (such as IntelliJ), you can import the project and start by running any of the test specs.  To run a specific DSL
+If you are using a Scala IDE (such as IntelliJ), you can import the project and start by running any of the test specs.  To run a specific DSL <<more docs coming>>
 
 ### WordCountExample walk-through
 
@@ -53,6 +53,20 @@ Docs coming
 
 ## Contribution and Development
 Contributions via Github Pull Request are welcome.  See the TODO for some ideas.
+
+
+Profiling software provided by ![](https://www.yourkit.com/images/yklogo.png)
+
+YourKit supports open source projects with its full-featured Java Profiler.
+YourKit, LLC is the creator of <a href="https://www.yourkit.com/java/profiler/">YourKit Java Profiler</a>
+and <a href="https://www.yourkit.com/.net/profiler/">YourKit .NET Profiler</a>,
+innovative and intelligent tools for profiling Java and .NET applications.
+
+
+## Contact
+
+Please report bugs/problems to:
+<https://github.com/pluralsight/hydra-spark/issues>
 
 ## License
 Apache 2.0, see LICENSE.md

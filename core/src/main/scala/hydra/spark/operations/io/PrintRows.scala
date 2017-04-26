@@ -17,12 +17,11 @@ package hydra.spark.operations.io
 
 import com.typesafe.config.Config
 import hydra.spark.api._
-import hydra.spark.configs._
 import org.apache.spark.sql.DataFrame
 
 /**
- * Created by alexsilva on 12/29/16.
- */
+  * Created by alexsilva on 12/29/16.
+  */
 case class PrintRows(numRows: Int = 10) extends DFOperation {
   override def transform(df: DataFrame): DataFrame = {
     df.show(numRows)
@@ -30,17 +29,18 @@ case class PrintRows(numRows: Int = 10) extends DFOperation {
   }
 
   /**
-   * Validates the target configuration as a future.
-   *
-   * @return
-   */
+    * Validates the target configuration as a future.
+    *
+    * @return
+    */
   override def validate: ValidationResult = if (numRows > 0) Valid else
     Invalid(ValidationError("print-rows", "numRows needs to be greater than zero."))
 }
 
 object PrintRows {
   def apply(cfg: Config): PrintRows = {
-    val numRows = cfg.get[Int]("numRows").getOrElse(10)
+    import configs.syntax._
+    val numRows = cfg.get[Int]("numRows").valueOrElse(10)
     PrintRows(numRows)
   }
 }

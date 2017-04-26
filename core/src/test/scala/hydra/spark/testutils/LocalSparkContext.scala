@@ -15,13 +15,13 @@
 
 package hydra.spark.testutils
 
-import _root_.io.netty.util.internal.logging.{ InternalLoggerFactory, Slf4JLoggerFactory }
+import _root_.io.netty.util.internal.logging.{InternalLoggerFactory, Slf4JLoggerFactory}
 import org.apache.spark.SparkContext
-import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach, Suite }
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Suite}
 
 /**
- * Created by alexsilva on 1/9/17.
- */
+  * Created by alexsilva on 1/9/17.
+  */
 trait LocalSparkContext extends BeforeAndAfterEach with BeforeAndAfterAll {
   self: Suite =>
 
@@ -29,7 +29,7 @@ trait LocalSparkContext extends BeforeAndAfterEach with BeforeAndAfterAll {
 
   override def beforeAll() {
     super.beforeAll()
-    InternalLoggerFactory.setDefaultFactory(new Slf4JLoggerFactory())
+    InternalLoggerFactory.setDefaultFactory(Slf4JLoggerFactory.INSTANCE)
   }
 
   override def afterEach() {

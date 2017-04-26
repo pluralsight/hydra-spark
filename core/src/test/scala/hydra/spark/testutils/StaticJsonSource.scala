@@ -29,9 +29,9 @@ import scala.collection.mutable
  */
 object StaticJsonSource extends Source[String] {
 
-  val email = """"email":"alex-silva@ps.com","""
+  val email = """"email":"hydra@dataisawesome.com","""
   val msgs = (for (i <- 0 to 10)
-    yield s"""{"msg-no": $i,${if (i % 2 == 0) email else ""}
+    yield s"""{"msg_no": $i,${if (i % 2 == 0) email else ""}
          |"data": {"value": "hello no $i", "time": ${System.currentTimeMillis}}
       }""".stripMargin)
 

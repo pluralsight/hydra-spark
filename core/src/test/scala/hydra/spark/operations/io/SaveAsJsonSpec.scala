@@ -19,23 +19,25 @@ import java.io.File
 
 import com.google.common.io.Files
 import com.typesafe.config.ConfigFactory
-import hydra.spark.api.{ Invalid, Operations }
+import hydra.spark.api.{Invalid, Operations}
 import hydra.spark.dispatch.SparkBatchDispatch
-import hydra.spark.testutils.{ ListOperation, SharedSparkContext, StaticJsonSource }
-import org.scalatest.{ BeforeAndAfterEach, FunSpecLike, Inside, Matchers }
+import hydra.spark.testutils.{ListOperation, SharedSparkContext, StaticJsonSource}
+import org.scalatest.{BeforeAndAfterEach, FunSpecLike, Inside, Matchers}
 
 import scala.collection.JavaConversions._
 import scala.collection.mutable
 
 /**
- * Created by alexsilva on 6/22/16.
- */
+  * Created by alexsilva on 6/22/16.
+  */
 class SaveAsJsonSpec extends Matchers with FunSpecLike with Inside with BeforeAndAfterEach with SharedSparkContext {
 
   describe("When Saving as JSON") {
     it("Should be configured properly") {
 
-      inside(SaveAsJson(ConfigFactory.empty()).validate) { case Invalid(errors) => errors.size shouldBe 1 }
+      intercept[IllegalArgumentException] {
+        SaveAsJson(ConfigFactory.empty())
+      }
 
       val props = Map("directory" -> "shouldntexist")
 
@@ -51,32 +53,27 @@ class SaveAsJsonSpec extends Matchers with FunSpecLike with Inside with BeforeAn
     it("Should save") {
       import spray.json._
 
-      val file = Files.createTempDir()
+      val tmpDir = Files.createTempDir()
 
       val props = ConfigFactory.parseString(
         s"""
-           |spark.master = "local[4]"
-           |spark.ui.enabled = false
-           |spark.driver.allowMultipleContexts = false
-           |directory = ${file.getAbsolutePath()}
+           |directory = ${tmpDir.getAbsolutePath}
+           |overwrite = true
         """.stripMargin
       )
 
       val t = SaveAsJson(props)
 
-      val sd = SparkBatchDispatch("test", StaticJsonSource, Operations(t), props, scl)
+      val sd = SparkBatchDispatch("test", StaticJsonSource, Operations(t), props, ss)
 
       sd.run()
 
-      val output = new File(t.output.toString)
+      val output = new File(t.directory)
 
-      val files = sd.ctx.sparkContext.wholeTextFiles(output.getAbsolutePath, 1)
+      val files = sd.sparkSession.sparkContext.wholeTextFiles(output.getAbsolutePath, 1)
       val l = mutable.ListBuffer[JsValue]()
       files.collect().foreach(s => s._2.split("\\n").foreach(r => l += r.parseJson))
       l should contain theSameElementsAs StaticJsonSource.msgs.map(_.parseJson)
-
-      new File(t.output.toString).delete()
-
       sd.stop()
     }
   }

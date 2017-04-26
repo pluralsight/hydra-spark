@@ -12,15 +12,15 @@ class ConcatColumnsSpec extends Matchers with FunSpecLike with SharedSparkContex
 
   describe("It should concatenate two columns") {
     it("Should allow use of two dataframe columns to make one column") {
-      val sqlContext = new SQLContext(sc)
+      val sqlContext =  ss.sqlContext
       // ConcatColumns accepts a sequence but dsl will actually send the subtype list
-      val df1 = ConcatColumns(List("email","msg-no"), "newColumn").transform(StaticJsonSource.createDF(sqlContext))
-      df1.first().getString(3) shouldBe "alex-silva@ps.com|0"
+      val df1 = ConcatColumns(List("email","msg_no"), "newColumn").transform(StaticJsonSource.createDF(sqlContext))
+      df1.first().getString(3) shouldBe "hydra@dataisawesome.com|0"
     }
     it("Should not break on an empty dataset") {
       // ConcatColumns accepts a sequence but dsl will actually send the subtype list
-      val df = SQLContext.getOrCreate(sc).read.json(sc.parallelize(""::Nil))
-      val df1 = ConcatColumns(List("email","msg-no"), "newColumn").transform(df)
+      val df =  ss.sqlContext.read.json(sc.parallelize(""::Nil))
+      val df1 = ConcatColumns(List("email","msg_no"), "newColumn").transform(df)
       df1.collect() shouldBe empty
     }
     it("Should be parseable") {

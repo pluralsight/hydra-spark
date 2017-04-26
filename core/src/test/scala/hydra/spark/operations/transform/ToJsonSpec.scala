@@ -18,7 +18,6 @@ package hydra.spark.operations.transform
 import java.io.File
 
 import hydra.spark.testutils.SharedSparkContext
-import org.apache.spark.sql.SQLContext
 import org.scalatest.{FunSpecLike, Matchers}
 
 import scala.io.Source
@@ -31,18 +30,18 @@ class ToJsonSpec extends Matchers with FunSpecLike with SharedSparkContext {
   describe("When converting columns to json") {
     it("works with complex types") {
       import spray.json._
-      val sqlContext = new SQLContext(sc)
+      val sqlContext = ss.sqlContext
       val path = Thread.currentThread().getContextClassLoader.getResource("data.txt").getFile
       val data = Source.fromFile(new File(path)).getLines().toArray.map(_.parseJson.asJsObject.fields("batters"))
       val df = sqlContext.read.json(path).repartition(1)
       val ndf = ToJson(Seq("batters")).transform(df)
       ndf.rdd.zipWithIndex().collect().foreach { case (row, idx) =>
-        data(idx.toInt) shouldBe (row.getString(row.fieldIndex("batters")).parseJson)
+        data(idx.toInt) shouldBe (row.getString(0).parseJson)
       }
     }
     it("does not fail with empty dataset") {
       val rdd = sc.parallelize("" :: Nil)
-      val df = SQLContext.getOrCreate(sc).read.json(rdd)
+      val df = ss.sqlContext.read.json(rdd)
       val ndf = ToJson(Seq("batters")).transform(df)
       ndf.collect() shouldBe empty
     }
