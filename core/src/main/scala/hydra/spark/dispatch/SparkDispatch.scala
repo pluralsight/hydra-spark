@@ -27,7 +27,7 @@ import org.apache.spark.sql.SparkSession
 abstract class SparkDispatch[S](name: String, source: Source[S], operations: Operations,
                                 dsl: Config, session: SparkSession) extends Dispatch[S] {
 
-  val author = dsl.get[String]("author").valueOrElse("The Tooth Fairy")
+  val author = dsl.get[String]("author").valueOrElse("Unknown")
 }
 
 object SparkDispatch {
