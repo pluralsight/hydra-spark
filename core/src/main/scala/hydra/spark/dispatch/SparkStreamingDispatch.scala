@@ -37,14 +37,15 @@ case class SparkStreamingDispatch[S: TypeTag](override val name: String, source:
 
   import scala.collection.JavaConverters._
 
-  val streamingConf = ConfigFactory.parseMap(dsl.flattenAtKey("streaming").asJava)
+  private val root = dsl.get[Config]("transport").valueOrElse(dsl.root().toConfig)
+  val streamingConf = ConfigFactory.parseMap(root.flattenAtKey("streaming").asJava)
   val stopGracefully = streamingConf.get[Boolean]("streaming.stopGracefully").valueOrElse(true)
   val stopSparkContext = streamingConf.get[Boolean]("streaming.stopSparkContext").valueOrElse(true)
 
+  val interval = streamingConf.get[FiniteDuration]("streaming.interval").map(d => Seconds(d.toSeconds)).toOption
+
   lazy val ssc = StreamingContext.getActiveOrCreate { () =>
-    val interval = streamingConf.get[FiniteDuration]("interval").map(d => Seconds(d.toSeconds))
-      .valueOrThrow(_ => throw new IllegalArgumentException("No streaming interval was defined for a streaming job."))
-    new StreamingContext(sparkSession.sparkContext, interval)
+    new StreamingContext(sparkSession.sparkContext, interval.get)
   }
 
   override def run(): Unit = {
@@ -67,6 +68,9 @@ case class SparkStreamingDispatch[S: TypeTag](override val name: String, source:
 
   override def stop(): Unit = ssc.stop(stopSparkContext, stopGracefully)
 
-  override def validate: ValidationResult = super.validate
+  override def validate: ValidationResult = {
+    interval.map(_ => super.validate)
+      .getOrElse(Invalid(this, new IllegalArgumentException("No streaming interval was defined for a streaming job.")))
+  }
 
 }

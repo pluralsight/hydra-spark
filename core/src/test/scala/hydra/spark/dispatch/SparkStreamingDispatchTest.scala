@@ -38,16 +38,39 @@ class SparkStreamingDispatchTest extends Matchers with FunSpecLike with SharedSp
 
   val props = Map("streaming.interval" -> "5s", "spark.local.dir" -> "/tmp/hydra", "spark.master" -> "local[*]")
 
-  var ssc: StreamingContext = _
-
-
   describe("When Creating a Dispatch using Spark") {
     it("Be configured properly") {
 
       val c = ConfigFactory.parseMap(props.asJava)
       val sd = SparkStreamingDispatch("test", EmptySource, Operations(Seq.empty), c, ss)
       val conf = sd.ssc.sparkContext.getConf
+      sd.ssc.stop(false, false)
+    }
 
+    it("should parse a streaming DSL") {
+      val dsl =
+        """
+          |{
+          |    "transport": {
+          |        "name": "test",
+          |        "version": "1",
+          |        "spark.master":"local[*]",
+          |        "streaming.interval" : "5s",
+          |        "source": {
+          |            "hydra.spark.testutils.EmptySource":{
+          |             "testName":"streaming"
+          |            }
+          |        },
+          |        "operations": {
+          |           "print-rows":{}
+          |        }
+          |    }
+          |}
+          |
+    """.stripMargin
+
+      val d = SparkDispatch(dsl)
+      d.validate shouldBe Valid
     }
   }
 }
