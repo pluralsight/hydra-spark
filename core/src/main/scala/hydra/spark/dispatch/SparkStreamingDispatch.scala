@@ -42,8 +42,7 @@ case class SparkStreamingDispatch[S: TypeTag](override val name: String, source:
   val stopSparkContext = streamingConf.get[Boolean]("streaming.stopSparkContext").valueOrElse(true)
 
   lazy val ssc = StreamingContext.getActiveOrCreate { () =>
-    val streamingConf = ConfigFactory.parseMap(dsl.flattenAtKey("streaming").asJava)
-    val interval = streamingConf.get[FiniteDuration]("streaming.interval").map(d => Seconds(d.toSeconds))
+    val interval = streamingConf.get[FiniteDuration]("interval").map(d => Seconds(d.toSeconds))
       .valueOrThrow(_ => throw new IllegalArgumentException("No streaming interval was defined for a streaming job."))
     new StreamingContext(sparkSession.sparkContext, interval)
   }
