@@ -15,8 +15,8 @@
 
 package hydra.spark.util
 
+import hydra.spark.sources.kafka.KafkaRecord
 import org.apache.hadoop.io.Text
-import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{DataFrame, Row, SQLContext, SparkSession}
 
@@ -43,8 +43,8 @@ object RDDConversions {
     }
   }
 
-  implicit object KafkaDF extends DFLike[ConsumerRecord[_, _]] {
-    type RKMMD = RDD[ConsumerRecord[_, _]]
+  implicit object KafkaDF extends DFLike[KafkaRecord[_, _]] {
+    type RKMMD = RDD[KafkaRecord[_, _]]
 
     override def toDF(rdd: RKMMD): DataFrame = {
       val spark: SQLContext = SparkSession.builder().getOrCreate.sqlContext

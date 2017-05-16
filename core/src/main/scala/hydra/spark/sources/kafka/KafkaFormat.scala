@@ -55,10 +55,10 @@ abstract class KafkaFormat[K: ClassTag, V: ClassTag]
                  topicProps: Map[String, Any],
                  properties: Map[String, String],
                  key: Option[K]
-               ): RDD[ConsumerRecord[K, V]] = {
+               ): RDD[KafkaRecord[K, V]] = {
 
     SparkKafkaUtils.createRDD[K, V](ctx, topic, topicProps.map(kv => kv._1 -> kv._2.toString), properties, format)
-      .map(m => key.map(k => addKey(m, k)).getOrElse(m))
+      .map(m => key.map(k => addKey(m, k)).getOrElse(KafkaRecord(m.key, m.value)))
   }
 
   def createDStream(
@@ -67,11 +67,11 @@ abstract class KafkaFormat[K: ClassTag, V: ClassTag]
                      topicProps: Map[String, Any],
                      properties: Map[String, String],
                      key: Option[K]
-                   ): DStream[ConsumerRecord[K, V]] = {
+                   ): DStream[KafkaRecord[K, V]] = {
 
 
     SparkKafkaUtils.createDStream[K, V](ctx, topic, topicProps.map(kv => kv._1 -> kv._2.toString), properties, format)
-      .transform(rdd => rdd.map(m => key.map(k => addKey(m, k)).getOrElse(m)))
+      .transform(rdd => rdd.map(m => key.map(k => addKey(m, k)).getOrElse(KafkaRecord(m.key, m.value))))
 
   }
 
@@ -85,7 +85,7 @@ abstract class KafkaFormat[K: ClassTag, V: ClassTag]
     }
   }
 
-  def addKey(mmd: ConsumerRecord[K, V], key: K): ConsumerRecord[K, V]
+  def addKey(mmd: ConsumerRecord[K, V], key: K): KafkaRecord[K, V]
 
 }
 
@@ -94,7 +94,7 @@ object KafkaJsonFormat extends KafkaFormat[String, JsonNode] {
   override def format = "json"
 
   def addKey(md: ConsumerRecord[String, JsonNode], key: String) = {
-    new ConsumerRecord[String, JsonNode](md.topic(), md.partition(), md.offset(), md.key(),
+    new KafkaRecord[String, JsonNode](md.key(),
       md.value().asInstanceOf[ObjectNode].put(key, md.key))
   }
 }
@@ -117,7 +117,7 @@ object KafkaAvroFormat extends KafkaFormat[String, Object] {
     val newRecord = new GenericData.Record(newSchema)
     fields.foreach(field => newRecord.put(field.name(), record.get(field.name)))
     newRecord.put(key, md.key)
-    new ConsumerRecord[String, Object](md.topic(), md.partition(), md.offset(), md.key(), newRecord)
+    new KafkaRecord[String, Object](md.key(), newRecord)
   }
 
   def generateKeyedSchema(key: String, fields: Seq[Schema.Field], name: String, namespace: String) = {
@@ -137,7 +137,7 @@ object KafkaStringFormat extends KafkaFormat[String, String] {
   def addKey(md: ConsumerRecord[String, String], key: String) = {
     val pj = md.value.parseJson.asJsObject
     val keyed = JsObject(pj.fields + (key -> JsString(md.key))).toString
-    new ConsumerRecord[String, String](md.topic(), md.partition(), md.offset(), md.key(), keyed)
+    new KafkaRecord[String, String](md.key(), keyed)
   }
 }
 

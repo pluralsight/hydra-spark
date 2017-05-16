@@ -20,7 +20,6 @@ import hydra.spark.api._
 import hydra.spark.util.RDDConversions._
 import hydra.spark.util.{KafkaUtils, Network}
 import kafka.api.OffsetRequest
-import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{DataFrame, SQLContext}
@@ -44,9 +43,9 @@ import scala.util.Try
   *                   to the dataframe and its value will be the KafkaKey.
   */
 case class KafkaSource(topics: Map[String, Map[String, Any]], properties: Map[String, String])
-  extends Source[ConsumerRecord[_, _]] {
+  extends Source[KafkaRecord[_, _]] {
 
-  type KMMD = ConsumerRecord[_, _]
+  type KMMD = KafkaRecord[_, _]
 
   override val name = "kafka"
 
@@ -66,12 +65,12 @@ case class KafkaSource(topics: Map[String, Map[String, Any]], properties: Map[St
     dfs.reduceLeft(_.union(_))
   }
 
-  override def createStream(ctx: StreamingContext): DStream[ConsumerRecord[_, _]] = {
+  override def createStream(ctx: StreamingContext): DStream[KafkaRecord[_, _]] = {
     val streams = topics.map {
       case (topic, props) =>
         kafkaFormat(formatName(props))
           .createDStream(ctx, topic, props, properties, props.get("keyColumn").map(_.toString))
-          .asInstanceOf[DStream[ConsumerRecord[_, _]]]
+          .asInstanceOf[DStream[KafkaRecord[_, _]]]
     }.toSeq
     ctx.union(streams)
   }

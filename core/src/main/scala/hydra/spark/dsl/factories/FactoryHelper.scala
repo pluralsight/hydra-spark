@@ -113,6 +113,7 @@ object FactoryHelper {
         case q if q == classOf[Int] => cfg.getInt(key)
         case q if q == classOf[Long] => cfg.getLong(key)
         case q if q == classOf[Double] => cfg.getDouble(key)
+        case q if q == classOf[Boolean] => cfg.getBoolean(key)
         case q if q == classOf[Config] => cfg.getConfig(key)
         case q if q == classOf[AnyRef] => cfg.getAnyRef(key)
         case q => throw new IllegalArgumentException(s"No known conversion for property $q.")

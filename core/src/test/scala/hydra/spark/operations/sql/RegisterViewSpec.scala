@@ -16,7 +16,7 @@ class RegisterViewSpec extends Matchers with FunSpecLike with BeforeAndAfterEach
       validation.errors shouldBe Invalid.unapply(validation).get
     }
 
-    it("Should parse and register a view") {
+    it("Should parse and register a local view") {
       val dsl =
         """
           |{
@@ -31,7 +31,8 @@ class RegisterViewSpec extends Matchers with FunSpecLike with BeforeAndAfterEach
           |        },
           |        "operations": {
           |           "register-view":{
-          |               "name":"test_view"
+          |               "name":"test_view",
+          |               "global":false
           |           }
           |        }
           |    }
@@ -45,6 +46,37 @@ class RegisterViewSpec extends Matchers with FunSpecLike with BeforeAndAfterEach
 
       val ctx = ss.sqlContext
       val df = ctx.sql("select * from test_view")
+      df.count() shouldBe 3
+    }
+
+    it("Should parse and register a global view") {
+      val dsl =
+        """
+          |{
+          |    "transport": {
+          |        "name": "test",
+          |        "version": "1",
+          |        "spark.master":"local[*]",
+          |        "source": {
+          |            "hydra.spark.testutils.ListSource":{
+          |             "messages":["1","2","3"]
+          |            }
+          |        },
+          |        "operations": {
+          |           "register-view":{
+          |               "name":"test_view_global",
+          |               "global":true
+          |           }
+          |        }
+          |    }
+          |}
+          |
+    """.stripMargin
+
+
+      val d = SparkDispatch(dsl)
+      d.run()
+      val df = ss.sql("select * from  global_temp.test_view_global")
       df.count() shouldBe 3
     }
   }

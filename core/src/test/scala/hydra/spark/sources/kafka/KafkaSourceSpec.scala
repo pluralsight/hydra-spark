@@ -90,7 +90,7 @@ class KafkaSourceSpec extends Matchers with FunSpecLike with ScalaFutures with P
     val stream = source.createStream(sctx)
     val msgs = new ArrayBuffer[String]()
     stream.foreachRDD {
-      msgs ++= _.map(_.value().toString).collect()
+      msgs ++= _.map(_.value.toString).collect()
     }
 
     sctx.start()
@@ -132,7 +132,7 @@ class KafkaSourceSpec extends Matchers with FunSpecLike with ScalaFutures with P
 
     val msgs = new ArrayBuffer[JsValue]()
     stream.foreachRDD {
-      msgs ++= _.map(_.value().toString).collect().map(_.parseJson)
+      msgs ++= _.map(_.value.toString).collect().map(_.parseJson)
     }
 
     sctx.start()
@@ -168,7 +168,7 @@ class KafkaSourceSpec extends Matchers with FunSpecLike with ScalaFutures with P
     val msgs = new ArrayBuffer[String]()
 
     stream.foreachRDD { rdd =>
-      msgs ++= rdd.map(_.value().toString).collect()
+      msgs ++= rdd.map(_.value.toString).collect()
     }
 
 

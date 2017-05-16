@@ -6,9 +6,9 @@ import org.apache.spark.sql.DataFrame
 /**
   * Created by alexsilva on 5/3/17.
   */
-case class RegisterView(name: String) extends DFOperation {
+case class RegisterView(name: String, global: Boolean = false) extends DFOperation {
   override def transform(df: DataFrame): DataFrame = {
-    df.createOrReplaceTempView(name)
+    if (global) df.createGlobalTempView(name) else df.createOrReplaceTempView(name)
     df
   }
 

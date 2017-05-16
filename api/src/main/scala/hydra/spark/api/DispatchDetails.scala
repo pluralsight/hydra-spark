@@ -39,6 +39,10 @@ case class DispatchDetails[S](name: String, source: Source[S], operations: Opera
     val sparkRefConf = dsl.getConfig("transport").flattenAtKey("spark")
     val jars = dsl.get[List[String]]("spark.jars").valueOrElse(List.empty)
     val appName = sparkRefConf.get("spark.app.name").getOrElse(name)
-    new SparkConf().setAll(sparkRefConf).setAppName(appName).setJars(jars)
+
+    new SparkConf().setAll(sparkRefConf)
+      .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
+      .registerKryoClasses(Array(classOf[org.apache.avro.generic.GenericData.Record]))
+      .setAppName(appName).setJars(jars)
   }
 }
