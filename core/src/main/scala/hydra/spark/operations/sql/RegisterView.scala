@@ -13,4 +13,7 @@ case class RegisterView(name: String, global: Boolean = false) extends DFOperati
   }
 
   override def validate: ValidationResult = checkRequiredParams(Seq("view name" -> name))
+
 }
+
+
