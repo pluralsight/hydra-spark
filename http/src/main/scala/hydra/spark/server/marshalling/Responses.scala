@@ -1,18 +1,12 @@
 package hydra.spark.server.marshalling
 
-import java.util.UUID
-
-import akka.http.scaladsl.model.StatusCode
-
 /**
   * Created by alexsilva on 5/1/17.
   */
-trait BaseResponse {
-  def requestId: String
+trait BaseResponse
 
-  def statusCode: StatusCode
-}
+case class GenericResponse(status: Int, message: String) extends BaseResponse
 
+case class JobSubmittedResponse(streamId: String, logFile: String)
 
-case class GenericResponse(statusCode: StatusCode, message: String,
-                           requestId: String = UUID.randomUUID().toString) extends BaseResponse
+case class JobStatusResponse(requestId: String, sparkAppId: Option[String], state: String) extends BaseResponse

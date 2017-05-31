@@ -30,8 +30,6 @@ case class TypesafeDSLParser(sourcesPkg: Seq[String] = Seq("hydra.spark.sources"
 
   val factory = ClasspathDslElementFactory(sourcesPkg, operationsPkg)
 
-  val defaults = ConfigFactory.defaultReference.withFallback(ConfigFactory.load(getClass.getClassLoader, "reference"))
-
   override def parse(dsl: String): DispatchDetails[_] = {
     apply(ConfigFactory.parseString(dsl, ConfigParseOptions.defaults().setSyntax(ConfigSyntax.CONF)))
   }
@@ -42,11 +40,11 @@ case class TypesafeDSLParser(sourcesPkg: Seq[String] = Seq("hydra.spark.sources"
 
     val source = transport.get[ConfigObject]("source")
       .map(s => factory.createSource(s, transport))
-      .valueOrThrow(_ => InvalidDslException("Invalid DSL: A source is required."))
+      .valueOrThrow(e => InvalidDslException(s"Invalid DSL: ${e.head.throwable.getMessage}"))
 
     val operations: Seq[DFOperation] = transport.get[ConfigObject]("operations")
       .map(ops => factory.createOperations(ops, transport))
-      .valueOrThrow(_ => InvalidDslException("Invalid DSL: At least one target/operation is required."))
+      .valueOrThrow(e => InvalidDslException(s"Invalid DSL: ${e.head.throwable.getMessage}"))
 
     val name = transport.get[String]("name").valueOrElse(UUID.randomUUID().toString)
 
@@ -54,8 +52,12 @@ case class TypesafeDSLParser(sourcesPkg: Seq[String] = Seq("hydra.spark.sources"
 
     val isStreaming = streamingProps.get("streaming.interval").isDefined
 
-    DispatchDetails(name, source, Operations(operations), isStreaming, dsl)
+    DispatchDetails(name, source, Operations(operations), isStreaming, dsl, TypesafeDSLParser.sparkDefaults)
   }
+}
 
+object TypesafeDSLParser extends ConfigSupport {
+
+  val sparkDefaults = config.get[Config]("spark").valueOrElse(ConfigFactory.empty).atKey("spark")
 
 }

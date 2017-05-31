@@ -2,12 +2,11 @@ package hydra.spark.submit
 
 import java.io.File
 
-import com.typesafe.config.{Config, ConfigFactory, ConfigRenderOptions}
 import hydra.spark.api.DispatchDetails
-import hydra.spark.submit.HydraSparkSubmit.baseLogDir
-import org.apache.spark.launcher.SparkAppHandle
-import org.apache.spark.sql.catalyst
-import org.apache.spark.sql.catalyst.dsl
+import hydra.spark.configs.ConfigSupport
+import org.apache.spark.launcher.{SparkAppHandle, SparkLauncher}
+
+import scala.util.Try
 
 /**
   * Created by alexsilva on 5/1/17.
@@ -18,41 +17,37 @@ case class HydraSparkSubmit[T](dispatch: DispatchDetails[T]) {
 
   val logFile = new File(baseLogDir, s"${dispatch.name}-${System.currentTimeMillis()}.log")
 
-
-  val dslWithDefaults = catalyst.dsl.withFallback(defaults)
-
-  val sparkConf = rootConfig.getConfig("spark").atKey("spark")
-
-  lazy val launcher = {
-    val info = SparkSubmitInfo(sparkHome, hydraSparkJar, hadoopConfDir, yarnConfDir)
-    HydraSparkLauncher.createLauncher(sparkConf, info, catalyst.dsl.root().render(ConfigRenderOptions.concise()))
+  lazy val launcher: Try[SparkLauncher] = {
+    Try(Seq(sparkHome, hydraSparkJar).map(_.get)).map { s =>
+      val info = SparkSubmitInfo(s(0), s(1), hadoopConfDir, yarnConfDir)
+      HydraSparkLauncher.createLauncher(info, dispatch)
+    }
   }
 
-  def submit(listeners: SparkAppHandle.Listener*) = {
-    launcher.redirectOutput(logFile)
-    launcher.startApplication(listeners: _*)
+  def submit(listeners: SparkAppHandle.Listener*): Try[SparkAppHandle] = {
+    launcher.map { l =>
+      l.redirectOutput(logFile)
+      l.startApplication(listeners: _*)
+    }
   }
 }
 
-object HydraSparkSubmit {
+object HydraSparkSubmit extends ConfigSupport {
 
   import configs.syntax._
 
-  val baseLogDir = applicationConfig.get[String]("transport.spark.log.dir").valueOrElse("/var/log/hydra/transports")
+  val baseLogDir = config.get[String]("hydra.spark.log.dir").valueOrElse("/var/log/hydra-spark")
 
+  val sparkHome = Try(config.get[String]("spark.home")
+    .valueOrThrow(e => HydraSparkSubmitException("Unable to find spark home config.", e.configException)))
 
-  val defaults = rootConfig.resolve().get[Config]("hydra.transport.defaults")
-    .valueOrElse(ConfigFactory.empty).atKey("hydra.transport.defaults")
+  val hydraSparkJar = Try(config.get[String]("hydra.spark.assembly")
+    .valueOrThrow(e => HydraSparkSubmitException("Unable to find hydra-spark jar config.", e.configException)))
 
-  val sparkHome = rootConfig.get[String]("spark.home")
-    .valueOrThrow(e => new JobExecutionException("Unable to find spark home config.", e.configException))
+  val hadoopConfDir = config.get[String]("spark.HADOOP_CONF_DIR").toOption
 
-  val hydraSparkJar = applicationConfig.get[String]("transport.spark-dsl.jar")
-    .valueOrThrow(e => new JobExecutionException("Unable to find hydra-spark jar config.", e.configException))
-
-  val hadoopConfDir = rootConfig.get[String]("spark.HADOOP_CONF_DIR").toOption
-
-  val yarnConfDir = rootConfig.get[String]("spark.YARN_CONF_DIR").toOption
+  val yarnConfDir = config.get[String]("spark.YARN_CONF_DIR").toOption
 
 }
 
+case class HydraSparkSubmitException(msg: String, cause: Throwable) extends RuntimeException(msg, cause)

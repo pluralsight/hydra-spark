@@ -26,12 +26,15 @@ object Dependencies {
     "ru.yandex.qatools.embed" % "postgresql-embedded" % "1.22" % "test",
     "com.h2database" % "h2" % "1.4.192" % "test") ++ postgres.map(_ % "test")
 
-  lazy val slick = Seq("com.typesafe.slick" %% "slick" % slickVersion,
-    "com.typesafe.slick" %% "slick-hikaricp" % slickVersion,
-    "org.postgresql" % "postgresql" % postgresVersion)
+  lazy val serviceContainer = Seq("com.github.vonnagy" %% "service-container" % serviceContainerVersion)
+    .map(_.excludeAll(
+      ExclusionRule(organization = "ch.qos.logback"),
+      ExclusionRule(organization = "org.slf4j")
+    ))
 
-  lazy val akkaHttp = Seq("com.typesafe.akka" %% "akka-http-core" % akkaHttpVersion
-    , "com.typesafe.akka" %% "akka-http" % akkaHttpVersion)
+  lazy val akkaHttp = Seq("com.typesafe.akka" %% "akka-http-core" % akkaHttpVersion,
+    "com.typesafe.akka" %% "akka-http-spray-json" % akkaHttpVersion,
+    "com.typesafe.akka" %% "akka-http" % akkaHttpVersion)
 
   lazy val typesafeConfig = Seq("com.typesafe" % "config" % typeSafeConfigVersion)
 
@@ -54,7 +57,7 @@ object Dependencies {
   val scalaConfigs = Seq("com.github.kxbmap" %% "configs" % kxbmapConfigVersion)
 
   lazy val coreTestDeps = Seq(
-  //  "org.scalactic" %% "scalactic" % scalaTestVersion % "test",
+    //  "org.scalactic" %% "scalactic" % scalaTestVersion % "test",
     "org.scalatest" %% "scalatest" % scalaTestVersion % "test")
 
   lazy val httpTest = Seq("com.typesafe.akka" %% "akka-http-testkit" % akkaHttpVersion % "test")
@@ -78,7 +81,7 @@ object Dependencies {
     "com.fasterxml.jackson.core" % "jackson-annotations" % jacksonVersion)
 
   lazy val sparkCore = Seq(
-    "org.apache.spark" %% "spark-core" % sparkVersion % "provided",
+    "org.apache.spark" %% "spark-core" % sparkVersion,
     "org.apache.spark" %% "spark-streaming" % sparkVersion % "provided")
 
   lazy val spark = sparkCore ++ Seq(
@@ -87,6 +90,15 @@ object Dependencies {
     "org.apache.spark" %% "spark-yarn" % sparkVersion % "provided",
     "com.databricks" %% "spark-avro" % avroSparkVersion,
     sparkStreamingKafka, sparkTags)
+
+  lazy val slick = Seq(
+    "com.typesafe.slick" %% "slick" % slickVersion,
+    "com.h2database" % "h2" % h2Version,
+    "org.postgresql" % "postgresql" % postgresVersion,
+    "commons-dbcp" % "commons-dbcp" % commonsDbcpVersion,
+    "org.flywaydb" % "flyway-core" % flywayVersion
+   // "com.typesafe.slick" %% "slick-hikaricp" % slickVersion
+  )
 
   lazy val sparkStreamingKafka = "org.apache.spark" %% "spark-streaming-kafka-0-10" % sparkVersion
 

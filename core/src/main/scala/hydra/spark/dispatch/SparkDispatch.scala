@@ -42,7 +42,7 @@ object SparkDispatch {
 
   def apply[S: TypeTag](d: DispatchDetails[S]): SparkDispatch[S] = {
 
-    val session = SparkSession.builder().config(d.conf).appName(d.name).getOrCreate()
+    val session = SparkSession.builder().config(d.sparkConf).appName(d.name).getOrCreate()
 
     if (d.isStreaming)
       SparkStreamingDispatch[S](d.name, d.source, d.operations, d.dsl, session)

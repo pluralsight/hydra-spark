@@ -1,3 +1,5 @@
+
+
 /*
  * Copyright (C) 2017 Pluralsight, LLC.
  *
@@ -24,9 +26,11 @@ object Versions {
   lazy val kafkaVersion = "0.10.2.0"
   lazy val confluentVersion = "3.2.0"
   lazy val springVersion = "4.2.2.RELEASE"
-  lazy val slickVersion = "3.2.0-M1"
-  lazy val SparkJobServerVersion = "0.6.2"
-  lazy val postgresVersion = "9.3-1102-jdbc41"
+  lazy val slickVersion = "3.2.0"
+  lazy val h2Version = "1.3.176"
+  lazy val postgresVersion = "9.4.1209"
+  lazy val commonsDbcpVersion = "1.4"
+  lazy val flywayVersion = "3.2.1"
   lazy val guavaVersion = "18.0"
   lazy val avroVersion = "1.8.1"
   val log4jVersion = "2.7"
@@ -35,6 +39,7 @@ object Versions {
   lazy val sparkVersion = "2.1.0"
   lazy val avroSparkVersion = "3.2.0"
   lazy val jacksonVersion = "2.6.5"
-  lazy val akkaHttpVersion = "10.0.4"
+  lazy val akkaHttpVersion = "10.0.5"
   lazy val sprayVersion = "1.3.3"
+  lazy val serviceContainerVersion = "2.0.5"
 }

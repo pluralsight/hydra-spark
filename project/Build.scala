@@ -42,10 +42,12 @@ object HydraSparkBuild extends Build {
     )
 
   lazy val `http` = (project in file("http"))
+    .dependsOn(core)
     .settings(commonSettings: _*).
     settings(
       name := "hydra-spark-http",
-      libraryDependencies ++= Seq(logging, spark, typesafeConfig, akkaHttp, coreTestDeps, httpTest).flatten
+      libraryDependencies ++= Seq(logging, spark, typesafeConfig, serviceContainer, akkaHttp,
+        slick, coreTestDeps, httpTest).flatten
     )
 
 

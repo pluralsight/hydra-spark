@@ -43,13 +43,13 @@ trait DslElementFactory {
   protected def operations: Map[String, Class[_ <: DFOperation]]
 
   def createSource(cfg: ConfigObject, properties: Config): Source[_] = {
-    val fsources = materialize[Source[_]](cfg, sources, properties)
+    val fsources = materialize[Source[_]]("source", cfg, sources, properties)
     require(fsources.size == 1, "Only one source is allowed.")
     fsources.head
   }
 
   def createOperations(cfg: ConfigObject, properties: Config): Seq[DFOperation] =
-    materialize[DFOperation](cfg, operations, properties)
+    materialize[DFOperation]("operation", cfg, operations, properties)
 }
 
 case class ClasspathDslElementFactory(sourcePkg: Seq[String], operationsPkg: Seq[String]) extends DslElementFactory {

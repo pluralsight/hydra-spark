@@ -31,16 +31,17 @@ import org.apache.spark.SparkConf
   *                    Created by alexsilva on 1/3/17.
   */
 case class DispatchDetails[S](name: String, source: Source[S], operations: Operations, isStreaming: Boolean,
-                              dsl: Config) {
+                              dsl: Config, sparkDefaults: Config) {
 
-  val conf: SparkConf = {
+  lazy val sparkConf: SparkConf = {
     import configs.syntax._
     import hydra.spark.configs._
-    val sparkRefConf = dsl.getConfig("transport").flattenAtKey("spark")
+    val sparkDslConf = dsl.getConfig("transport").flattenAtKey("spark")
+    val sparkConf = sparkDslConf ++ sparkDefaults.flattenAtKey("spark")
     val jars = dsl.get[List[String]]("spark.jars").valueOrElse(List.empty)
-    val appName = sparkRefConf.get("spark.app.name").getOrElse(name)
+    val appName = sparkDslConf.get("spark.app.name").getOrElse(name)
 
-    new SparkConf().setAll(sparkRefConf)
+    new SparkConf().setAll(sparkConf)
       .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
       .registerKryoClasses(Array(classOf[org.apache.avro.generic.GenericData.Record]))
       .setAppName(appName).setJars(jars)
