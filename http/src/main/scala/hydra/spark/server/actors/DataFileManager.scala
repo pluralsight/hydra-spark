@@ -1,9 +1,11 @@
 package hydra.spark.server.actors
 
+
 import java.nio.file.{Files, Paths}
 
 import akka.actor.{Actor, Props}
-import hydra.spark.server.io.{FileDAO, FileInfo}
+import hydra.spark.server.actors.Messages._
+import hydra.spark.server.io.FileDAO
 import hydra.spark.server.job.BinaryType
 import org.joda.time.DateTime
 
@@ -44,12 +46,6 @@ object DataFileManager {
   case class DeleteDataFile(name: String)
 
   case object ListDataFiles
-
-  case class Stored(info: FileInfo)
-
-  case object Deleted
-
-  case class Error(e: Throwable)
 
   def props(fileDAO: FileDAO): Props = Props(classOf[DataFileManager], fileDAO)
 

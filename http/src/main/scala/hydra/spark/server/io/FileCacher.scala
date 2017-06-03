@@ -12,14 +12,13 @@ import org.slf4j.LoggerFactory
 
 trait FileCacher {
 
-  val rootDir: String
-  val rootDirFile: File
+  def rootDir: File
 
   private val logger = LoggerFactory.getLogger(getClass)
 
   def initFileDirectory(): Unit = {
-    if (!rootDirFile.exists()) {
-      if (!rootDirFile.mkdirs()) {
+    if (!rootDir.exists()) {
+      if (!rootDir.mkdirs()) {
         throw new RuntimeException("Could not create directory " + rootDir)
       }
     }
@@ -32,13 +31,11 @@ trait FileCacher {
     appName + "-" + uploadTime.toString("yyyyMMdd_hhmmss_SSS") + s".${binaryType.extension}"
   }
 
-  // Cache the jar file into local file system.
-  protected def cacheBinary(appName: String,
-                            binaryType: BinaryType,
-                            uploadTime: DateTime,
-                            binBytes: Array[Byte]) {
-    val outFile =
-      new File(rootDir, createBinaryName(appName, binaryType, uploadTime))
+  /**
+    * Caches the jar file into local file system.
+    */
+  protected def cacheBinary(appName: String, binaryType: BinaryType, uploadTime: DateTime, binBytes: Array[Byte]) {
+    val outFile = new File(rootDir, createBinaryName(appName, binaryType, uploadTime))
     val bos = new BufferedOutputStream(new FileOutputStream(outFile))
     try {
       logger.debug("Writing {} bytes to file {}", binBytes.length, outFile.getPath)
@@ -50,8 +47,7 @@ trait FileCacher {
   }
 
   protected def cleanCacheBinaries(appName: String): Unit = {
-    val dir = new File(rootDir)
-    val binaries = dir.listFiles(new FilenameFilter {
+    val binaries = rootDir.listFiles(new FilenameFilter {
       override def accept(dir: File, name: String): Boolean = {
         val prefix = appName + "-"
         if (name.startsWith(prefix)) {

@@ -1,6 +1,7 @@
 package hydra.spark.server.marshalling
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
+import hydra.spark.server.endpoints.FileEndpointResponse
 import hydra.spark.server.io.FileInfo
 import hydra.spark.server.job.BinaryType
 import org.joda.time.DateTime
@@ -59,5 +60,7 @@ trait HydraSparkJsonSupport extends SprayJsonSupport with DefaultJsonProtocol {
   implicit val dataFileInfoFormat = jsonFormat4(FileInfo)
   implicit val genericResponseFormat = jsonFormat2(GenericResponse)
   implicit val jobSubmittedResponseFormat = jsonFormat2(JobSubmittedResponse)
+  implicit val fileEndpointResponseFormat = jsonFormat3(FileEndpointResponse)
+
 
 }

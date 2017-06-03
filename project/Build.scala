@@ -47,7 +47,7 @@ object HydraSparkBuild extends Build {
     settings(
       name := "hydra-spark-http",
       libraryDependencies ++= Seq(logging, spark, typesafeConfig, serviceContainer, akkaHttp,
-        slick, coreTestDeps, httpTest).flatten
+        slick, coreTestDeps, dbTesting, httpTest).flatten
     )
 
 

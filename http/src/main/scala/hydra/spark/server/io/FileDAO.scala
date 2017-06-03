@@ -32,27 +32,24 @@ case class FileDAO(rootDirPath: String) {
     }
 
     val dataFile = new File(rootDirFile, META_DATA_FILE_NAME)
-    // read back all files info during startup
-    if (dataFile.exists()) {
-      val in = new DataInputStream(new BufferedInputStream(new FileInputStream(dataFile)))
-      try {
-        while (true) {
-          val dataInfo = readFileInfo(dataFile.getAbsolutePath, in)
-          addFile(dataInfo)
-        }
-      } catch {
-        case e: EOFException => // do nothing
-      } finally {
-        in.close()
-      }
-    }
+    dataFile.createNewFile()
+    val in = new DataInputStream(new BufferedInputStream(new FileInputStream(dataFile)))
+    loadFileInfos(in).foreach(addFile)
+    in.close()
     dataFile
   }
 
   val rootDir = dataFile.getParentFile.getAbsolutePath
 
-
   private val dataOutputStream = new DataOutputStream(new FileOutputStream(dataFile, true))
+
+  private def loadFileInfos(in: java.io.DataInputStream): Stream[FileInfo] = {
+    if (in.available() == 0) Stream.Empty
+    else {
+      val info = FileInfo(in.readUTF, BinaryType.fromString(in.readUTF()), in.readUTF(), new DateTime(in.readLong))
+      Stream.cons(info, loadFileInfos(in))
+    }
+  }
 
   def shutdown(): Unit = {
     Try(dataOutputStream.close()).recover { case t => logger.error(s"unable to close output stream:${t.getMessage}") }
@@ -84,6 +81,7 @@ case class FileDAO(rootDirPath: String) {
   private def writeFileInfo(out: DataOutputStream, aInfo: FileInfo) {
     out.writeUTF(aInfo.appName)
     out.writeUTF(aInfo.btype.name)
+    out.writeUTF(aInfo.path)
     out.writeLong(aInfo.uploadTime.getMillis)
   }
 
@@ -97,9 +95,6 @@ case class FileDAO(rootDirPath: String) {
     }
   }
 
-  private def readFileInfo(path: String, in: DataInputStream) =
-    FileInfo(in.readUTF, BinaryType.fromString(in.readUTF()), path, new DateTime(in.readLong))
-
   def listFiles(ftype: Option[BinaryType]): Seq[FileInfo] = {
     ftype.map(bt => files.values.filter(p => p.btype == bt)).getOrElse(files.values).toSeq
   }
@@ -112,6 +107,5 @@ case class FileDAO(rootDirPath: String) {
 
 object FileDAO {
   private val logger = LoggerFactory.getLogger(getClass)
-  //  val EXTENSION = ".dat"
   val META_DATA_FILE_NAME = "hydra-spark.data"
 }
