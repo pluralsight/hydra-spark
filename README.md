@@ -1,3 +1,5 @@
+# hydra-spark
+
 [![Build Status](https://travis-ci.org/pluralsight/hydra-spark.svg?branch=master)](https://travis-ci.org/pluralsight/hydra-spark)
 [![codecov](https://codecov.io/gh/pluralsight/hydra-spark/branch/master/graph/badge.svg)](https://codecov.io/gh/pluralsight/hydra-spark)
 [![Join the chat at https://gitter.im/pluralsight/hydra](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/pluralsight/hydra-spark?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
@@ -44,24 +46,26 @@ The steps below show you how to use hydra-spark with an example DSL, by running 
 You need to have [SBT](http://www.scala-sbt.org/release/docs/Getting-Started/Setup.html) installed.
 
 ### Using an IDE
-If you are using a Scala IDE (such as IntelliJ), you can import the project and start by running any of the test specs.  To run a specific DSL
+If you are using a Scala IDE (such as IntelliJ), you can import the project and start by running any of the test specs.  To run a specific DSL <<more docs coming>>
 
 ### WordCountExample walk-through
 
 #### Package Jar - Send to Cluster
+Docs coming
 
 ## Contribution and Development
 Contributions via Github Pull Request are welcome.  See the TODO for some ideas.
 
+
 Profiling software provided by ![](https://www.yourkit.com/images/yklogo.png)
 
-YourKit supports open source projects with its full-featured [Java Profiler](https://www.yourkit.com/java/profiler/index.jsp).
+YourKit supports open source projects with its full-featured Java Profiler.
+YourKit, LLC is the creator of <a href="https://www.yourkit.com/java/profiler/">YourKit Java Profiler</a>
+and <a href="https://www.yourkit.com/.net/profiler/">YourKit .NET Profiler</a>,
+innovative and intelligent tools for profiling Java and .NET applications.
 
 
 ## Contact
-
-For user/dev questions, we are  for discussions:
-<https://groups.google.com/forum/#!forum/spark-jobserver>
 
 Please report bugs/problems to:
 <https://github.com/pluralsight/hydra-spark/issues>
@@ -69,6 +73,3 @@ Please report bugs/problems to:
 ## License
 Apache 2.0, see LICENSE.md
 
-## TODO
-
-- More debugging for classpath issues

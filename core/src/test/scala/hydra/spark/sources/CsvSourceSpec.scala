@@ -15,20 +15,18 @@
 
 package hydra.spark.sources
 
-import hydra.spark.api.{ Invalid, InvalidDslException }
-import hydra.spark.dispatch.SparkDispatch
+import hydra.spark.api.{Invalid, InvalidDslException}
 import hydra.spark.dsl.parser.TypesafeDSLParser
 import hydra.spark.testutils.SharedSparkContext
-import org.apache.spark.sql.SQLContext
-import org.apache.spark.streaming.{ Seconds, StreamingContext }
-import org.scalatest.concurrent.{ Eventually, PatienceConfiguration, ScalaFutures }
-import org.scalatest.{ BeforeAndAfterAll, FunSpecLike, Matchers }
+import org.apache.spark.streaming.{Seconds, StreamingContext}
+import org.scalatest.concurrent.{Eventually, PatienceConfiguration, ScalaFutures}
+import org.scalatest.{BeforeAndAfterAll, FunSpecLike, Matchers}
 
 /**
- * Created by alexsilva on 6/2/16.
- */
+  * Created by alexsilva on 6/2/16.
+  */
 class CsvSourceSpec extends Matchers with FunSpecLike with ScalaFutures with PatienceConfiguration
-    with Eventually with SharedSparkContext with BeforeAndAfterAll {
+  with Eventually with SharedSparkContext with BeforeAndAfterAll {
 
   lazy val ssc = new StreamingContext(sc, Seconds(1))
 
@@ -48,7 +46,7 @@ class CsvSourceSpec extends Matchers with FunSpecLike with ScalaFutures with Pat
       val path = Thread.currentThread().getContextClassLoader.getResource("profile.csv").getFile
       val csv = CsvSource(path, true)
 
-      val df = csv.createDF(new SQLContext(sc))
+      val df = csv.createDF(ss.sqlContext)
 
       df.count() shouldBe 37
       val row = df.first()

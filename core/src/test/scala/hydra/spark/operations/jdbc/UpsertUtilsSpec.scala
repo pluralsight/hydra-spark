@@ -45,7 +45,7 @@ class UpsertUtilsSpec extends Matchers with FunSpecLike with SharedSparkContext 
   describe("when using upsert utils") {
     it ("returns all column paths") {
       val rdd = sc.parallelize(json :: Nil)
-      val df = SQLContext.getOrCreate(sc).read.json(rdd)
+      val df =  ss.sqlContext.read.json(rdd)
       val flattened = UpsertUtils.columnPaths(df.schema)
       flattened should contain allOf("context.ip","user.handle", "user.id", "user.names.first", "user.names.last")
     }
@@ -53,7 +53,7 @@ class UpsertUtilsSpec extends Matchers with FunSpecLike with SharedSparkContext 
     it ("flattens a dataframe") {
 
       val rdd = sc.parallelize(json :: Nil)
-      val df = SQLContext.getOrCreate(sc).read.json(rdd)
+      val df =  ss.sqlContext.read.json(rdd)
 
       val flattenedJson =
         """
@@ -67,7 +67,7 @@ class UpsertUtilsSpec extends Matchers with FunSpecLike with SharedSparkContext 
         """.stripMargin
 
       val frdd = sc.parallelize(flattenedJson :: Nil)
-      val fdf = SQLContext.getOrCreate(sc).read.json(frdd)
+      val fdf =  ss.sqlContext.read.json(frdd)
 
       val flat = UpsertUtils.flatten(df,"_")
       flat.schema shouldBe fdf.schema

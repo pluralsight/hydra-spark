@@ -16,15 +16,15 @@
 package hydra.spark.api
 
 /**
- * Created by alexsilva on 6/17/16.
- */
+  * Created by alexsilva on 6/17/16.
+  */
 trait Validatable {
 
   /**
-   * Validates the target configuration as a future.
-   *
-   * @return
-   */
+    * Validates the target configuration as a future.
+    *
+    * @return
+    */
   def validate: ValidationResult
 }
 
@@ -41,50 +41,53 @@ object ValidationError {
 }
 
 /**
- * A validation result.
- */
+  * A validation result.
+  */
 sealed trait ValidationResult
 
 /**
- * Validation was a success.
- */
+  * Validation was a success.
+  */
 case object Valid extends ValidationResult
 
 /**
- * Validation was a failure.
- *
- * @param errors the resulting errors
- */
+  * Validation was a failure.
+  *
+  * @param errors the resulting errors
+  */
 case class Invalid(errors: Seq[ValidationError]) extends ValidationResult {
 
   /**
-   * Combines these validation errors with another validation failure.
-   *
-   * @param other validation failure
-   * @return a new merged `Invalid`
-   */
+    * Combines these validation errors with another validation failure.
+    *
+    * @param other validation failure
+    * @return a new merged `Invalid`
+    */
   def ++(other: Invalid): Invalid = Invalid(this.errors ++ other.errors)
 }
 
 /**
- * This object provides helper methods to construct `Invalid` values.
- */
+  * This object provides helper methods to construct `Invalid` values.
+  */
 object Invalid {
 
   /**
-   * Creates an `Invalid` value with a single error.
-   *
-   * @param error the validation error
-   * @return an `Invalid` value
-   */
+    * Creates an `Invalid` value with a single error.
+    *
+    * @param error the validation error
+    * @return an `Invalid` value
+    */
   def apply(error: ValidationError): Invalid = Invalid(Seq(error))
 
+  def apply(origin: AnyRef, error: Throwable): Invalid =
+    Invalid((Seq(ValidationError(origin.getClass.getName, error.getMessage))))
+
   /**
-   * Creates an `Invalid` value with a single error.
-   *
-   * @param error the validation error message
-   * @param args  the validation error message arguments
-   * @return an `Invalid` value
-   */
+    * Creates an `Invalid` value with a single error.
+    *
+    * @param error the validation error message
+    * @param args  the validation error message arguments
+    * @return an `Invalid` value
+    */
   def apply(origin: String, error: String, args: Any*): Invalid = Invalid(Seq(ValidationError(origin, error, args: _*)))
 }

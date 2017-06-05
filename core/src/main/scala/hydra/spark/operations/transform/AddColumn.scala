@@ -15,10 +15,10 @@
 
 package hydra.spark.operations.transform
 
-import hydra.spark.api.{ DFOperation, ValidationResult }
+import hydra.spark.api.DFOperation
+import hydra.spark.api.ValidationResult
 import org.apache.spark.sql.DataFrame
 import org.springframework.expression.spel.standard.SpelExpressionParser
-
 /**
  * Created by alexsilva on 8/16/16.
  */

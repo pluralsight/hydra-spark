@@ -16,50 +16,62 @@
 package hydra.spark.dispatch
 
 /**
- * Created by alexsilva on 6/21/16.
- */
+  * Created by alexsilva on 6/21/16.
+  */
 
 import com.typesafe.config.ConfigFactory
 import hydra.spark.api._
 import hydra.spark.testutils.SharedSparkContext
-import hydra.spark.util.{RDDConversions, StreamingContextLike}
+import hydra.spark.util.RDDConversions
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{DataFrame, SQLContext}
+import org.apache.spark.streaming.StreamingContext
 import org.apache.spark.streaming.dstream.DStream
-import org.apache.spark.streaming.{Seconds, StreamingContext}
-import org.scalamock.scalatest.MockFactory
 import org.scalatest.{FunSpecLike, Matchers}
 
 import scala.collection.JavaConverters._
-import scala.concurrent.duration._
 
 /**
- * Created by alexsilva on 6/20/16.
- */
-class SparkStreamingDispatchTest extends Matchers with FunSpecLike with MockFactory with SharedSparkContext {
+  * Created by alexsilva on 6/20/16.
+  */
+class SparkStreamingDispatchTest extends Matchers with FunSpecLike with SharedSparkContext {
 
-  val props = Map("batchDuration" -> "5s", "spark.local.dir" -> "/tmp/hydra", "spark.master" -> "local[*]")
-
-  var ssc: ContextLike = _
-
-  override def beforeAll() = {
-    super.beforeAll()
-    ssc = StreamingContextLike(new StreamingContext(sc, Seconds(1)))
-  }
+  val props = Map("streaming.interval" -> "5s", "spark.local.dir" -> "/tmp/hydra", "spark.master" -> "local[*]")
 
   describe("When Creating a Dispatch using Spark") {
     it("Be configured properly") {
 
       val c = ConfigFactory.parseMap(props.asJava)
-      val sd = SparkStreamingDispatch("test", EmptySource, Operations(Seq.empty), c, ssc)
-      val conf = sd.ctx.sparkContext.getConf
-
+      val sd = SparkStreamingDispatch("test", EmptySource, Operations(Seq.empty), c, ss)
+      val conf = sd.ssc.sparkContext.getConf
+      sd.ssc.stop(false, false)
     }
-  }
 
-  override def afterAll() = {
-    super.afterAll()
-    ssc.stop()
+    it("should parse a streaming DSL") {
+      val dsl =
+        """
+          |{
+          |    "transport": {
+          |        "name": "test",
+          |        "version": "1",
+          |        "spark.master":"local[*]",
+          |        "streaming.interval" : "5s",
+          |        "source": {
+          |            "hydra.spark.testutils.EmptySource":{
+          |             "testName":"streaming"
+          |            }
+          |        },
+          |        "operations": {
+          |           "print-rows":{}
+          |        }
+          |    }
+          |}
+          |
+    """.stripMargin
+
+      val d = SparkDispatch(dsl)
+      d.validate shouldBe Valid
+    }
   }
 }
 

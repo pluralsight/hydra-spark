@@ -67,10 +67,10 @@ class MergeFiles(source: String, targetFile: String, deleteSource: Boolean = fal
 
 object MergeFiles {
   def apply(cfg: Config): MergeFiles = {
-    import hydra.spark.configs._
-    val source = cfg.get[String]("source-directory").getOrElse("")
-    val target = cfg.get[String]("destination-file").getOrElse("")
-    val deleteSource = cfg.get[String]("delete-source").map(_.toBoolean).getOrElse(false)
+    import configs.syntax._
+    val source = cfg.get[String]("source-directory").valueOrElse("")
+    val target = cfg.get[String]("destination-file").valueOrElse("")
+    val deleteSource = cfg.get[Boolean]("delete-source").valueOrElse(false)
     new MergeFiles(source, target, deleteSource)
   }
 }

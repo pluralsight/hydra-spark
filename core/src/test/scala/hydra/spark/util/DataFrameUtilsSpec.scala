@@ -1,7 +1,6 @@
 package hydra.spark.util
 
 import hydra.spark.testutils.SharedSparkContext
-import org.apache.spark.sql.SQLContext
 import org.scalatest.{FunSpecLike, Matchers}
 
 /**
@@ -32,7 +31,7 @@ class DataFrameUtilsSpec extends Matchers with FunSpecLike with SharedSparkConte
 
   describe("When using DataFrameUtils") {
     it("drops a nested column") {
-      val df = SQLContext.getOrCreate(sc).read.json(sc.parallelize(json :: Nil))
+      val df = ss.sqlContext.read.json(sc.parallelize(json :: Nil))
       val dropJson =
         """
           |{
@@ -51,13 +50,13 @@ class DataFrameUtilsSpec extends Matchers with FunSpecLike with SharedSparkConte
         """.stripMargin
 
       val ddf = df.dropNestedColumn("user.handle")
-      val ndf = SQLContext.getOrCreate(sc).read.json(sc.parallelize(dropJson :: Nil))
+      val ndf = ss.sqlContext.read.json(sc.parallelize(dropJson :: Nil))
       ddf.schema.fields.map(_.name) shouldBe ndf.schema.fields.map(_.name)
       ddf.first() shouldBe ndf.first()
     }
 
     it("drops a root-level column") {
-      val df = SQLContext.getOrCreate(sc).read.json(sc.parallelize(json :: Nil))
+      val df = ss.sqlContext.read.json(sc.parallelize(json :: Nil))
       val dropJson =
         """
           |{
@@ -75,7 +74,7 @@ class DataFrameUtilsSpec extends Matchers with FunSpecLike with SharedSparkConte
           |}
         """.stripMargin
       val ddf = df.dropNestedColumn("id")
-      val ndf = SQLContext.getOrCreate(sc).read.json(sc.parallelize(dropJson :: Nil))
+      val ndf = ss.sqlContext.read.json(sc.parallelize(dropJson :: Nil))
       ddf.schema shouldBe ndf.schema
       ddf.first() shouldBe ndf.first()
     }

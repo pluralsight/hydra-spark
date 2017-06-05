@@ -66,11 +66,11 @@ abstract class AbstractFileSource[K: ClassTag, V: ClassTag, F <: InputFormat[K, 
 
 object AbstractFileSource {
 
-  import hydra.spark.configs._
+  import configs.syntax._
 
   def fromConfig(cfg: Config): (String, Map[String, String]) = {
-    val path = cfg.get[String]("path").getOrElse("")
-    val properties = cfg.get[Map[String, String]]("properties").getOrElse(Map.empty[String, String])
+    val path = cfg.get[String]("path").valueOrElse("")
+    val properties = cfg.get[Map[String, String]]("properties").valueOrElse(Map.empty[String, String])
     (path, properties)
   }
 

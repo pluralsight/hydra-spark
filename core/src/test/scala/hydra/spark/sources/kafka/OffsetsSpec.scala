@@ -15,62 +15,73 @@
 
 package hydra.spark.sources.kafka
 
+import java.util.Properties
+
 import hydra.spark.api.InvalidDslException
-import hydra.spark.testutils.SharedKafka
-import hydra.spark.util.{Collections, SimpleConsumerConfig}
+import hydra.spark.testutils.KafkaTestSupport
 import kafka.api.OffsetRequest
-import kafka.common.TopicAndPartition
+import kafka.consumer.ConsumerConfig
+import net.manub.embeddedkafka.EmbeddedKafka
+import org.apache.kafka.common.TopicPartition
 import org.scalatest.concurrent.Eventually
 import org.scalatest.time.{Seconds, Span}
 import org.scalatest.{BeforeAndAfterAll, FunSpecLike, Matchers}
 
+import scala.collection.JavaConverters._
+
 /**
   * Created by alexsilva on 12/12/16.
   */
-class OffsetsSpec extends Matchers with FunSpecLike with BeforeAndAfterAll with Eventually with SharedKafka {
-
-  import Collections._
+class OffsetsSpec extends Matchers with FunSpecLike with Eventually with KafkaTestSupport
+with BeforeAndAfterAll {
 
   implicit override val patienceConfig = PatienceConfig(timeout = Span(5, Seconds), interval = Span(1, Seconds))
 
-  //setting the group id to 10 because KafkaUnit sets it to 10 as well within its readMessages method...
-  val cfg = SimpleConsumerConfig(Map(
-    "metadata.broker.list" -> bootstrapServers,
-    "zookeeper.connect.url" -> zkConnect, "group.id" -> "10"
-  ))
+  val props = new Properties()
+  props.putAll(Map(
+    "bootstrap.servers" -> bootstrapServers,
+    "zookeeper.connect" -> zkConnect,
+    "group.id" -> "hydra-spark").asJava)
+
+  val cfg = new ConsumerConfig(props)
+
+  override def beforeAll() = {
+    super.beforeAll()
+    startKafka()
+  }
 
   describe("Kafka offsets") {
     it("Should translate topic start/stop values into the correct number") {
-      var properties = Map("metadata.broker.list" -> "localhost:5001", "start" -> "largest")
+      var properties = Map("bootstrap.servers" -> "localhost:6001", "start" -> "largest")
       Offsets.stringToNumber(properties.get("start"), OffsetRequest.EarliestTime) shouldBe OffsetRequest.LatestTime
       Offsets.stringToNumber(properties.get("stop"), OffsetRequest.LatestTime) shouldBe OffsetRequest.LatestTime
 
-      properties = Map("metadata.broker.list" -> "localhost:5001", "start" -> "smallest")
+      properties = Map("bootstrap.servers" -> "localhost:6001", "start" -> "smallest")
       Offsets.stringToNumber(properties.get("start"), OffsetRequest.EarliestTime) shouldBe OffsetRequest.EarliestTime
       Offsets.stringToNumber(properties.get("stop"), OffsetRequest.LatestTime) shouldBe OffsetRequest.LatestTime
 
-      properties = Map("metadata.broker.list" -> "localhost:5001")
+      properties = Map("bootstrap.servers" -> "localhost:6001")
       Offsets.stringToNumber(properties.get("start"), OffsetRequest.EarliestTime) shouldBe OffsetRequest.EarliestTime
       Offsets.stringToNumber(properties.get("stop"), OffsetRequest.LatestTime) shouldBe OffsetRequest.LatestTime
 
-      properties = Map("metadata.broker.list" -> "localhost:5001", "start" -> "-2")
+      properties = Map("bootstrap.servers" -> "localhost:6001", "start" -> "-2")
       Offsets.stringToNumber(properties.get("start"), OffsetRequest.EarliestTime) shouldBe OffsetRequest.EarliestTime
       Offsets.stringToNumber(properties.get("stop"), OffsetRequest.LatestTime) shouldBe OffsetRequest.LatestTime
 
-      properties = Map("metadata.broker.list" -> "localhost:5001", "start" -> "-1")
+      properties = Map("bootstrap.servers" -> "localhost:6001", "start" -> "-1")
       Offsets.stringToNumber(properties.get("start"), OffsetRequest.EarliestTime) shouldBe OffsetRequest.LatestTime
       Offsets.stringToNumber(properties.get("stop"), OffsetRequest.LatestTime) shouldBe OffsetRequest.LatestTime
 
-      properties = Map("metadata.broker.list" -> "localhost:5001", "start" -> "1243345")
+      properties = Map("bootstrap.servers" -> "localhost:6001", "start" -> "1243345")
       Offsets.stringToNumber(properties.get("start"), OffsetRequest.EarliestTime) shouldBe 1243345
       Offsets.stringToNumber(properties.get("stop"), OffsetRequest.LatestTime) shouldBe OffsetRequest.LatestTime
 
-      properties = Map("metadata.broker.list" -> "localhost:5001", "start" -> "NaN")
+      properties = Map("bootstrap.servers" -> "localhost:6001", "start" -> "NaN")
       intercept[InvalidDslException] {
         Offsets.stringToNumber(properties.get("start"), OffsetRequest.EarliestTime)
       }
 
-      properties = Map("metadata.broker.list" -> "localhost:5001", "start" -> "last")
+      properties = Map("bootstrap.servers" -> "localhost:6001", "start" -> "last")
       Offsets.stringToNumber(properties.get("start"), OffsetRequest.EarliestTime) shouldBe -3
       Offsets.stringToNumber(properties.get("stop"), OffsetRequest.LatestTime) shouldBe OffsetRequest.LatestTime
     }
@@ -78,37 +89,22 @@ class OffsetsSpec extends Matchers with FunSpecLike with BeforeAndAfterAll with 
     it("Should return the correct range for offsets") {
       eventually {
         val ranges = Offsets.offsetRange("testJson", -2, -1, cfg)
-        ranges shouldBe Map(TopicAndPartition("testJson", 0) -> (0, 11))
+        ranges shouldBe Map(new TopicPartition("testJson", 0) -> (0, 11))
       }
     }
 
     //todo: fix this, can't get it to work
-    //    it("Should use the last offset properly") {
-    //      Await.result(kafkaStarted, 15.seconds)
-    //      //let's consume some msgs
-    //      val consumerProperties = new Properties
-    //      consumerProperties.put("zookeeper.connect", "localhost:5000")
-    //      consumerProperties.put("group.id", "10")
-    //      consumerProperties.put("socket.timeout.ms", "500")
-    //      consumerProperties.put("consumer.id", "test")
-    //      consumerProperties.put("auto.offset.reset", "smallest")
-    //      consumerProperties.put("consumer.timeout.ms", "5000")
-    //      val consumer = Consumer.createJavaConsumerConnector(new ConsumerConfig(consumerProperties))
-    //      val stringDecoder = new StringDecoder(new VerifiableProperties(new Properties))
-    //      val topicMap = Map("testJson" -> (1: java.lang.Integer)).asJava
-    //      val s = consumer.createMessageStreams(topicMap, stringDecoder, stringDecoder)
-    //      val it = s.get("testJson").get(0).iterator()
-    //      for (i <- 0 to 10) {
-    //        //consuming messages
-    //        it.next()
-    //      }
-    //      consumer.commitOffsets()
-    //      //produce another one
-    //      kafka.sendMessages(new KeyedMessage[String, String]("testJson", "test", "test"))
-    //      val ranges = Offsets.offsetRange("testJson", -3, -1, cfg)
-    //      ranges shouldBe Map(TopicAndPartition("testJson", 0) -> (11, 12))
-    //      consumer.shutdown()
-    //    }
+    ignore("Should use the last offset properly") {
+      for (i <- 0 until 10) {
+        val json = s"""{"messageId": $i,"messageValue":"hello"}"""
+        EmbeddedKafka.publishStringMessageToKafka("test_offset", json)
+      }
+      EmbeddedKafka.consumeNumberStringMessagesFrom("test_offset", 10, true)
+      EmbeddedKafka.publishStringMessageToKafka("test_offset", "test")
+      val ranges = Offsets.offsetRange("testJson", -3, -1, cfg)
+      ranges shouldBe Map(new TopicPartition("test_offset", 0) -> (11, 12))
+
+    }
   }
 
 }

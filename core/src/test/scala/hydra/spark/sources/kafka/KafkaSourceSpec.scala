@@ -15,40 +15,55 @@
 
 package hydra.spark.sources.kafka
 
-import hydra.spark.api.{ Invalid, Valid }
-import hydra.spark.testutils.{ SharedKafka, SharedSparkContext }
-import org.apache.spark.sql.SQLContext
+import hydra.spark.api.{Invalid, Valid}
+import hydra.spark.testutils.{KafkaTestSupport, SharedSparkContext}
+import org.apache.spark.sql.SparkSession
 import org.apache.spark.streaming.StreamingContext
-import org.scalatest.concurrent.{ Eventually, PatienceConfiguration, ScalaFutures }
-import org.scalatest.time.{ Seconds, Span }
-import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach, FunSpecLike, Matchers }
+import org.scalatest.concurrent.{Eventually, PatienceConfiguration, ScalaFutures}
+import org.scalatest.time.{Seconds, Span}
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, FunSpecLike, Matchers}
 
 import scala.collection.mutable.ArrayBuffer
 
 /**
- * Created by alexsilva on 6/2/16.
- */
+  * Created by alexsilva on 6/2/16.
+  */
 class KafkaSourceSpec extends Matchers with FunSpecLike with ScalaFutures with PatienceConfiguration
-    with Eventually with BeforeAndAfterAll with BeforeAndAfterEach with SharedKafka with SharedSparkContext {
+  with Eventually with BeforeAndAfterEach with SharedSparkContext with KafkaTestSupport
+  with BeforeAndAfterAll {
+
+  val topics: Map[String, Map[String, Any]] = Map(
+    "testJson" -> jsonProps,
+    "testAvro" -> avroProps
+  )
+
 
   implicit override val patienceConfig = PatienceConfig(timeout = Span(12, Seconds), interval = Span(1, Seconds))
 
   var sctx: StreamingContext = _
 
+  override def beforeAll() = {
+    super.beforeAll()
+    startKafka()
+  }
+
+  override def afterAll() = {
+    super.afterAll()
+    stopKafka()
+  }
+
   override def afterEach(): Unit = {
     super.afterEach()
-    sctx.stop(false, true)
+    Option(sctx).foreach(_.stop(false, true))
   }
 
   override def beforeEach() = {
     super.beforeEach()
-    MsgHolder.msgs.clear()
-    sctx = new StreamingContext(sc, org.apache.spark.streaming.Seconds(1))
   }
 
   describe("The Kafka Source") {
     it("Should be valid with all the basic properties") {
-      val properties = Map("metadata.broker.list" -> "localhost:5001")
+      val properties = Map("bootstrap.servers" -> "localhost:6001")
       val source = KafkaSource(topics, properties)
       source.validate() shouldBe Valid
     }
@@ -62,93 +77,110 @@ class KafkaSourceSpec extends Matchers with FunSpecLike with ScalaFutures with P
   }
 
   it("Should Create the json stream") {
-    val properties = Map("metadata.broker.list" -> "localhost:5001", "group.id" -> "test")
-    val source = KafkaSource(Map("testJson" -> jsonTopic), properties)
+    val properties = Map(
+      "bootstrap.servers" -> "localhost:6001",
+      "zookeeper.connect" -> "localhost:6000",
+      "group.id" -> "json-stream-test")
+
+    val kafkaMessages = publishJson("json-stream")
+    val source = KafkaSource(Map("json-stream" -> jsonProps), properties)
+
+    sctx = new StreamingContext(sc, org.apache.spark.streaming.Seconds(1))
 
     val stream = source.createStream(sctx)
-
-    stream.foreachRDD { rdd =>
-      rdd.foreach(msg => MsgHolder.msgs += msg.value.toString)
+    val msgs = new ArrayBuffer[String]()
+    stream.foreachRDD {
+      msgs ++= _.map(_.value.toString).collect()
     }
 
     sctx.start()
     eventually {
-      MsgHolder.msgs shouldEqual jsonMessages
+      msgs shouldEqual kafkaMessages
     }
   }
 
   it("should create the RDD") {
-    val properties = Map("metadata.broker.list" -> "localhost:5001", "group.id" -> "test")
-    val source = KafkaSource(Map("testJson" -> jsonTopic), properties)
-    source.createDF(new SQLContext(sc)).count() shouldBe 11
+    import spray.json._
+    val properties = Map(
+      "bootstrap.servers" -> "localhost:6001",
+      "zookeeper.connect" -> "localhost:6000",
+      "group.id" -> "test-rdd")
+    val kafkaMessages = publishJson("test-rdd")
+    val source = KafkaSource(Map("test-rdd" -> jsonProps), properties)
+    val df = source.createDF(ss.sqlContext)
+    val spark = SparkSession.builder().getOrCreate()
+    import spark.implicits._
+    val msgs = df.toJSON.map(_.toString).collect().map(_.parseJson)
+
+    eventually {
+      msgs should contain theSameElementsAs kafkaMessages.map(_.parseJson)
+    }
+
   }
 
   it("includes the key in the json payload when specified") {
     import spray.json._
-    val properties = Map("metadata.broker.list" -> "localhost:5001", "group.id" -> "test")
-    val topicProps = jsonTopic + ("keyColumn" -> "key")
-    val source = KafkaSource(Map("testJson" -> topicProps), properties)
+    val properties = Map(
+      "bootstrap.servers" -> "localhost:6001",
+      "zookeeper.connect" -> "localhost:6000",
+      "group.id" -> "test-json-key")
+    val topicProps = jsonProps + ("keyColumn" -> "messageKey")
+    val kafkaMessages = publishJsonWithKeys("test-json-key")
+    val source = KafkaSource(Map("test-json-key" -> topicProps), properties)
+    sctx = new StreamingContext(sc, org.apache.spark.streaming.Seconds(1))
     val stream = source.createStream(sctx)
 
-    stream.foreachRDD { rdd =>
-      rdd.foreach(msg => MsgHolder.msgs += msg.value.toString)
+    val msgs = new ArrayBuffer[JsValue]()
+    stream.foreachRDD {
+      msgs ++= _.map(_.value.toString).collect().map(_.parseJson)
     }
 
     sctx.start()
 
-    val keyedMessages = jsonMessages.map { json =>
+    val keyedMessages: Seq[JsValue] = kafkaMessages.map { json =>
       val pj = json.parseJson.asJsObject
-      JsObject(pj.fields + ("key" -> pj.fields("no"))).toString()
+      JsObject(pj.fields + ("messageKey" -> JsString(pj.fields("messageId").compactPrint)))
     }
 
     eventually {
-      MsgHolder.msgs shouldEqual keyedMessages
+      msgs shouldEqual keyedMessages
     }
+
   }
 
-  it("Checkpoints batch jobs") {
-    //KAFKA UNIT DOES NOT SUPPORT TOPIC COORDINATORS; HOW CAN WE UNIT TEST THIS???
-
-    //    val properties = Map("metadata.broker.list" -> "localhost:5001", "group.id" -> "test-checkpoint")
-    //    val source = KafkaSource(Map("testJson" -> jsonTopic), properties)
-    //    source.createDF(new SQLContext(ctx.get)).count() shouldBe 11
-    //    val groupSource = KafkaSource(Map("testJson" ->  (jsonTopic + ("start" -> "last"))), properties)
-    //    groupSource.createDF(new SQLContext(ctx.get)).count() shouldBe 0
-    //    //we then publish messages
-    //    kafka.sendMessages(new KeyedMessage("testJson","test","test"))
-    //
-    //    val groupSource2 = KafkaSource(Map("testJson" ->  (jsonTopic + ("start" -> "last"))), properties)
-    //    groupSource2.createDF(new SQLContext(ctx.get)).count() shouldBe 1
-  }
-
-  it("includes the key in the avro payload when specified") {
+  ignore("includes the key in the avro payload when specified") {
     import spray.json._
     val properties = Map(
-      "metadata.broker.list" -> "localhost:5001",
-      "group.id" -> "test",
-      "schema.registry.url" -> "localhost:8081"
+      "bootstrap.servers" -> "localhost:6001",
+      "zookeeper.connect" -> "localhost:6000",
+      "group.id" -> "hydra-avro-keys",
+    "schema.registry.url" -> "http://localhost:8081"
     )
-    val topicProps = avroTopic + ("keyColumn" -> "key")
-    val source = KafkaSource(Map("testAvro" -> topicProps), properties)
+
+    val records = publishAvroWithKeys("test-avro-keys")
+
+    val topicProps = avroProps + ("keyColumn" -> "messageKey",
+      "schema" -> "test-schema")
+
+    val source = KafkaSource(Map("test-avro-keys" -> topicProps), properties)
+    sctx = new StreamingContext(sc, org.apache.spark.streaming.Seconds(1))
     val stream = source.createStream(sctx)
+    val msgs = new ArrayBuffer[String]()
 
     stream.foreachRDD { rdd =>
-      rdd.foreach(msg => MsgHolder.msgs += msg.value.toString)
+      msgs ++= rdd.map(_.value.toString).collect()
     }
+
 
     sctx.start()
 
-    val keyedMessages = jsonMessages.map { json =>
-      val pj = json.parseJson.asJsObject
-      JsObject(pj.fields + ("key" -> pj.fields("no"))).toString()
+    val keyedMessages = records.map { record =>
+      val pj = record.toString.parseJson.asJsObject
+      JsObject(pj.fields + ("messageKey" -> pj.fields("messageId"))).toString()
     }
 
     eventually {
-      MsgHolder.msgs shouldEqual keyedMessages
+      msgs shouldEqual keyedMessages
     }
   }
-}
-
-object MsgHolder {
-  val msgs = new ArrayBuffer[String]()
 }

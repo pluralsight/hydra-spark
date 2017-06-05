@@ -16,23 +16,30 @@
 package hydra.spark.operations.io
 
 
+import java.util.Properties
+
 import com.typesafe.config.ConfigFactory
 import hydra.spark.api.{Invalid, Operations, Valid}
 import hydra.spark.dispatch.SparkBatchDispatch
-import hydra.spark.testutils.{KafkaUnitWithKeys, SharedSparkContext, StaticJsonSource}
+import hydra.spark.testutils.{SharedSparkContext, StaticJsonSource}
 import kafka.serializer.StringEncoder
+import net.manub.embeddedkafka.{EmbeddedKafka, EmbeddedKafkaConfig, KafkaUnavailableException}
+import org.apache.kafka.clients.consumer.{ConsumerRecord, KafkaConsumer, OffsetAndMetadata}
 import org.apache.kafka.clients.producer.ProducerConfig
-import org.apache.kafka.common.serialization.StringSerializer
+import org.apache.kafka.common.serialization.{Deserializer, StringDeserializer, StringSerializer}
+import org.apache.kafka.common.{KafkaException, TopicPartition}
 import org.scalatest._
 import org.scalatest.concurrent.Eventually
+
+import scala.collection.mutable.ListBuffer
+import scala.concurrent.TimeoutException
+import scala.util.Try
 
 /**
   * Created by alexsilva on 8/9/16.
   */
 class PublishToKafkaSpec extends Matchers with FunSpecLike with Inside with BeforeAndAfterAll with Eventually
-  with BeforeAndAfterEach with SharedSparkContext {
-
-  var kafka: KafkaUnitWithKeys = new KafkaUnitWithKeys(5000, 5001)
+  with BeforeAndAfterEach with SharedSparkContext with EmbeddedKafka {
 
   val props = ConfigFactory.parseString(
     s"""
@@ -44,8 +51,7 @@ class PublishToKafkaSpec extends Matchers with FunSpecLike with Inside with Befo
   )
 
   val kafkaProps = Map(
-    "metadata.broker.list" -> "localhost:5001",
-    ProducerConfig.BOOTSTRAP_SERVERS_CONFIG -> "localhost:5001",
+    ProducerConfig.BOOTSTRAP_SERVERS_CONFIG -> "localhost:6001",
     "producer.type" -> "sync",
     "batch.size" -> "1",
     ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG -> classOf[StringSerializer].getCanonicalName(),
@@ -55,8 +61,7 @@ class PublishToKafkaSpec extends Matchers with FunSpecLike with Inside with Befo
 
   override def beforeAll() = {
     super.beforeAll()
-    kafka.startup()
-    kafka.createTopic("test-topic")
+    EmbeddedKafka.start()
   }
 
   describe("When writing to Kafka") {
@@ -72,15 +77,15 @@ class PublishToKafkaSpec extends Matchers with FunSpecLike with Inside with Befo
 
     it("Should produce unordered messages") {
 
-      val op = PublishToKafka("test-topic", properties = kafkaProps)
+      val op = PublishToKafka("test-und-topic", properties = kafkaProps)
 
-      val sd = SparkBatchDispatch("test", StaticJsonSource, Operations(op), props, scl)
+      val sd = SparkBatchDispatch("test", StaticJsonSource, Operations(op), props, ss)
 
       sd.validate shouldBe Valid
 
       sd.run()
 
-      val msgs = kafka.readMessages("test-topic", StaticJsonSource.msgs.size)
+      val msgs = EmbeddedKafka.consumeNumberStringMessagesFrom("test-und-topic", StaticJsonSource.msgs.size)
 
       eventually {
         msgs.size shouldBe StaticJsonSource.msgs.size
@@ -91,22 +96,22 @@ class PublishToKafkaSpec extends Matchers with FunSpecLike with Inside with Befo
     it("Should produce ordered messages") {
       import spray.json._
 
-      val op = PublishToKafka("test-topic", orderBy = Some("msg-no desc"), properties = kafkaProps)
+      val op = PublishToKafka("test-ord-topic", orderBy = Some("msg_no desc"), properties = kafkaProps)
 
-      val sd = SparkBatchDispatch("test", StaticJsonSource, Operations(op), props, scl)
+      val sd = SparkBatchDispatch("test", StaticJsonSource, Operations(op), props, ss)
 
       sd.validate shouldBe Valid
 
       sd.run()
 
-      val msgs = kafka.readMessages("test-topic", StaticJsonSource.msgs.size)
+      val msgs = EmbeddedKafka.consumeNumberStringMessagesFrom("test-ord-topic", StaticJsonSource.msgs.size)
 
-      val sorted = StaticJsonSource.msgs.sortWith(_.parseJson.asJsObject.fields("msg-no").asInstanceOf[JsNumber]
-        .value > _.parseJson.asJsObject.fields("msg-no").asInstanceOf[JsNumber].value)
+      val sorted = StaticJsonSource.msgs.sortWith(_.parseJson.asJsObject.fields("msg_no").asInstanceOf[JsNumber]
+        .value > _.parseJson.asJsObject.fields("msg_no").asInstanceOf[JsNumber].value)
 
       for (i <- 0 until msgs.size)
-        msgs.get(i).parseJson.asJsObject.fields("msg-no").asInstanceOf[JsNumber].value shouldBe
-          sorted(i).parseJson.asJsObject.fields("msg-no").asInstanceOf[JsNumber].value
+        msgs(i).parseJson.asJsObject.fields("msg_no").asInstanceOf[JsNumber].value shouldBe
+          sorted(i).parseJson.asJsObject.fields("msg_no").asInstanceOf[JsNumber].value
 
     }
 
@@ -114,20 +119,20 @@ class PublishToKafkaSpec extends Matchers with FunSpecLike with Inside with Befo
 
       import spray.json._
 
-      val op = PublishToKafka("test-topic", columns = Some(List("msg-no")), properties = kafkaProps)
+      val op = PublishToKafka("test-sel-topic", columns = Some(List("msg_no")), properties = kafkaProps)
 
-      val sd = SparkBatchDispatch("test", StaticJsonSource, Operations(op), props, scl)
+      val sd = SparkBatchDispatch("test", StaticJsonSource, Operations(op), props, ss)
 
       sd.validate shouldBe Valid
 
       sd.run()
 
-      val msgs = kafka.readMessages("test-topic", StaticJsonSource.msgs.size)
+      val msgs = EmbeddedKafka.consumeNumberStringMessagesFrom("test-sel-topic", StaticJsonSource.msgs.size)
 
       msgs.size shouldBe StaticJsonSource.msgs.size
       for (i <- 0 until msgs.size) {
         intercept[NoSuchElementException] {
-          msgs.get(i).parseJson.asJsObject.fields("data")
+          msgs(i).parseJson.asJsObject.fields("data")
         }
       }
     }
@@ -137,11 +142,11 @@ class PublishToKafkaSpec extends Matchers with FunSpecLike with Inside with Befo
     import spray.json._
     import DefaultJsonProtocol._
 
-    import scala.collection.JavaConverters._
+    val op = PublishToKafka("test-key-topic",
+      key = Some("msg_no"), orderBy = Some("msg_no desc"),
+      properties = kafkaProps)
 
-    val op = PublishToKafka("test-topic", key = Some("msg-no"), orderBy = Some("msg-no desc"), properties = kafkaProps)
-
-    val sd = SparkBatchDispatch("test", StaticJsonSource, Operations(op), props, scl)
+    val sd = SparkBatchDispatch("test", StaticJsonSource, Operations(op), props, ss)
 
     sd.validate shouldBe Valid
 
@@ -149,20 +154,70 @@ class PublishToKafkaSpec extends Matchers with FunSpecLike with Inside with Befo
 
     val sortedNoKeys = StaticJsonSource.msgs.map { json =>
       val fields = json.parseJson.asJsObject.fields
-      fields("msg-no").convertTo[Int] -> JsObject(fields - "msg-no").compactPrint
-    }.sortWith(_._1 < _._1)
+      fields("msg_no").convertTo[Int] -> JsObject(fields - "msg_no").fields("data")
+    }.sortWith(_._1 > _._1).toList.map(r=>r._1.toString -> r._2)
 
-    val msgs = kafka.readMessagesWithKey("test-topic", StaticJsonSource.msgs.size).asMap.asScala
-    msgs.keys should contain theSameElementsAs (sortedNoKeys.map(_._1.toString))
+    val keyed = consumeKeyedMessagesFrom("test-key-topic", 11, true)(implicitly[EmbeddedKafkaConfig],
+      new StringDeserializer)
 
-    val allMsgs = msgs.values.map(_.asScala.mkString.parseJson)
-
-    allMsgs should contain theSameElementsAs (sortedNoKeys.map(_._2.parseJson))
+    keyed
+      .map(r => r.key() -> r.value().parseJson.asJsObject.fields("data")) should contain theSameElementsAs sortedNoKeys
   }
 
   override def afterAll() = {
     super.afterAll()
-    kafka.shutdown()
+    EmbeddedKafka.stop()
+  }
+
+
+  def consumeKeyedMessagesFrom[V](topic: String,
+                                  number: Int,
+                                  autoCommit: Boolean = false)(
+                                   implicit config: EmbeddedKafkaConfig,
+                                   deserializer: Deserializer[V]): List[ConsumerRecord[String, V]] = {
+
+    import scala.collection.JavaConverters._
+
+    val props = new Properties()
+    props.put("group.id", "hydra-spark")
+    props.put("bootstrap.servers", s"localhost:${config.kafkaPort}")
+    props.put("auto.offset.reset", "earliest")
+    props.put("enable.auto.commit", "false")
+    props.put("enable.auto.commit", autoCommit.toString)
+
+    val consumer =
+      new KafkaConsumer[String, V](props, new StringDeserializer, deserializer)
+
+    val messages = Try {
+      val messagesBuffer = ListBuffer.empty[ConsumerRecord[String, V]]
+      var messagesRead = 0
+      consumer.subscribe(List(topic).asJava)
+      consumer.partitionsFor(topic)
+
+      while (messagesRead < number) {
+        val records = consumer.poll(5000)
+        if (records.isEmpty) {
+          throw new TimeoutException(
+            "Unable to retrieve a message from Kafka in 5000ms")
+        }
+
+        val recordIter = records.iterator()
+        while (recordIter.hasNext && messagesRead < number) {
+          val record = recordIter.next()
+          messagesBuffer += record
+          val tp = new TopicPartition(record.topic(), record.partition())
+          val om = new OffsetAndMetadata(record.offset() + 1)
+          consumer.commitSync(Map(tp -> om).asJava)
+          messagesRead += 1
+        }
+      }
+      messagesBuffer.toList
+    }
+
+    consumer.close()
+    messages.recover {
+      case ex: KafkaException => throw new KafkaUnavailableException(ex)
+    }.get
   }
 
 

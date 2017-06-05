@@ -16,35 +16,23 @@
 package hydra.spark.operations.io
 
 import com.typesafe.config.Config
-import hydra.spark.configs._
 import hydra.spark.api._
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
-import org.apache.hadoop.io.compress.CompressionCodec
-import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.DataFrame
-
-import scala.reflect.ClassTag
+import org.apache.spark.sql.{DataFrame, SaveMode}
 
 /**
- * Created by alexsilva on 6/21/16.
- */
-case class SaveAsJson(directory: String, codec: Option[String]) extends DFOperation {
+  * Created by alexsilva on 6/21/16.
+  */
+case class SaveAsJson(directory: String, codec: Option[String], overwrite: Boolean = false) extends DFOperation {
 
   override def id: String = s"save-as-json-$directory-$codec"
 
-  lazy val output: Path = new Path(directory, System.currentTimeMillis().toString)
-
   override def transform(df: DataFrame): DataFrame = {
-    saveHadoopJson(df.toJSON, output)
+    df.write.option("compression", codec.getOrElse("none"))
+      .mode(if (overwrite) SaveMode.Overwrite else SaveMode.ErrorIfExists)
+      .json(directory)
     df
-  }
-
-  private def saveHadoopJson[A: ClassTag](rdd: RDD[A], path: Path): Unit = {
-    codec match {
-      case Some(c) => rdd.saveAsTextFile(path.toString, Class.forName(c).asInstanceOf[Class[_ <: CompressionCodec]])
-      case None => rdd.saveAsTextFile(path.toString)
-    }
   }
 
   override def validate: ValidationResult = {
@@ -59,9 +47,11 @@ case class SaveAsJson(directory: String, codec: Option[String]) extends DFOperat
 
 object SaveAsJson {
   def apply(cfg: Config): SaveAsJson = {
-    import hydra.spark.configs._
+    import configs.syntax._
     val directory = cfg.get[String]("directory")
-    val codec = cfg.get[String]("codec")
-    SaveAsJson(directory.getOrElse(""), codec)
+      .valueOrThrow(c => new IllegalArgumentException("A directory is required."))
+    val codec = cfg.get[String]("codec").toOption
+    val overwrite = cfg.get[Boolean]("overwrite").valueOrElse(false)
+    SaveAsJson(directory, codec, overwrite)
   }
 }

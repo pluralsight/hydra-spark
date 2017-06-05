@@ -19,7 +19,7 @@ package hydra.spark.testutils
   * Created by alexsilva on 1/9/17.
   */
 
-import hydra.spark.api.{ContextLike, DispatchDetails}
+import org.apache.spark.sql.{SQLContext, SQLImplicits, SparkSession}
 import org.apache.spark.{SparkConf, SparkContext}
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Suite}
 
@@ -28,12 +28,11 @@ trait SharedSparkContext extends BeforeAndAfterAll with BeforeAndAfterEach {
   self: Suite =>
 
   @transient private var _sc: SparkContext = _
-
-  @transient private var _scl: ContextLike = _
+  @transient private var _session: SparkSession = _
 
   def sc: SparkContext = _sc
 
-  def scl:ContextLike = _scl
+  def ss: SparkSession = _session
 
   var conf = new SparkConf(false)
     .setMaster("local[*]")
@@ -44,14 +43,8 @@ trait SharedSparkContext extends BeforeAndAfterAll with BeforeAndAfterEach {
 
   override def beforeAll() {
     super.beforeAll()
-    _sc = new SparkContext(conf)
-    _scl = new ContextLike {
-      override def stop() = _sc.stop()
-
-      override def isValidDispatch(d: DispatchDetails[_]) = !d.isStreaming
-
-      override def sparkContext = _sc
-    }
+    _session = SparkSession.builder().config(conf).appName("hydra-test").getOrCreate()
+    _sc = _session.sparkContext
   }
 
   override def afterAll() {
@@ -72,4 +65,9 @@ trait SharedSparkContext extends BeforeAndAfterAll with BeforeAndAfterEach {
     super.afterEach()
     DebugFilesystem.assertNoOpenStreams()
   }
+
+  object TestImplicits extends SQLImplicits {
+    protected override def _sqlContext: SQLContext = self.ss.sqlContext
+  }
+
 }

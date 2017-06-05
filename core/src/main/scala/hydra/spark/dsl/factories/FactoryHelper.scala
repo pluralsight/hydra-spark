@@ -26,6 +26,7 @@ import scala.collection.JavaConverters._
 import scala.language.existentials
 import scala.reflect.runtime.universe._
 
+
 /**
   * Methods to help constructing sources and operations from config files using reflection.
   *
@@ -60,8 +61,9 @@ object FactoryHelper {
   }
 
   private def instantiate[T: TypeTag](clazz: Class[T], cfg: Config): T = {
+    import configs.syntax._
     val cname = s"""hydra.spark.defaults."${clazz.getName}""""
-    val defaultProps = defaults.get[ConfigObject](cname).getOrElse(ConfigFactory.empty().root()).toConfig
+    val defaultProps = defaults.get[ConfigObject](cname).valueOrElse(ConfigFactory.empty().root()).toConfig
 
     val propsCfg = ConfigFactory
       .parseMap((defaultProps.flattenAtKey("properties") ++ cfg.flattenAtKey("properties")).asJava)
@@ -98,18 +100,20 @@ object FactoryHelper {
     import scala.reflect.runtime.universe._
 
     val m = runtimeMirror(getClass.getClassLoader)
+    import configs.syntax._
 
     def getAsScala(key: String, tpe: TypeTag[_]) = {
       val c = tpe.tpe.typeSymbol.asClass
       val clz: Class[_] = scala.util.Try(m.runtimeClass(c))
         .recover { case e: ClassNotFoundException => classOf[AnyRef] }.get
       val v = clz match {
-        case q if q == classOf[Seq[String]] => cfg.get[List[String]](key).getOrElse(List.empty)
-        case q if q == classOf[Map[_, _]] => cfg.get[Map[String, String]](key).getOrElse(Map.empty)
+        case q if q == classOf[Seq[String]] => cfg.get[List[String]](key).valueOrElse(List.empty)
+        case q if q == classOf[Map[_, _]] => cfg.get[Config](key).valueOrElse(ConfigFactory.empty).to[Map[String,String]]
         case q if q == classOf[String] => cfg.getString(key)
         case q if q == classOf[Int] => cfg.getInt(key)
         case q if q == classOf[Long] => cfg.getLong(key)
         case q if q == classOf[Double] => cfg.getDouble(key)
+        case q if q == classOf[Boolean] => cfg.getBoolean(key)
         case q if q == classOf[Config] => cfg.getConfig(key)
         case q if q == classOf[AnyRef] => cfg.getAnyRef(key)
         case q => throw new IllegalArgumentException(s"No known conversion for property $q.")

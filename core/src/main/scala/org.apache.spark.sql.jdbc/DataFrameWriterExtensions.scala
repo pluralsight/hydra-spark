@@ -15,30 +15,24 @@
 
 package org.apache.spark.sql.jdbc
 
-import java.util.Properties
-
-import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
+import org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JdbcUtils}
 import org.apache.spark.sql.types.StructField
-import org.apache.spark.sql.{ DataFrame, DataFrameWriter, SaveMode }
+import org.apache.spark.sql.{DataFrame, DataFrameWriter, Row, SaveMode}
 
 /**
- * Created by alexsilva on 6/19/16.
- */
+  * Created by alexsilva on 6/19/16.
+  */
 
 object DataFrameWriterExtensions {
 
-  implicit class Upsert(w: DataFrameWriter) {
-    def upsert(url: String, table: String, idColumn: Option[StructField], connectionProperties: Properties,
-      df: DataFrame): Unit = {
-
-      val props = new Properties()
-
+  implicit class Upsert(w: DataFrameWriter[Row]) {
+    def upsert(idColumn: Option[StructField], jdbcOptions: JDBCOptions, df: DataFrame): Unit = {
+      val url = jdbcOptions.url
+      val table = jdbcOptions.table
       val modeF = w.getClass.getDeclaredField("mode")
       modeF.setAccessible(true)
       val mode = modeF.get(w).asInstanceOf[SaveMode]
-
-      props.putAll(connectionProperties)
-      val conn = JdbcUtils.createConnectionFactory(url, props)()
+      val conn = JdbcUtils.createConnectionFactory(jdbcOptions)()
 
       try {
         var tableExists = JdbcUtils.tableExists(conn, url, table)
@@ -58,12 +52,10 @@ object DataFrameWriterExtensions {
 
         // Create the table if the table didn't exist.
         if (!tableExists) {
-          val schema = JdbcUtils.schemaString(df, url)
-//          val pk = idColumn.map(id => id.name) match {
-//            case Some(s: String) => s", primary key($s)"
-//            case _ => ""
-//          }
-          val pk = idColumn.collect{case c: StructField => s", primary key(${c.name})"}.getOrElse("")
+          val schema = JdbcUtils.schemaString(df.schema, url)
+          val dialect = JdbcDialects.get(url)
+          val pk = idColumn.collect { case c: StructField => s", primary key(${dialect.quoteIdentifier(c.name)})" }
+            .getOrElse("")
           val sql = s"CREATE TABLE $table ( $schema $pk )"
           val statement = conn.createStatement
           try {
@@ -78,8 +70,8 @@ object DataFrameWriterExtensions {
 
       //todo: make this a single method
       idColumn match {
-        case Some(id) => UpsertUtils.upsert(df, idColumn, url, table, props)
-        case None => JdbcUtils.saveTable(df, url, table, props)
+        case Some(id) => UpsertUtils.upsert(df, idColumn, jdbcOptions)
+        case None => JdbcUtils.saveTable(df, url, table, jdbcOptions)
       }
 
     }
