@@ -17,26 +17,27 @@ trait JobConfigsComponent {
     e => e.root().render(), s => ConfigFactory.parseString(s))
 
   class JobConfigsTable(tag: Tag) extends Table[JobConfig](tag, "CONFIGS") {
+    def configId = column[Int]("CFG_ID", O.PrimaryKey, O.AutoInc)
 
-    def jobId = column[String]("JOB_ID", O.PrimaryKey)
+    def jobId = column[String]("JOB_ID")
 
     def jobConfig = column[Config]("JOB_CONFIG")
 
-    def * = (jobId, jobConfig) <> (JobConfig.tupled, JobConfig.unapply)
+    def * = (configId.?, jobId, jobConfig) <> (JobConfig.tupled, JobConfig.unapply)
   }
 
-  object JobConfigsRepository extends Repository[JobConfigsTable, String](profile, db) {
+  object JobConfigsRepository extends Repository[JobConfigsTable, Int](profile, db) {
 
     val table = lifted.TableQuery[JobConfigsTable]
 
-    val createQuery = table returning table.map(_.jobId) into ((item, id) => item.copy(jobId = id))
+    val createQuery = table returning table.map(_.configId) into ((item, id) => item.copy(configId = Some(id)))
 
     def create(t: JobConfig): Future[JobConfig] = {
       val action = createQuery += t
       db.run(action)
     }
 
-    def getId(table: JobConfigsTable) = table.jobId
+    def getId(table: JobConfigsTable) = table.configId
 
     def findConfigByJobId(jobId: String): Future[Option[Config]] = {
       val query = table.filter(_.jobId === jobId).map(_.jobConfig).result

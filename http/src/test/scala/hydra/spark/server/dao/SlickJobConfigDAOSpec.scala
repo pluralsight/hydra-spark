@@ -23,7 +23,9 @@ class SlickJobConfigDAOSpec extends Matchers with FunSpecLike with H2Persistence
   override def beforeAll(): Unit = {
     super.beforeAll()
     FlywaySupport.migrate(config.getConfig("h2-db"))
-    dao.saveJobConfig(jobId, expectedConfig)
+    whenReady(dao.saveJobConfig(jobId, expectedConfig)) { c =>
+      c.jobConfig shouldBe expectedConfig
+    }
   }
 
   describe("saveJobConfig() and getJobConfigs() tests") {
@@ -40,8 +42,8 @@ class SlickJobConfigDAOSpec extends Matchers with FunSpecLike with H2Persistence
       dao.saveJobConfig(jobId2, jobConfig2)
       dao = null
       dao = new SlickJobConfigRepository
-      whenReady(dao.getJobConfig(jobId)) { cfg => cfg should equal(expectedConfig) }
-      whenReady(dao.getJobConfig(jobId2)) { cfg => cfg should equal(expectedConfig2) }
+      whenReady(dao.getJobConfig(jobId)) { cfg => cfg should equal(Some(expectedConfig)) }
+      whenReady(dao.getJobConfig(jobId2)) { cfg => cfg should equal(Some(expectedConfig2)) }
     }
   }
 

@@ -42,10 +42,10 @@ class SlickJobRepository()(implicit val db: Database, val profile: JdbcProfile, 
 
     bin.flatMap { b =>
       val errors = jobInfo.error.map(e => e.getMessage)
-      val job = Job(Some(jobInfo.jobId), jobInfo.contextName, b.id.get, jobInfo.classPath,
+      val job = Job(jobInfo.jobId, jobInfo.contextName, b.id.get, jobInfo.classPath,
         jobInfo.status, jobInfo.startTime, jobInfo.endTime, errors)
       JobsRepository.create(job).map { j =>
-        JobInfo(job.jobId.get,
+        JobInfo(job.jobId,
           job.contextName,
           BinaryInfo(b.appName, BinaryType.fromString(b.binaryType), b.uploadTime),
           job.classPath,

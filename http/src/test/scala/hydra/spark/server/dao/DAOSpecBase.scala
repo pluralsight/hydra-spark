@@ -14,7 +14,7 @@ trait DAOSpecBase {
 
   val throwable: Throwable = new Throwable("test-error")
   val jarInfo: BinaryInfo = genJarInfo(false, false)
-  val jobInfoNoEndNoErr: JobInfo = genJobInfo(jarInfo, false, false, JobStatus.Unknown, false)
+  val jobInfoNoEndNoErr: JobInfo = genJobInfo(jarInfo, false, false, JobStatus.Running, false)
   val jobId: String = jobInfoNoEndNoErr.jobId
 
   def genJarInfo: (Boolean, Boolean) => BinaryInfo = genJarInfoClosure

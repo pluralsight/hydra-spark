@@ -24,6 +24,7 @@ trait JobsComponent extends BinariesComponent {
   lazy val binaries = TableQuery[BinariesTable]
 
   class JobsTable(tag: Tag) extends Table[Job](tag, "JOBS") {
+
     def jobId = column[String]("JOB_ID", O.PrimaryKey)
 
     def contextName = column[String]("CONTEXT_NAME")
@@ -40,7 +41,7 @@ trait JobsComponent extends BinariesComponent {
 
     def error = column[Option[String]]("ERROR")
 
-    def * = (jobId.?, contextName, binId, classPath, status, startTime, endTime, error) <> (Job.tupled, Job.unapply)
+    def * = (jobId, contextName, binId, classPath, status, startTime, endTime, error) <> (Job.tupled, Job.unapply)
 
     def binary = foreignKey("BINARY", binId, binaries)(_.id)
   }
@@ -49,17 +50,11 @@ trait JobsComponent extends BinariesComponent {
 
     val table = TableQuery[JobsTable]
 
-    val binaryTable = TableQuery[BinariesTable]
+    val createQuery = table returning table.map(_.jobId) into ((item, id) => item.copy(jobId = id))
 
-    val createQuery = table returning table.map(_.jobId) into ((item, id) => item.copy(jobId = Some(id)))
-
-    def create(t: Job): Future[Job] = {
-      val action = createQuery += t
-      db.run(action)
-    }
-
-    def getjobInfo(jobId: String) = {
-      db.run(table.filter(_.jobId === jobId).result.headOption)
+    def create(t: Job)(implicit ec: ExecutionContext): Future[Job] = {
+      val action = table.insertOrUpdate(t)
+      db.run(action).map(_ => t)
     }
 
     def getId(table: JobsTable) = table.jobId
@@ -123,8 +118,10 @@ trait JobsComponent extends BinariesComponent {
           j.status,
           j.error)
       }
-      for (r <- db.run(innerJoin.result)) yield {
-        r.map {
+
+      val mapper: (Seq[(String, String, String, String, DateTime, String, DateTime, Option[DateTime], JobStatus,
+        Option[String])]) => Option[JobInfo] =
+        (r) => r.map {
           case (id, context, app, binType, upload, classpath, start, end, status, err) =>
             JobInfo(id,
               context,
@@ -135,8 +132,11 @@ trait JobsComponent extends BinariesComponent {
               status,
               err.map(new Throwable(_)))
 
-        }
-      }.headOption
+        }.headOption
+
+      val result = db.run(innerJoin.result)
+
+      result.map(mapper)
     }
   }
 

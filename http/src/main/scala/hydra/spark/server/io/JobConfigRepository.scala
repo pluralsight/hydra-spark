@@ -22,7 +22,7 @@ class SlickJobConfigRepository()(implicit val db: Database, val profile: JdbcPro
   extends JobConfigRepository with JobConfigsComponent with DatabaseComponent with ProfileComponent {
 
   override def saveJobConfig(jobId: String, jobConfig: Config): Future[JobConfig] =
-    JobConfigsRepository.create(JobConfig(jobId, jobConfig))
+    JobConfigsRepository.create(JobConfig(None, jobId, jobConfig))
 
   override def getJobConfig(jobId: String): Future[Option[Config]] = JobConfigsRepository.findConfigByJobId(jobId)
 }

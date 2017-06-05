@@ -25,7 +25,6 @@ class SlickBinaryDAOSpec extends Matchers with FunSpecLike with BeforeAndAfter w
   val config = ConfigFactory.load()
 
   val dao = new SlickBinaryRepository("/tmp/hydra-spark-test/")
-  val jarBytes: Array[Byte] = Files.toByteArray(testJar)
   var jarFile = new File(
     config.getString("hydra.spark.server.sql.rootdir"),
     jarInfo.appName + "-" + jarInfo.uploadTime.toString("yyyyMMdd_hhmmss_SSS") + ".jar")

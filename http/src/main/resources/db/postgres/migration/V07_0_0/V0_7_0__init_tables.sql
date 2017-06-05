@@ -19,6 +19,7 @@ CREATE TABLE "JOBS" (
 
 
 CREATE TABLE "CONFIGS" (
-  "JOB_ID"          VARCHAR(255)                  NOT NULL PRIMARY KEY,
+  "CFG_ID"          SERIAL                        NOT NULL PRIMARY KEY,
+  "JOB_ID"          VARCHAR(255)                  NOT NULL,
   "JOB_CONFIG"      TEXT                          NOT NULL
 );

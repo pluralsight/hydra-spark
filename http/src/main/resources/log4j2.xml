@@ -70,6 +70,14 @@
             <AppenderRef ref="STDOUT"/>
         </Logger>
 
+        <Logger name="slick" level="error">
+            <AppenderRef ref="STDOUT"/>
+        </Logger>
+
+        <Logger name="com.zaxxer.hikari" level="error">
+            <AppenderRef ref="STDOUT"/>
+        </Logger>
+
         <Root level="DEBUG">
             <AppenderRef ref="STDOUT"/>
         </Root>

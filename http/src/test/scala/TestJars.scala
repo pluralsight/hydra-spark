@@ -2,6 +2,8 @@ package hydra.spark.server
 
 import java.io.File
 
+import com.google.common.io.Files
+
 
 trait TestJars {
   val testBinaryBaseDir = "binaries"
@@ -37,6 +39,8 @@ trait TestJars {
     assert(allJars.size == 1, allJars.toList.toString)
     allJars.head
   }
+
+  lazy val jarBytes: Array[Byte] = Files.toByteArray(testJar)
 
   lazy val testEgg: java.io.File = {
     val dir = new java.io.File(testEggDir)
