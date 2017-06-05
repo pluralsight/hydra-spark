@@ -1,8 +1,3 @@
-package hydra.spark.operations.transform
-
-/**
-  * Created by alexsilva on 6/5/17.
-  */
 /*
  * Copyright (C) 2017 Pluralsight, LLC.
  *
@@ -20,17 +15,14 @@ package hydra.spark.operations.transform
 
 package hydra.spark.operations.transform
 
-import hydra.spark.api.DFOperation
+import hydra.spark.api.{DFOperation, ValidationResult}
 import org.apache.spark.sql.DataFrame
 
-/**
-  * Created by alexsilva on 8/16/16.
-  */
 case class DropColumn(names: Seq[String]) extends DFOperation {
   override def id: String = s"drop-column-$names"
 
   override def transform(df: DataFrame): DataFrame = {
-    df.drop(names:_*)
+    df.drop(names: _*)
   }
 
   override def validate: ValidationResult = {
