@@ -23,7 +23,6 @@ object HydraSparkBuild extends Build {
 
   val javaVersion = sys.env.getOrElse("JAVA_VERSION", "1.8")
 
-
   lazy val `api` = (project in file("api"))
     .settings(commonSettings: _*).
     settings(
