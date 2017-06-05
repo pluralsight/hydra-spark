@@ -226,21 +226,23 @@ object UpsertBuilder {
 
 }
 
-object PostgresUpsertBuilder extends UpsertBuilder {
+object PostgresUpsertBuilder extends UpsertBuilder with Logging {
   def upsertStatement(conn: Connection, table: String, dialect: JdbcDialect, idField: Option[StructField],
                       schema: StructType) = {
     idField match {
       case Some(id) => {
-        val columns = schema.fields.map(_.name).mkString(",")
+        val columns = schema.fields.map(f=>dialect.quoteIdentifier(f.name)).mkString(",")
         val placeholders = schema.fields.map(_ => "?").mkString(",")
         val updateSchema = StructType(schema.fields.filterNot(_.name == id.name))
-        val updateColumns = updateSchema.fields.map(_.name).mkString(",")
+        val updateColumns = updateSchema.fields.map(f=>dialect.quoteIdentifier(f.name)).mkString(",")
         val updatePlaceholders = updateSchema.fields.map(_ => "?").mkString(",")
         val sql =
           s"""insert into ${table} ($columns) values ($placeholders)
              |on conflict (${id.name})
              |do update set ($updateColumns) = ($updatePlaceholders)
              |where ${table}.${id.name} = ?;""".stripMargin
+
+        log.debug(s"Using sql $sql")
 
         val schemaFields = schema.fields ++ updateSchema.fields :+ id
         val upsertSchema = StructType(schemaFields)
