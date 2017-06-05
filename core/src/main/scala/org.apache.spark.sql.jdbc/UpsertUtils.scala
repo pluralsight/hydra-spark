@@ -21,7 +21,9 @@ import org.apache.spark.internal.Logging
 import org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JdbcUtils}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, Row}
+import org.postgresql.util.PSQLException
 
+import scala.util.Try
 import scala.util.control.NonFatal
 
 /**
@@ -92,13 +94,13 @@ object UpsertUtils extends Logging {
         .upsertStatement(conn, table, dialect, idColumn, rddSchema)
 
       val stmt = upsert.stmt
+
       val uschema = upsert.schema
 
       try {
         var rowCount = 0
         while (iterator.hasNext) {
           val row = iterator.next()
-          val numFields = uschema.fields.length
           uschema.fields.zipWithIndex.foreach {
             case (f, idx) =>
               val i = row.fieldIndex(f.name)
@@ -163,7 +165,9 @@ object UpsertUtils extends Logging {
           stmt.addBatch()
           rowCount += 1
           if (rowCount % batchSize == 0) {
-            stmt.executeBatch()
+            Try(stmt.executeBatch()).recover{
+              case e: BatchUpdateException => e.printStackTrace()
+            }
             rowCount = 0
           }
         }
@@ -171,7 +175,8 @@ object UpsertUtils extends Logging {
           stmt.executeBatch()
         }
       } catch {
-        case jdbce: BatchUpdateException => jdbce.getNextException().printStackTrace()
+        case e: BatchUpdateException => e.getNextException().printStackTrace()
+        case e: PSQLException => e.getNextException().printStackTrace();
       } finally {
         stmt.close()
       }
@@ -226,7 +231,7 @@ object UpsertBuilder {
 
 }
 
-object PostgresUpsertBuilder extends UpsertBuilder {
+object PostgresUpsertBuilder extends UpsertBuilder with Logging {
   def upsertStatement(conn: Connection, table: String, dialect: JdbcDialect, idField: Option[StructField],
                       schema: StructType) = {
     idField match {
@@ -241,6 +246,8 @@ object PostgresUpsertBuilder extends UpsertBuilder {
              |on conflict (${id.name})
              |do update set ($updateColumns) = ($updatePlaceholders)
              |where ${table}.${id.name} = ?;""".stripMargin
+
+        log.debug(s"Using sql $sql")
 
         val schemaFields = schema.fields ++ updateSchema.fields :+ id
         val upsertSchema = StructType(schemaFields)
