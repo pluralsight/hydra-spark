@@ -236,10 +236,10 @@ object PostgresUpsertBuilder extends UpsertBuilder with Logging {
                       schema: StructType) = {
     idField match {
       case Some(id) => {
-        val columns = schema.fields.map(_.name).mkString(",")
+        val columns = schema.fields.map(f=>dialect.quoteIdentifier(f.name)).mkString(",")
         val placeholders = schema.fields.map(_ => "?").mkString(",")
         val updateSchema = StructType(schema.fields.filterNot(_.name == id.name))
-        val updateColumns = updateSchema.fields.map(_.name).mkString(",")
+        val updateColumns = updateSchema.fields.map(f=>dialect.quoteIdentifier(f.name)).mkString(",")
         val updatePlaceholders = updateSchema.fields.map(_ => "?").mkString(",")
         val sql =
           s"""insert into ${table} ($columns) values ($placeholders)

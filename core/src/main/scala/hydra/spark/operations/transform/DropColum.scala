@@ -1,3 +1,8 @@
+package hydra.spark.operations.transform
+
+/**
+  * Created by alexsilva on 6/5/17.
+  */
 /*
  * Copyright (C) 2017 Pluralsight, LLC.
  *
@@ -16,28 +21,19 @@
 package hydra.spark.operations.transform
 
 import hydra.spark.api.DFOperation
-import hydra.spark.api.ValidationResult
 import org.apache.spark.sql.DataFrame
-import org.springframework.expression.spel.standard.SpelExpressionParser
+
 /**
- * Created by alexsilva on 8/16/16.
- */
-case class AddColumn(name: String, value: Any) extends DFOperation {
-  override def id: String = s"add-column-$name"
+  * Created by alexsilva on 8/16/16.
+  */
+case class DropColumn(names: Seq[String]) extends DFOperation {
+  override def id: String = s"drop-column-$names"
 
   override def transform(df: DataFrame): DataFrame = {
-    val isExpr = value.toString.startsWith("${")
-    val resValue = if (isExpr) parseExpr(value.toString.substring(2, value.toString.length - 1)) else value
-    df.withColumn(name, org.apache.spark.sql.functions.lit(resValue))
+    df.drop(names:_*)
   }
 
   override def validate: ValidationResult = {
-    checkRequiredParams(Seq(("name", name), ("value", value)))
-  }
-
-  private def parseExpr(expr: String): AnyRef = {
-    val parser = new SpelExpressionParser()
-    val exp = parser.parseExpression(expr)
-    exp.getValue
+    checkRequiredParams(Seq(("names", names)))
   }
 }
