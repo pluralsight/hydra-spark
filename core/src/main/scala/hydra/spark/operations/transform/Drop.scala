@@ -18,14 +18,14 @@ package hydra.spark.operations.transform
 import hydra.spark.api.{DFOperation, ValidationResult}
 import org.apache.spark.sql.DataFrame
 
-case class DropColumn(names: Seq[String]) extends DFOperation {
-  override def id: String = s"drop-column-$names"
+case class Drop(columns: Seq[String]) extends DFOperation {
+  override def id: String = s"drop-column-$columns"
 
   override def transform(df: DataFrame): DataFrame = {
-    df.drop(names: _*)
+    df.drop(columns: _*)
   }
 
   override def validate: ValidationResult = {
-    checkRequiredParams(Seq(("names", names)))
+    checkRequiredParams(Seq(("columns", columns)))
   }
 }
