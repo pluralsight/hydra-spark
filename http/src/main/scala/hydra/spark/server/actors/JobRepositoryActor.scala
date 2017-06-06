@@ -13,7 +13,8 @@ import scala.util.{Failure, Success, Try}
 /**
   * Created by alexsilva on 6/1/17.
   */
-class JobRepositoryActor(jobRepo: JobRepository, binRepo: BinaryRepository, cfgRepo: JobConfigRepository) extends Actor {
+class JobRepositoryActor(jobRepo: JobRepository, binRepo: BinaryRepository, cfgRepo: JobConfigRepository)
+  extends Actor {
 
   import JobRepositoryActor._
   import akka.pattern.pipe

@@ -9,6 +9,6 @@ import configs.syntax._
 object JobUtils {
 
   def getMaxRunningJobs(config: Config): Int = {
-    config.get[Int]("spark.jobserver.max-jobs-per-context").valueOrElse(Runtime.getRuntime.availableProcessors)
+    config.get[Int]("spark.server.max-jobs-per-context").valueOrElse(Runtime.getRuntime.availableProcessors)
   }
 }
