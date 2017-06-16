@@ -13,13 +13,15 @@
  * limitations under the License.
  */
 
-package hydra.spark.dsl.parser
+package hydra.spark.submit
 
-import hydra.spark.api.{Dispatch, DispatchDetails}
+import hydra.spark.api.{DFOperation, Valid, ValidationResult}
+import org.apache.spark.sql.DataFrame
 
-/**
- * Created by alexsilva on 1/3/17.
- */
-trait DSLParser {
-  def parse(dsl: String): DispatchDetails[_]
+
+object NoOpOperation extends DFOperation {
+  override def transform(df: DataFrame): DataFrame = df
+
+  override def validate: ValidationResult = Valid
 }
+

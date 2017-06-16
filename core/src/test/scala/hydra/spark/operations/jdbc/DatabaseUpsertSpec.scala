@@ -357,7 +357,6 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
       val dsl =
         """
           |{
-          |  "transport": {
           |    "version": 1,
           |    "interval": "20s"
           |
@@ -386,11 +385,10 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
           |      }
           |    }
           |  }
-          |  }
           |}
         """.stripMargin
 
-      val dispatch = TypesafeDSLParser().parse(dsl)
+      val dispatch = TypesafeDSLParser().parse(dsl).get
       dispatch.operations.steps.head.validate shouldBe Valid
     }
 

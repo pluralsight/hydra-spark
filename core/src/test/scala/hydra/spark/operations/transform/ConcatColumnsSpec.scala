@@ -2,7 +2,6 @@ package hydra.spark.operations.transform
 
 import hydra.spark.dsl.parser.TypesafeDSLParser
 import hydra.spark.testutils.{SharedSparkContext, StaticJsonSource}
-import org.apache.spark.sql.{SQLContext}
 import org.scalatest.{FunSpecLike, Matchers}
 
 /**
@@ -14,7 +13,7 @@ class ConcatColumnsSpec extends Matchers with FunSpecLike with SharedSparkContex
     it("Should allow use of two dataframe columns to make one column") {
       val sqlContext =  ss.sqlContext
       // ConcatColumns accepts a sequence but dsl will actually send the subtype list
-      val df1 = ConcatColumns(List("email","msg_no"), "newColumn").transform(StaticJsonSource.createDF(sqlContext))
+      val df1 = ConcatColumns(List("email","msg_no"), "newColumn").transform(StaticJsonSource.createDF(ss))
       df1.first().getString(3) shouldBe "hydra@dataisawesome.com|0"
     }
     it("Should not break on an empty dataset") {
@@ -27,7 +26,6 @@ class ConcatColumnsSpec extends Matchers with FunSpecLike with SharedSparkContex
        val dsl =
       """
       |{
-        |    "transport": {
           |        "version": 1,
           |        "spark.master": "local[*]",
           |        "name": "test-dispatch",
@@ -42,11 +40,10 @@ class ConcatColumnsSpec extends Matchers with FunSpecLike with SharedSparkContex
           |           "columnNames": ["col1", "col2"]
           |           }
           |        }
-          |    }
         |}
       """.stripMargin
 
-      val dispatch = TypesafeDSLParser().parse(dsl)
+      val dispatch = TypesafeDSLParser().parse(dsl).get
       val d = dispatch.operations.steps.head.asInstanceOf[ConcatColumns]
       d.columnNames shouldBe Seq("col1","col2")
       d.newName shouldBe "newCol"

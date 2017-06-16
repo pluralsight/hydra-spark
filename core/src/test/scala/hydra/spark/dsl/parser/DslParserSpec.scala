@@ -38,7 +38,7 @@ class DslParserSpec extends Matchers with FunSpecLike with BeforeAndAfterEach wi
 
   val dsl =
     """
-     transport {
+      {
       |  version = 1
       |  name = test-job
       |  streaming.interval = 5s
@@ -101,13 +101,13 @@ class DslParserSpec extends Matchers with FunSpecLike with BeforeAndAfterEach wi
   describe("When parsing the dsl") {
     it("Should load sources") {
       import configs.syntax._
-      val d = TypesafeDSLParser().parse(dsl)
+      val d = TypesafeDSLParser().parse(dsl).get
 
       d.name shouldBe "test-job"
 
       d.isStreaming shouldBe true
 
-      val cfg = d.dsl.getConfig("transport")
+      val cfg = d.dsl
 
       cfg.get[FiniteDuration]("streaming.interval").value shouldBe 5.seconds
 
@@ -163,7 +163,6 @@ class DslParserSpec extends Matchers with FunSpecLike with BeforeAndAfterEach wi
       val defDsl =
         """
           |      {
-          |      	"transport": {
           |      		"version": 1,
           |      		"name": "test-defaults-job",
           |         "spark.master":"local[*]",
@@ -186,11 +185,10 @@ class DslParserSpec extends Matchers with FunSpecLike with BeforeAndAfterEach wi
           |      		}
           |      	}
           |      }
-          |      }
         """.
           stripMargin
 
-      val sd = TypesafeDSLParser().parse(defDsl)
+      val sd = TypesafeDSLParser().parse(defDsl).get
       val source = sd.source.asInstanceOf[KafkaSource]
       source.topics.get("test.topic").get("format") shouldBe "json"
       source.properties.get("metadata.broker.list") shouldBe Some("localhost:6667")
@@ -201,7 +199,6 @@ class DslParserSpec extends Matchers with FunSpecLike with BeforeAndAfterEach wi
       val defDsl =
         """
           |{
-          |	"transport": {
           |		"version": 1,
           |		"name": "test - defaults - job",
           |		"spark.master": "local[*]",
@@ -228,11 +225,10 @@ class DslParserSpec extends Matchers with FunSpecLike with BeforeAndAfterEach wi
           |				"value": "alex"
           |			}
           |		}
-          |	}
           |}
         """.stripMargin
 
-      val sd = TypesafeDSLParser().parse(defDsl)
+      val sd = TypesafeDSLParser().parse(defDsl).get
       val source = sd.source.asInstanceOf[KafkaSource]
 
       source.properties("metadata.broker.list") shouldBe "broker1:6667,broker2:6667,broker3:6667"
@@ -243,7 +239,6 @@ class DslParserSpec extends Matchers with FunSpecLike with BeforeAndAfterEach wi
       val defDsl =
         """
           |{
-          |	"transport": {
           |		"version": 1,
           |		"name": "test-defaults-job",
           |		"spark.master": "local[*]",
@@ -269,12 +264,11 @@ class DslParserSpec extends Matchers with FunSpecLike with BeforeAndAfterEach wi
           |				"value": "alex"
           |			}
           |		}
-          |	}
           |}
         """
           .stripMargin
 
-      val sd = TypesafeDSLParser().parse(defDsl)
+      val sd = TypesafeDSLParser().parse(defDsl).get
       sd.isStreaming shouldBe false
       val source = sd.source.asInstanceOf[KafkaSource]
 
@@ -287,8 +281,6 @@ class DslParserSpec extends Matchers with FunSpecLike with BeforeAndAfterEach wi
       //only HOCON is supported in substitution
       val defDsl =
         s"""
-
-           |      	transport {
            |      		version= 1,
            |      		name = test-defaults-job
            |         spark.master = "local[*]"
@@ -314,10 +306,8 @@ class DslParserSpec extends Matchers with FunSpecLike with BeforeAndAfterEach wi
            |      			value= alex
            |      		}
            |      	}
-           |     }
-           |
         """.stripMargin
-      val sd = TypesafeDSLParser().parse(defDsl)
+      val sd = TypesafeDSLParser().parse(defDsl).get
       sd.source.asInstanceOf[KafkaSource].properties("schema.registry.url") shouldBe "testschema"
       val op = sd.operations.steps.head.asInstanceOf[SaveAsJson]
       op.directory shouldBe "/test"
@@ -328,7 +318,7 @@ class DslParserSpec extends Matchers with FunSpecLike with BeforeAndAfterEach wi
       val path = Thread.currentThread().getContextClassLoader.getResource("credentials.conf").getFile
       val defDsl =
         s"""
-           |transport {
+           | {
            |  include file("$path")
            |  version = 1
            |  name = test-defaults-job
@@ -357,7 +347,7 @@ class DslParserSpec extends Matchers with FunSpecLike with BeforeAndAfterEach wi
            |  }
            |}
         """.stripMargin
-      val sd = TypesafeDSLParser().parse(defDsl)
+      val sd = TypesafeDSLParser().parse(defDsl).get
       sd.source.asInstanceOf[KafkaSource].properties("mydb-un") shouldBe "test-user"
       sd.source.asInstanceOf[KafkaSource].properties("mydb-pwd") shouldBe "password"
 

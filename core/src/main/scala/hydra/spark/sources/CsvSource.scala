@@ -17,7 +17,7 @@ package hydra.spark.sources
 
 import com.typesafe.config.Config
 import hydra.spark.api._
-import org.apache.spark.sql.{DataFrame, Row, SQLContext}
+import org.apache.spark.sql.{DataFrame, Row, SparkSession}
 import org.apache.spark.streaming.StreamingContext
 import org.apache.spark.streaming.dstream.DStream
 
@@ -32,7 +32,7 @@ case class CsvSource(path: String, header: Boolean = false) extends RowSource {
   override def createStream(sc: StreamingContext): DStream[Row] =
     throw new InvalidDslException("CSV source does not support streaming.")
 
-  override def createDF(ctx: SQLContext): DataFrame = {
+  override def createDF(ctx: SparkSession): DataFrame = {
     val df = ctx.read
       .format("com.databricks.spark.csv")
       .option("header", header.toString) // Use first line of all files as header

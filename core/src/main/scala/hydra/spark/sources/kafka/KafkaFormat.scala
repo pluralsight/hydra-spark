@@ -23,10 +23,9 @@ import org.apache.avro.Schema
 import org.apache.avro.Schema.Field
 import org.apache.avro.generic.{GenericData, GenericRecord}
 import org.apache.kafka.clients.consumer.ConsumerRecord
-import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{DataFrame, SQLContext}
+import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.apache.spark.streaming.StreamingContext
 import org.apache.spark.streaming.dstream.DStream
 import org.codehaus.jackson.node.TextNode
@@ -38,27 +37,26 @@ abstract class KafkaFormat[K: ClassTag, V: ClassTag]
 
   def format: String
 
-  def createDF(ctx: SQLContext, topic: String,
+  def createDF(ctx: SparkSession, topic: String,
                topicProps: Map[String, Any],
                properties: Map[String, String],
                key: Option[K]): DataFrame = {
-    val rdd = createRDD(ctx.sparkContext, topic, topicProps, properties, key)
+    val rdd = createRDD(ctx, topic, topicProps, properties, key)
 
     val fxn = rdd.map(_.value.toString)
 
     schemaOpt(topicProps).map(s => ctx.read.schema(s).json(fxn)) getOrElse ctx.read.json(fxn)
   }
 
-  def createRDD(
-                 ctx: SparkContext,
+  def createRDD(s: SparkSession,
                  topic: String,
                  topicProps: Map[String, Any],
                  properties: Map[String, String],
                  key: Option[K]
                ): RDD[KafkaRecord[K, V]] = {
 
-    SparkKafkaUtils.createRDD[K, V](ctx, topic, topicProps.map(kv => kv._1 -> kv._2.toString), properties, format)
-      .map(m => key.map(k => addKey(m, k)).getOrElse(KafkaRecord(m.key, m.value)))
+    SparkKafkaUtils.createRDD[K, V](s.sparkContext, topic, topicProps.map(kv => kv._1 -> kv._2.toString),
+      properties, format).map(m => key.map(k => addKey(m, k)).getOrElse(KafkaRecord(m.key, m.value)))
   }
 
   def createDStream(

@@ -107,7 +107,7 @@ class KafkaSourceSpec extends Matchers with FunSpecLike with ScalaFutures with P
       "group.id" -> "test-rdd")
     val kafkaMessages = publishJson("test-rdd")
     val source = KafkaSource(Map("test-rdd" -> jsonProps), properties)
-    val df = source.createDF(ss.sqlContext)
+    val df = source.createDF(ss)
     val spark = SparkSession.builder().getOrCreate()
     import spark.implicits._
     val msgs = df.toJSON.map(_.toString).collect().map(_.parseJson)

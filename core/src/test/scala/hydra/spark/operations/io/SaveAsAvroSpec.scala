@@ -25,7 +25,7 @@ import org.apache.avro.io.DecoderFactory
 import org.apache.commons.io.FileUtils
 import org.apache.commons.io.filefilter.{RegexFileFilter, TrueFileFilter}
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{DataFrame, SQLContext}
+import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.apache.spark.streaming.StreamingContext
 import org.apache.spark.streaming.dstream.DStream
 import org.scalatest._
@@ -64,7 +64,7 @@ class SaveAsAvroSpec extends Matchers with FunSpecLike with Inside with BeforeAn
     it("Should save a string source") {
       val t = SaveAsAvro(tmpDir.getAbsolutePath, "classpath:schema.avsc", None, Map.empty,
         overwrite = true)
-      t.transform(AvroSpecSource.createDF(ss.sqlContext))
+      t.transform(AvroSpecSource.createDF(ss))
       val output = FileUtils.listFiles(tmpDir, new RegexFileFilter("^.*.avro$"), TrueFileFilter.INSTANCE)
       val records = output.asScala.map { file =>
         val reader = DataFileReader.openReader(file, new GenericDatumReader[GenericRecord]())
@@ -106,7 +106,7 @@ object AvroSpecSource extends Source[String] {
 
   override def validate = Valid
 
-  override def createDF(ctx: SQLContext): DataFrame = ctx.read.json(ctx.sparkContext.parallelize(msgs))
+  override def createDF(ctx: SparkSession): DataFrame = ctx.read.json(ctx.sparkContext.parallelize(msgs))
 
   override def toDF(rdd: RDD[String]): DataFrame = rdd.toDF
 }

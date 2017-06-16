@@ -16,10 +16,7 @@
 package hydra.spark.operations.transform
 
 import hydra.spark.testutils.{SharedSparkContext, StaticJsonSource}
-import org.apache.spark.sql.SQLContext
-import org.apache.spark.sql.{DataFrame, Column}
-import org.apache.spark.{SparkConf, SparkContext}
-import org.scalatest.{BeforeAndAfterEach, FunSpecLike, Inside, Matchers}
+import org.scalatest.{FunSpecLike, Matchers}
 
 /**
   * Created by alexsilva on 8/12/16.
@@ -29,20 +26,20 @@ class AddColumnSpec extends Matchers with FunSpecLike with SharedSparkContext {
   describe("It should add  a column") {
     it("Should add a column") {
       val sqlContext =  ss.sqlContext
-      val df = AddColumn("newColumn", 10).transform(StaticJsonSource.createDF(sqlContext))
+      val df = AddColumn("newColumn", 10).transform(StaticJsonSource.createDF(ss))
       df.first().getInt(3) shouldBe 10
 
-      val df1 = AddColumn("newColumn", "new").transform(StaticJsonSource.createDF(sqlContext))
+      val df1 = AddColumn("newColumn", "new").transform(StaticJsonSource.createDF(ss))
       df1.first().getString(3) shouldBe "new"
     }
 
     it("Should add a dynamic column") {
       val sqlContext =  ss.sqlContext
-      val df = AddColumn("newColumn", "${10+20}").transform(StaticJsonSource.createDF(sqlContext))
+      val df = AddColumn("newColumn", "${10+20}").transform(StaticJsonSource.createDF(ss))
       df.first().getInt(3) shouldBe 30
 
       val df1 = AddColumn("newColumn", "${T(java.lang.String).valueOf(1)}")
-        .transform(StaticJsonSource.createDF(sqlContext))
+        .transform(StaticJsonSource.createDF(ss))
       df1.first().getString(3) shouldBe "1"
     }
 

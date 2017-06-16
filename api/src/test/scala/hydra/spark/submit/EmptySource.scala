@@ -13,35 +13,30 @@
  * limitations under the License.
  */
 
-package hydra.spark.sources
+package hydra.spark.submit
 
-import hydra.spark.api._
+import hydra.spark.api.{Source, Valid, ValidationResult}
+import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{DataFrame, Row, SparkSession}
 import org.apache.spark.streaming.StreamingContext
 import org.apache.spark.streaming.dstream.DStream
 
-import scala.util.Try
 
 /**
-  * Created by alexsilva on 7/21/16.
-  */
-case class HiveSource(dtable: String) extends RowSource {
-  override def name: String = "hive"
+ * Just to test factories.
+ *
+ * Created by alexsilva on 10/21/16.
+ */
+case class EmptySource(testName: String) extends Source[Row] {
 
-  override def createStream(sc: StreamingContext): DStream[Row] =
-    throw new InvalidDslException("Hive source does not support streaming.")
+  override def name: String = "test"
 
-  override def createDF(ctx: SparkSession): DataFrame = {
-    ctx.sql(dtable)
-  }
+  override def createStream(sc: StreamingContext): DStream[Row] = ???
 
-  /**
-    * Validates the target configuration as a future.
-    *
-    * @return
-    */
-  override def validate: ValidationResult = {
-    Try(require(dtable.length > 0, "A table (or query) is required.")).map(x => Valid)
-      .recover { case t: Throwable => Invalid(name, t.getMessage) }.get
-  }
+  override def createDF(session: SparkSession): DataFrame = ???
+
+  override def validate: ValidationResult = Valid
+
+  override def toDF(rdd: RDD[Row]): DataFrame = ???
 }
+

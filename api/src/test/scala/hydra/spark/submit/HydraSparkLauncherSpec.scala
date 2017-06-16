@@ -1,6 +1,7 @@
 package hydra.spark.submit
 
 import com.typesafe.config.ConfigFactory
+import hydra.spark.api.{DispatchDetails, Operations}
 import org.scalatest.{FunSpecLike, Matchers}
 
 import scala.collection.JavaConverters._
@@ -17,7 +18,6 @@ class HydraSparkLauncherSpec extends Matchers with FunSpecLike {
     val dsl =
       """
         |    {
-        |    	"transport": {
         |    		"version": 1,
         |      "env":{
         |         "HADOOP_USER_NAME":"hydra"
@@ -33,29 +33,29 @@ class HydraSparkLauncherSpec extends Matchers with FunSpecLike {
         |    			"print-rows": {}
         |    		}
         |    	}
-        |    }
       """.stripMargin
 
-    it("builds the right environment variables") {
-      val dslC = ConfigFactory.parseString(dsl).getConfig("transport")
+    val dslC = ConfigFactory.parseString(dsl)
 
-      val env = HydraSparkLauncher.buildEnv(dslC, sparkInfo)
+    it("builds the right environment variables") {
+
+      val d = DispatchDetails("test", EmptySource("test"), Operations(NoOpOperation), false, dslC,
+        ConfigFactory.empty())
+
+      val env = HydraSparkLauncher.env(d, sparkInfo)
 
       env shouldBe Map("HADOOP_CONF_DIR" -> "/hadoop", "YARN_CONF_DIR" -> "/yarn", "HADOOP_USER_NAME" -> "hydra")
     }
 
     it("submits") {
-      val launcher = HydraSparkLauncher.createLauncher(
-        HydraSparkLauncher.defaultSparkCfg,
-        sparkInfo,
-        dsl
-      )
+      val d = DispatchDetails("test", EmptySource("test"), Operations(NoOpOperation), false, dslC,
+        ConfigFactory.empty())
+      val launcher = HydraSparkLauncher.createLauncher(sparkInfo, d)
 
       import org.scalatest.PrivateMethodTester._
       val createBuilder = PrivateMethod[ProcessBuilder]('createBuilder)
       val builder = launcher invokePrivate createBuilder()
       val cmds = builder.command().asScala
-      cmds should contain("test-dispatch")
       cmds should contain("spark.master=local[1]")
     }
   }

@@ -96,7 +96,7 @@ class JdbcSourceSpec extends Matchers with FunSpecLike with ScalaFutures with Pa
     it("Should create an RDD from a table") {
       val source = new JdbcSource(table, Map("url" -> h2Url))
       source.validate shouldBe Valid
-      val rows = source.createDF(ctx)
+      val rows = source.createDF(ss)
       rows.map(r => r.getInt(0)).collect() should contain allOf(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
     }
 
@@ -104,7 +104,7 @@ class JdbcSourceSpec extends Matchers with FunSpecLike with ScalaFutures with Pa
       val query = s"(select * from $table where user_id<=5 order by user_id asc) as testquery"
       val source = new JdbcSource(query, Map("url" -> h2Url))
       source.validate shouldBe Valid
-      val rows = source.createDF(ctx)
+      val rows = source.createDF(ss)
       rows.map(r => r.getInt(0)).collect() shouldBe Array(0, 1, 2, 3, 4, 5)
     }
 
@@ -112,7 +112,6 @@ class JdbcSourceSpec extends Matchers with FunSpecLike with ScalaFutures with Pa
       val dsl =
         """
      {
-          |  "transport": {
           |    "version": 1,
           |    "spark.master":"local[*]",
           |    "interval":"1s",
@@ -137,12 +136,11 @@ class JdbcSourceSpec extends Matchers with FunSpecLike with ScalaFutures with Pa
           |              }
           |        }
           |        }
-          |      }
           |}
         """.stripMargin
 
       val rdd = ctx.read.json(sc.parallelize(Seq("""{"name":"alex"}"""))).rdd
-      val disp = TypesafeDSLParser().parse(dsl)
+      val disp = TypesafeDSLParser().parse(dsl).get
       disp.source.asInstanceOf[Source[Row]].toDF(rdd).count() shouldBe 1
     }
   }
