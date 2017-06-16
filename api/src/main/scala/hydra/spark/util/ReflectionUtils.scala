@@ -13,10 +13,10 @@
  * limitations under the License.
  */
 
-package hydra.spark.dsl.util
+package hydra.spark.util
 
 import scala.reflect.runtime.universe._
-import scala.reflect.runtime.{ currentMirror => cm, universe => ru }
+import scala.reflect.runtime.{currentMirror => cm, universe => ru}
 
 /**
  * Created by alexsilva on 1/4/16.

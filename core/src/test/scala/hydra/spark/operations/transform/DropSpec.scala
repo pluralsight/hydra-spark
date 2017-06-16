@@ -27,7 +27,7 @@ class DropSpec extends Matchers with FunSpecLike with SharedSparkContext {
   describe("The drop operation") {
     it("drops a column") {
       val sqlContext = ss.sqlContext
-      val df = Drop(Seq("data")).transform(StaticJsonSource.createDF(sqlContext))
+      val df = Drop(Seq("data")).transform(StaticJsonSource.createDF(ss))
       df.first().getLong(1) shouldBe 0
     }
 
@@ -35,7 +35,6 @@ class DropSpec extends Matchers with FunSpecLike with SharedSparkContext {
       val dsl =
         """
           |{
-          |    "transport": {
           |        "version": 1,
           |        "spark.master": "local[*]",
           |        "name": "test-dispatch",
@@ -49,11 +48,10 @@ class DropSpec extends Matchers with FunSpecLike with SharedSparkContext {
           |           "columns": ["col1", "col2"]
           |           }
           |        }
-          |    }
           |}
         """.stripMargin
 
-      val dispatch = TypesafeDSLParser().parse(dsl)
+      val dispatch = TypesafeDSLParser().parse(dsl).get
       val d = dispatch.operations.steps.head.asInstanceOf[Drop]
       d.columns shouldBe Seq("col1", "col2")
     }

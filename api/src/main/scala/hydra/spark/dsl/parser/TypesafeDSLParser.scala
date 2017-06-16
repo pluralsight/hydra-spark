@@ -24,35 +24,38 @@ import hydra.spark.configs._
 import hydra.spark.dsl.factories.ClasspathDslElementFactory
 import hydra.spark.internal.Logging
 
+import scala.util.Try
+
 case class TypesafeDSLParser(sourcesPkg: Seq[String] = Seq("hydra.spark.sources"),
                              operationsPkg: Seq[String] = Seq("hydra.spark.operations"))
   extends DSLParser with Logging {
 
   val factory = ClasspathDslElementFactory(sourcesPkg, operationsPkg)
 
-  override def parse(dsl: String): DispatchDetails[_] = {
-    apply(ConfigFactory.parseString(dsl, ConfigParseOptions.defaults().setSyntax(ConfigSyntax.CONF)))
+  override def parse(dsl: String): Try[DispatchDetails[_]] = {
+    parse(ConfigFactory.parseString(dsl, ConfigParseOptions.defaults().setSyntax(ConfigSyntax.CONF)))
   }
 
-  def apply(dsl: Config): DispatchDetails[_] = {
+  def parse(dsl: Config): Try[DispatchDetails[_]] = {
 
-    val transport = dsl.getConfig("transport").resolve()
+    Try(dsl.resolve()).map { transport =>
 
-    val source = transport.get[ConfigObject]("source")
-      .map(s => factory.createSource(s, transport))
-      .valueOrThrow(e => InvalidDslException(s"Invalid DSL: ${e.head.throwable.getMessage}"))
+      val source = transport.get[ConfigObject]("source")
+        .map(s => factory.createSource(s, transport))
+        .valueOrThrow(e => InvalidDslException(s"Invalid DSL: ${e.head.throwable.getMessage}"))
 
-    val operations: Seq[DFOperation] = transport.get[ConfigObject]("operations")
-      .map(ops => factory.createOperations(ops, transport))
-      .valueOrThrow(e => InvalidDslException(s"Invalid DSL: ${e.head.throwable.getMessage}"))
+      val operations: Seq[DFOperation] = transport.get[ConfigObject]("operations")
+        .map(ops => factory.createOperations(ops, transport))
+        .valueOrThrow(e => InvalidDslException(s"Invalid DSL: ${e.head.throwable.getMessage}"))
 
-    val name = transport.get[String]("name").valueOrElse(UUID.randomUUID().toString)
+      val name = transport.get[String]("name").valueOrElse(UUID.randomUUID().toString)
 
-    val streamingProps = transport.flattenAtKey("streaming")
+      val streamingProps = transport.flattenAtKey("streaming")
 
-    val isStreaming = streamingProps.get("streaming.interval").isDefined
+      val isStreaming = streamingProps.get("streaming.interval").isDefined
 
-    DispatchDetails(name, source, Operations(operations), isStreaming, dsl, TypesafeDSLParser.sparkDefaults)
+      DispatchDetails(name, source, Operations(operations), isStreaming, dsl, TypesafeDSLParser.sparkDefaults)
+    }
   }
 }
 

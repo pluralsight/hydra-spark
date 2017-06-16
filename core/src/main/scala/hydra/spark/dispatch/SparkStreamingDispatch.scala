@@ -19,7 +19,7 @@ import com.typesafe.config.{Config, ConfigFactory}
 import hydra.spark.api._
 import hydra.spark.internal.Logging
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{DataFrame, SparkSession}
+import org.apache.spark.sql.DataFrame
 import org.apache.spark.streaming.{Seconds, StreamingContext}
 
 import scala.concurrent.duration.FiniteDuration
@@ -29,16 +29,15 @@ import scala.reflect.runtime.universe._
   * Created by alexsilva on 6/20/16.
   */
 case class SparkStreamingDispatch[S: TypeTag](override val name: String, source: Source[S], operations: Operations,
-                                              dsl: Config, sparkSession: SparkSession)
-  extends SparkDispatch[S](name, source, operations, dsl, sparkSession) with Logging {
+                                              dsl: Config)
+  extends SparkDispatch[S](name, source, operations, dsl) with Logging {
 
   import configs.syntax._
   import hydra.spark.configs._
 
   import scala.collection.JavaConverters._
 
-  private val root = dsl.get[Config]("transport").valueOrElse(dsl.root().toConfig)
-  val streamingConf = ConfigFactory.parseMap(root.flattenAtKey("streaming").asJava)
+  val streamingConf = ConfigFactory.parseMap(dsl.flattenAtKey("streaming").asJava)
   val stopGracefully = streamingConf.get[Boolean]("streaming.stopGracefully").valueOrElse(true)
   val stopSparkContext = streamingConf.get[Boolean]("streaming.stopSparkContext").valueOrElse(true)
 

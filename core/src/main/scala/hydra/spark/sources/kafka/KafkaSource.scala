@@ -22,7 +22,7 @@ import hydra.spark.util.{KafkaUtils, Network}
 import kafka.api.OffsetRequest
 import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{DataFrame, SQLContext}
+import org.apache.spark.sql.{DataFrame, SQLContext, SparkSession}
 import org.apache.spark.streaming.StreamingContext
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.kafka010.HasOffsetRanges
@@ -57,7 +57,7 @@ case class KafkaSource(topics: Map[String, Map[String, Any]], properties: Map[St
     "string" -> KafkaStringFormat
   )
 
-  override def createDF(ctx: SQLContext): DataFrame = {
+  override def createDF(ctx: SparkSession): DataFrame = {
     val dfs = topics.map {
       case (topic, props) =>
         kafkaFormat(formatName(props)).createDF(ctx, topic, props, properties, props.get("keyColumn").map(_.toString))

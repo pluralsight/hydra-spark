@@ -20,7 +20,6 @@ class RegisterViewSpec extends Matchers with FunSpecLike with BeforeAndAfterEach
       val dsl =
         """
           |{
-          |    "transport": {
           |        "name": "test",
           |        "version": "1",
           |        "spark.master":"local[*]",
@@ -35,7 +34,6 @@ class RegisterViewSpec extends Matchers with FunSpecLike with BeforeAndAfterEach
           |               "global":false
           |           }
           |        }
-          |    }
           |}
           |
     """.stripMargin
@@ -53,7 +51,6 @@ class RegisterViewSpec extends Matchers with FunSpecLike with BeforeAndAfterEach
       val dsl =
         """
           |{
-          |    "transport": {
           |        "name": "test",
           |        "version": "1",
           |        "spark.master":"local[*]",
@@ -68,7 +65,6 @@ class RegisterViewSpec extends Matchers with FunSpecLike with BeforeAndAfterEach
           |               "global":true
           |           }
           |        }
-          |    }
           |}
           |
     """.stripMargin

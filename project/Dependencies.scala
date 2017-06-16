@@ -29,22 +29,20 @@ object Dependencies {
   lazy val serviceContainer = Seq("com.github.vonnagy" %% "service-container" % serviceContainerVersion)
     .map(_.excludeAll(
       ExclusionRule(organization = "ch.qos.logback"),
-      ExclusionRule(organization = "org.slf4j")
+      ExclusionRule(organization = "org.slf4j"),
+      ExclusionRule(organization = "com.fasterxml.jackson.core")
     ))
 
   lazy val akkaHttp = Seq("com.typesafe.akka" %% "akka-http-core" % akkaHttpVersion,
     "com.typesafe.akka" %% "akka-http-spray-json" % akkaHttpVersion,
     "com.typesafe.akka" %% "akka-http" % akkaHttpVersion)
 
-  lazy val typesafeConfig = Seq("com.typesafe" % "config" % typeSafeConfigVersion)
-
   lazy val configExt = Seq("com.github.kxbmap" %% "configs" % kxbmapConfigVersion)
 
   lazy val embeddedKafka = "net.manub" %% "scalatest-embedded-kafka" % "0.12.0" % "test"
 
   lazy val kafka = Seq("org.apache.kafka" %% "kafka" % kafkaVersion,
-    "org.apache.kafka" % "kafka-clients" % kafkaVersion,
-    embeddedKafka)
+    "org.apache.kafka" % "kafka-clients" % kafkaVersion, embeddedKafka)
 
   lazy val reflections = Seq("org.reflections" % "reflections" % reflectionsVersion)
 
@@ -54,7 +52,9 @@ object Dependencies {
 
   lazy val spEL = Seq("org.springframework" % "spring-expression" % springVersion)
 
-  val scalaConfigs = Seq("com.github.kxbmap" %% "configs" % kxbmapConfigVersion)
+  val configs = Seq(
+    "com.typesafe" % "config" % typeSafeConfigVersion,
+    "com.github.kxbmap" %% "configs" % kxbmapConfigVersion)
 
   lazy val coreTestDeps = Seq(
     //  "org.scalactic" %% "scalactic" % scalaTestVersion % "test",
@@ -65,6 +65,9 @@ object Dependencies {
   lazy val confluent = Seq(
     "io.confluent" % "kafka-avro-serializer" % confluentVersion,
     "io.confluent" % "kafka-schema-registry" % confluentVersion % "test")
+    .map(_.excludeAll(
+      ExclusionRule(organization = "com.fasterxml.jackson.core")
+    ))
 
   lazy val avro = Seq("org.apache.avro" % "avro" % avroVersion)
 
@@ -76,12 +79,12 @@ object Dependencies {
     "org.apache.logging.log4j" % "log4j-api" % log4jVersion,
     "org.apache.logging.log4j" % "log4j-1.2-api" % log4jVersion)
 
-  lazy val jackson = Seq("com.fasterxml.jackson.core" % "jackson-core" % jacksonVersion,
-    "com.fasterxml.jackson.core" % "jackson-databind" % jacksonVersion,
-    "com.fasterxml.jackson.core" % "jackson-annotations" % jacksonVersion)
+  //  lazy val jackson = Seq("com.fasterxml.jackson.core" % "jackson-core" % jacksonVersion,
+  //    "com.fasterxml.jackson.core" % "jackson-databind" % jacksonVersion,
+  //    "com.fasterxml.jackson.core" % "jackson-annotations" % jacksonVersion)
 
   lazy val sparkCore = Seq(
-    "org.apache.spark" %% "spark-core" % sparkVersion,
+    "org.apache.spark" %% "spark-core" % sparkVersion % "provided",
     "org.apache.spark" %% "spark-streaming" % sparkVersion % "provided")
 
   lazy val spark = sparkCore ++ Seq(
@@ -97,7 +100,7 @@ object Dependencies {
     "org.postgresql" % "postgresql" % postgresVersion,
     "commons-dbcp" % "commons-dbcp" % commonsDbcpVersion,
     "org.flywaydb" % "flyway-core" % flywayVersion
-   // "com.typesafe.slick" %% "slick-hikaricp" % slickVersion
+   //"com.typesafe.slick" %% "slick-hikaricp" % slickVersion
   )
 
   lazy val sparkStreamingKafka = "org.apache.spark" %% "spark-streaming-kafka-0-10" % sparkVersion

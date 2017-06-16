@@ -18,7 +18,6 @@ package hydra.spark.testutils
 import com.typesafe.config.ConfigFactory
 import hydra.spark.api._
 import hydra.spark.dispatch.SparkStreamingDispatch
-import org.apache.spark.sql.SparkSession
 
 import scala.reflect.runtime.universe._
 
@@ -39,7 +38,7 @@ case class StreamingTestDispatch[S: TypeTag](source: Source[S], operations: Oper
     """.stripMargin
   )
 
-  val dispatch = SparkStreamingDispatch("test", source, operations, dsl, SparkSession.builder().getOrCreate())
+  val dispatch = SparkStreamingDispatch("test", source, operations, dsl)
 
   def run() = dispatch.run()
 

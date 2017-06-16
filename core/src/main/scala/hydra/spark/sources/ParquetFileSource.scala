@@ -15,10 +15,8 @@
 
 package hydra.spark.sources
 
-import hydra.spark.api.{ Invalid, Source, Valid, ValidationResult }
-import org.apache.spark.SparkContext
-import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{ DataFrame, Row, SQLContext }
+import hydra.spark.api.{Invalid, Valid, ValidationResult}
+import org.apache.spark.sql.{DataFrame, Row, SparkSession}
 import org.apache.spark.streaming.StreamingContext
 import org.apache.spark.streaming.dstream.DStream
 
@@ -32,8 +30,8 @@ class ParquetFileSource(file: String) extends RowSource {
 
   override def createStream(sc: StreamingContext): DStream[Row] = ???
 
-  override def createDF(ctx: SQLContext): DataFrame = {
-    ctx.read.parquet("people.parquet")
+  override def createDF(ctx: SparkSession): DataFrame = {
+    ctx.read.parquet(file)
   }
 
   /**

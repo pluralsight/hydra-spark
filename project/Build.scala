@@ -27,8 +27,7 @@ object HydraSparkBuild extends Build {
     .settings(commonSettings: _*).
     settings(
       name := "hydra-spark-api",
-      libraryDependencies ++= Seq(logging, scalaConfigs, spark, guava, postgres, kafka, confluent, jackson,
-        typesafeConfig, reflections, springCore, spEL, scopt, coreTestDeps, dbTesting).flatten
+      libraryDependencies ++= Seq(logging, configs, spark, coreTestDeps, reflections).flatten
     )
 
   lazy val `core` = (project in file("core"))
@@ -36,21 +35,13 @@ object HydraSparkBuild extends Build {
     .dependsOn(api)
     .settings(
       name := "hydra-spark-core",
-      libraryDependencies ++= Seq(logging, spark, guava, postgres, kafka, confluent, jackson, slf4j, sprayJson,
-        reflections, springCore, spEL, scopt, coreTestDeps, dbTesting).flatten
+      libraryDependencies ++= Seq(logging, spark, guava, postgres, kafka, confluent, slf4j, sprayJson,
+        springCore, spEL, scopt, coreTestDeps, dbTesting).flatten
     )
-
-  lazy val `http` = (project in file("http"))
-    .dependsOn(core)
-    .settings(commonSettings: _*).
-    settings(
-      name := "hydra-spark-http",
-      libraryDependencies ++= Seq(logging, spark, typesafeConfig, serviceContainer, akkaHttp,
-        slick, coreTestDeps, dbTesting, httpTest).flatten
-    )
-
 
   lazy val buildTag = scala.util.Properties.envOrNone("version").map(v => "." + v).getOrElse("")
+
+  import Versions.jacksonVersion
 
   lazy val commonSettings = Seq(
     organization := "pluralsight",
@@ -63,6 +54,9 @@ object HydraSparkBuild extends Build {
     excludeDependencies += "org.slf4j" % "slf4j-log4j12",
     excludeDependencies += "log4j" % "log4j",
     excludeDependencies += "log4j" % "apache-log4j-extras",
+    dependencyOverrides += "com.fasterxml.jackson.core" %% "jackson-core" % jacksonVersion,
+    dependencyOverrides += "com.fasterxml.jackson.core" %% "jackson-annotations" % jacksonVersion,
+    dependencyOverrides += "com.fasterxml.jackson.core" %% "jackson-databind" % jacksonVersion,
     dependencyOverrides += "org.scalatest" %% "scalatest" % "3.0.1",
     dependencyOverrides += "org.scala-lang" % "scala-compiler" % scalaVersion.value,
     publishArtifact in Test := false,

@@ -13,13 +13,13 @@
  * limitations under the License.
  */
 
-package hydra.spark.dsl.util
+package hydra.spark.util
 
 import scala.collection.immutable.ListMap
 import scala.concurrent.duration.Duration
-import scala.reflect.api.{ Mirror, TypeCreator, Universe }
+import scala.reflect.api.{Mirror, TypeCreator, Universe}
 import scala.reflect.runtime.universe._
-import scala.reflect.runtime.{ currentMirror => cm, universe => ru }
+import scala.reflect.runtime.{currentMirror => cm, universe => ru}
 
 /**
  * Created by alexsilva on 6/2/16.

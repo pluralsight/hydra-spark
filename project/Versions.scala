@@ -18,7 +18,7 @@
 object Versions {
   val jdkVersion = scala.util.Properties.isJavaAtLeast("1.8")
 
-  val hydraSparkVersion = "0.5.0"
+  val hydraSparkVersion = "0.6.1"
 
   lazy val typeSafeConfigVersion = if (jdkVersion) "1.3.0" else "1.2.1"
   lazy val kxbmapConfigVersion = "0.4.2"

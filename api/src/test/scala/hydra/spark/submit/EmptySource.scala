@@ -17,7 +17,7 @@ package hydra.spark.submit
 
 import hydra.spark.api.{Source, Valid, ValidationResult}
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{DataFrame, Row, SQLContext}
+import org.apache.spark.sql.{DataFrame, Row, SparkSession}
 import org.apache.spark.streaming.StreamingContext
 import org.apache.spark.streaming.dstream.DStream
 
@@ -33,7 +33,7 @@ case class EmptySource(testName: String) extends Source[Row] {
 
   override def createStream(sc: StreamingContext): DStream[Row] = ???
 
-  override def createDF(ctx: SQLContext): DataFrame = ???
+  override def createDF(session: SparkSession): DataFrame = ???
 
   override def validate: ValidationResult = Valid
 

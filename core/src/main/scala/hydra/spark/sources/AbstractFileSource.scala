@@ -16,11 +16,11 @@
 package hydra.spark.sources
 
 import com.typesafe.config.Config
-import hydra.spark.api.{ Invalid, Source, Valid, ValidationResult }
+import hydra.spark.api.{Invalid, Source, Valid, ValidationResult}
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.mapreduce.InputFormat
 import org.apache.spark.SparkContext
-import org.apache.spark.sql.{ DataFrame, DataFrameReader, SQLContext }
+import org.apache.spark.sql.{DataFrame, DataFrameReader, SparkSession}
 import org.apache.spark.streaming.StreamingContext
 import org.apache.spark.streaming.dstream.DStream
 
@@ -45,7 +45,7 @@ abstract class AbstractFileSource[K: ClassTag, V: ClassTag, F <: InputFormat[K, 
     sc.fileStream[K, V, F](path).map(_._2)
   }
 
-  override def createDF(ctx: SQLContext): DataFrame = {
+  override def createDF(ctx: SparkSession): DataFrame = {
     setHadoopConfig(ctx.sparkContext)
     fileToDF(ctx.read)
   }

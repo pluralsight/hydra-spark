@@ -18,7 +18,6 @@ class HydraSparkLauncherSpec extends Matchers with FunSpecLike {
     val dsl =
       """
         |    {
-        |    	"transport": {
         |    		"version": 1,
         |      "env":{
         |         "HADOOP_USER_NAME":"hydra"
@@ -34,10 +33,9 @@ class HydraSparkLauncherSpec extends Matchers with FunSpecLike {
         |    			"print-rows": {}
         |    		}
         |    	}
-        |    }
       """.stripMargin
 
-    val dslC = ConfigFactory.parseString(dsl).getConfig("transport")
+    val dslC = ConfigFactory.parseString(dsl)
 
     it("builds the right environment variables") {
 
@@ -58,7 +56,6 @@ class HydraSparkLauncherSpec extends Matchers with FunSpecLike {
       val createBuilder = PrivateMethod[ProcessBuilder]('createBuilder)
       val builder = launcher invokePrivate createBuilder()
       val cmds = builder.command().asScala
-      cmds should contain("test-dispatch")
       cmds should contain("spark.master=local[1]")
     }
   }

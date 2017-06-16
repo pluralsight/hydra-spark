@@ -20,7 +20,7 @@ import java.lang.reflect.Method
 import com.typesafe.config._
 import hydra.spark.api.InvalidDslException
 import hydra.spark.configs._
-import hydra.spark.dsl.util.{CaseClassFactory, ReflectionUtils}
+import hydra.spark.util.{CaseClassFactory, ReflectionUtils}
 
 import scala.collection.JavaConverters._
 import scala.language.existentials
