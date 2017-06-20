@@ -16,12 +16,12 @@
 package hydra.spark.testutils
 
 import com.typesafe.config.Config
-import hydra.spark.api.{ Source, Valid }
+import hydra.spark.api.{Source, Valid}
+import hydra.spark.util.RDDConversions._
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{ DataFrame, SQLContext }
+import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.apache.spark.streaming.StreamingContext
 import org.apache.spark.streaming.dstream.DStream
-import hydra.spark.util.RDDConversions._
 
 import scala.collection.mutable
 
@@ -38,7 +38,7 @@ case class ListSource(seq: Seq[String]) extends Source[String] {
     sc.queueStream[String](lines, false, rdd)
   }
 
-  override def createDF(ctx: SQLContext): DataFrame = ctx.read.json(ctx.sparkContext.parallelize(seq))
+  override def createDF(ctx: SparkSession): DataFrame = ctx.read.json(ctx.sparkContext.parallelize(seq))
 
   override def toDF(rdd: RDD[String]): DataFrame = rdd.toDF
 }

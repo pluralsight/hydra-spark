@@ -2,8 +2,8 @@ package hydra.spark.submit
 
 import java.util.UUID
 
-import com.typesafe.config.{Config, ConfigFactory}
-import configs.syntax._
+import com.typesafe.config.{ConfigFactory, ConfigRenderOptions}
+import hydra.spark.api.DispatchDetails
 import hydra.spark.internal.Logging
 import org.apache.spark.launcher.SparkLauncher
 
@@ -14,8 +14,7 @@ import scala.collection.JavaConverters._
   */
 object HydraSparkLauncher extends Logging {
 
-
-  def buildEnv(dispatchConfig: Config, sparkInfo: SparkSubmitInfo): Map[String, String] = {
+  private[submit] def env[T](dispatchDetails: DispatchDetails[T], sparkInfo: SparkSubmitInfo): Map[String, String] = {
     import hydra.spark.configs._
     val env: Map[String, String] = Map(
       "HADOOP_CONF_DIR" -> sparkInfo.hadoopConfDir,
@@ -24,29 +23,24 @@ object HydraSparkLauncher extends Logging {
       case (key, Some(value)) => key -> value
     }
 
-    env ++ dispatchConfig.flattenAtKey("env").map { case (k, v) => k.substring(4) -> v }
+    env ++ dispatchDetails.dsl.flattenAtKey("env").map { case (k, v) => k.substring(4) -> v }
 
   }
 
-  def createLauncher(baseSparkConfig: Config, sparkInfo: SparkSubmitInfo, dsl: String,
-                     containerElem: String = "transport"): SparkLauncher = {
-    import hydra.spark.configs._
-    val dslC = ConfigFactory.parseString(dsl).getConfig(containerElem)
+  def createLauncher[T](sparkInfo: SparkSubmitInfo, dispatch: DispatchDetails[T]): SparkLauncher = {
+    import configs.syntax._
 
-    val sparkConf = ConfigFactory.parseMap(dslC.flattenAtKey("spark").asJava)
-      .withFallback(baseSparkConfig)
-      .withFallback(defaultSparkCfg)
-
-    val launcher = new SparkLauncher(buildEnv(dslC, sparkInfo).asJava)
+    val dsl = dispatch.dsl.root().render(ConfigRenderOptions.concise())
+    val launcher = new SparkLauncher(env(dispatch, sparkInfo).asJava)
       .setSparkHome(sparkInfo.sparkHome)
       .setAppResource(sparkInfo.hydraSparkJar)
-      .setAppName(dslC.get[String]("name").valueOrElse(UUID.randomUUID().toString))
+      .setAppName(dispatch.dsl.get[String]("name").valueOrElse(UUID.randomUUID().toString))
       .setMainClass("hydra.spark.dsl.DslRunner")
       .addAppArgs(dsl)
-      .setMaster(sparkConf.getString("spark.master"))
+      .setMaster(dispatch.sparkConf.get("spark.master"))
       .setVerbose(true)
 
-    sparkConf.entrySet().asScala.foreach(entry => launcher.setConf(entry.getKey, entry.getValue.unwrapped().toString))
+    dispatch.sparkConf.getAll.foreach(entry => launcher.setConf(entry._1, entry._2))
 
     launcher
   }

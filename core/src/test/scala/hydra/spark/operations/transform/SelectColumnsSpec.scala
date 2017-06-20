@@ -17,7 +17,6 @@ package hydra.spark.operations.transform
 
 import hydra.spark.api.Invalid
 import hydra.spark.testutils.{SharedSparkContext, StaticJsonSource}
-import org.apache.spark.sql.SQLContext
 import org.scalatest.{FunSpecLike, Matchers}
 
 /**
@@ -27,15 +26,13 @@ class SelectColumnsSpec extends Matchers with FunSpecLike with SharedSparkContex
 
   describe("It should select column") {
     it("selects one column") {
-      val sqlContext =  ss.sqlContext
-      val df = SelectColumns(Seq("msg_no")).transform(StaticJsonSource.createDF(sqlContext))
+      val df = SelectColumns(Seq("msg_no")).transform(StaticJsonSource.createDF(ss))
       df.columns shouldBe Array("msg_no")
     }
 
     it("selects multiple column") {
-      val sqlContext =  ss.sqlContext
-      val df = SelectColumns(Seq("msg_no","data")).transform(StaticJsonSource.createDF(sqlContext))
-      df.columns shouldBe Array("msg_no","data")
+      val df = SelectColumns(Seq("msg_no", "data")).transform(StaticJsonSource.createDF(ss))
+      df.columns shouldBe Array("msg_no", "data")
     }
 
     it("validates") {

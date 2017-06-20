@@ -37,12 +37,16 @@ class HiveTableSpec extends Matchers with FunSpecLike with BeforeAndAfterEach wi
 
   override def beforeAll() = {
 
+    warehouseDir.delete()
+    cleanUp()
+
     val sparkConf = new SparkConf()
       .setMaster("local")
       .setAppName("hydra-spark-hive-test")
       .set("spark.ui.enabled", "false")
       .set("spark.local.dir", "/tmp")
       .set("spark.sql.warehouse.dir", warehouseDir.toURI.getPath)
+
 
     //prevent spark context from being created, because we need to add hive support
     hive = SparkSession.builder().config(sparkConf).enableHiveSupport().getOrCreate()
@@ -52,7 +56,14 @@ class HiveTableSpec extends Matchers with FunSpecLike with BeforeAndAfterEach wi
     //prevent spark context from being created, because we need to add hive support
     LocalSparkContext.stop(hive.sparkContext)
     warehouseDir.delete()
-    FileUtils.deleteDirectory(new File("spark_warehouse"))
+    cleanUp()
+  }
+
+  private def cleanUp() = {
+    val currentRelativePath = java.nio.file.Paths.get("")
+    val s = currentRelativePath.toAbsolutePath.toString
+    FileUtils.deleteDirectory(new File(s, "spark_warehouse"))
+    FileUtils.deleteDirectory(new File(s, "metastore_db"))
   }
 
 
@@ -60,8 +71,7 @@ class HiveTableSpec extends Matchers with FunSpecLike with BeforeAndAfterEach wi
 
     it("should save") {
 
-
-      val df = StaticJsonSource.createDF(hive.sqlContext)
+      val df = StaticJsonSource.createDF(hive)
       HiveTable("my_table", Map("option.path" -> warehouseDir.toURI.getPath), Seq.empty).transform(df)
       hive.catalog.refreshTable("my_table")
       val dfHive = hive.sql("SELECT * from my_table")

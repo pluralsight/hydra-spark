@@ -46,7 +46,7 @@ class CsvSourceSpec extends Matchers with FunSpecLike with ScalaFutures with Pat
       val path = Thread.currentThread().getContextClassLoader.getResource("profile.csv").getFile
       val csv = CsvSource(path, true)
 
-      val df = csv.createDF(ss.sqlContext)
+      val df = csv.createDF(ss)
 
       df.count() shouldBe 37
       val row = df.first()
@@ -58,7 +58,6 @@ class CsvSourceSpec extends Matchers with FunSpecLike with ScalaFutures with Pat
       val dsl =
         """
           |{
-          |	"transport": {
           |		"version": 1,
           |		"spark.master": "local[*]",
           |		"spark.ui.enabled": false,
@@ -78,10 +77,9 @@ class CsvSourceSpec extends Matchers with FunSpecLike with ScalaFutures with Pat
           |		}
           |	}
           |}
-          |}
         """.stripMargin
 
-      val dispatch = TypesafeDSLParser().parse(dsl)
+      val dispatch = TypesafeDSLParser().parse(dsl).get
 
       val csv = dispatch.source.asInstanceOf[CsvSource]
       csv.header shouldBe false

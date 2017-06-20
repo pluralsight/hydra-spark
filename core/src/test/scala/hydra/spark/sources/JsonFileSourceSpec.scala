@@ -79,7 +79,7 @@ class JsonFileSourceSpec extends Matchers with FunSpecLike with ScalaFutures wit
     it("Should create a DF") {
       val file = Thread.currentThread().getContextClassLoader.getResource("json-source.json")
       val jsonSource = JsonFileSource(file.getFile, Map.empty)
-      val df = jsonSource.createDF(ctx)
+      val df = jsonSource.createDF(ss)
       df.show()
       val row = df.first()
       row.getAs[String]("type") shouldBe "status"
@@ -88,7 +88,6 @@ class JsonFileSourceSpec extends Matchers with FunSpecLike with ScalaFutures wit
     it("Should be parseable") {
       val dsl =
         """
-          transport {
           |  version = 1
           |  spark.master = "local[*]"
           |  spark.ui.enabled = false
@@ -110,11 +109,9 @@ class JsonFileSourceSpec extends Matchers with FunSpecLike with ScalaFutures wit
           |    }
           |  }
           |}
-          |}
-          |
         """.stripMargin
 
-      val dispatch = TypesafeDSLParser().parse(dsl)
+      val dispatch = TypesafeDSLParser().parse(dsl).get
 
       val csv = dispatch.source.asInstanceOf[JsonFileSource]
       csv.path shouldBe "s3n://path"
@@ -131,7 +128,7 @@ class JsonFileSourceSpec extends Matchers with FunSpecLike with ScalaFutures wit
         fakePath,
         Map("fs.s3n.awsAccessKeyId" -> "key", "fs.s3n.awsSecretAccessKey" -> "secret")
       )
-      s3.createDF(ctx)
+      s3.createDF(ss)
       sc.hadoopConfiguration.get("fs.s3n.awsAccessKeyId") shouldBe "key"
       sc.hadoopConfiguration.get("fs.s3n.awsSecretAccessKey") shouldBe "secret"
     }

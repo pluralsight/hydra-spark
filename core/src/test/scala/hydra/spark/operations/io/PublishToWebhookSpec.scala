@@ -27,7 +27,6 @@ class PublishToWebhookSpec extends Matchers with FunSpecLike {
       val dsl =
         """
           |{
-          |	"transport": {
           |		"version": 1,
           |		"spark.master": "local[*]",
           |		"name": "test-dispatch",
@@ -41,11 +40,10 @@ class PublishToWebhookSpec extends Matchers with FunSpecLike {
           |				"url": "test.com"
           |			}
           |		}
-          |	}
           |}
         """.stripMargin
 
-      val publish = TypesafeDSLParser().parse(dsl).operations.steps.head.asInstanceOf[PublishToWebhook]
+      val publish = TypesafeDSLParser().parse(dsl).get.operations.steps.head.asInstanceOf[PublishToWebhook]
       publish.url shouldBe "test.com"
     }
   }

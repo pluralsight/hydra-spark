@@ -10,7 +10,6 @@ class DslRunnerSpec extends Matchers with FunSpecLike {
   val validDsl =
     """
     {
- |	"transport": {
  |		"version": 1,
  |		"spark.master": "local[*]",
  |		"name": "test-dispatch",
@@ -22,14 +21,12 @@ class DslRunnerSpec extends Matchers with FunSpecLike {
  |			"operations": {
  |				"print-rows": {}
  |			}
- |		}
  |	}
     """.stripMargin
 
   val invalidDsl =
     """
       |{
-      |	"transport": {
       |		"version": 1,
       |   "spark.master" = "mesos",
       |  "name": "test-dispatch",
@@ -49,7 +46,6 @@ class DslRunnerSpec extends Matchers with FunSpecLike {
       |				}
       |			}
       |		}
-      |	}
       |}
     """.stripMargin
 

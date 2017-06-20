@@ -20,7 +20,7 @@ import java.lang.reflect.Method
 import com.typesafe.config._
 import hydra.spark.api.InvalidDslException
 import hydra.spark.configs._
-import hydra.spark.dsl.util.{CaseClassFactory, ReflectionUtils}
+import hydra.spark.util.{CaseClassFactory, ReflectionUtils}
 
 import scala.collection.JavaConverters._
 import scala.language.existentials
@@ -45,14 +45,14 @@ object FactoryHelper {
     * @tparam T
     * @return
     */
-  def materialize[T: TypeTag](elm: ConfigObject, choices: Map[String, Class[_ <: T]], props: Config): Seq[T] = {
+  def materialize[T: TypeTag](matType: String, elm: ConfigObject, choices: Map[String, Class[_ <: T]],
+                              props: Config): Seq[T] = {
     val elements = elm.entrySet().asScala.map(x => {
       val dk = DslKey(x.getKey)
       //try to look up in the map, if not found try to load it as a class name
       val c = scala.util.Try(choices.get(dk.kname).getOrElse(Class.forName(dk.kname).asInstanceOf[Class[_ <: T]]))
       if (c.isFailure)
-        throw InvalidDslException(s"'${dk.kname}' is not a registered operation or source. Known operations are " +
-          s"${choices.keys.mkString(",")}")
+        throw InvalidDslException(s"'${dk.kname}' is not a known $matType. Possible choices: ${choices.keys.mkString(",")}")
       val elemCfg = x.getValue.atPath(dk.kname).getConfig(dk.kname).resolveWith(props)
       dk -> scala.util.Try(instantiate(c.get, elemCfg))
     }).toSeq
@@ -100,6 +100,7 @@ object FactoryHelper {
     import scala.reflect.runtime.universe._
 
     val m = runtimeMirror(getClass.getClassLoader)
+
     import configs.syntax._
 
     def getAsScala(key: String, tpe: TypeTag[_]) = {
@@ -108,7 +109,7 @@ object FactoryHelper {
         .recover { case e: ClassNotFoundException => classOf[AnyRef] }.get
       val v = clz match {
         case q if q == classOf[Seq[String]] => cfg.get[List[String]](key).valueOrElse(List.empty)
-        case q if q == classOf[Map[_, _]] => cfg.get[Config](key).valueOrElse(ConfigFactory.empty).to[Map[String,String]]
+        case q if q == classOf[Map[_, _]] => cfg.get[Config](key).valueOrElse(ConfigFactory.empty).to[Map[String, String]]
         case q if q == classOf[String] => cfg.getString(key)
         case q if q == classOf[Int] => cfg.getInt(key)
         case q if q == classOf[Long] => cfg.getLong(key)

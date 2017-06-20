@@ -25,7 +25,9 @@ import org.apache.spark.sql.SparkSession
   * Created by alexsilva on 6/21/16.
   */
 abstract class SparkDispatch[S](name: String, source: Source[S], operations: Operations,
-                                dsl: Config, session: SparkSession) extends Dispatch[S] {
+                                dsl: Config) extends Dispatch[S] {
+
+  lazy val sparkSession = SparkSession.builder().getOrCreate()
 
   val author = dsl.get[String]("author").valueOrElse("Unknown")
 }
@@ -37,17 +39,17 @@ object SparkDispatch {
   val parser = TypesafeDSLParser(Seq("hydra.spark.sources"), Seq("hydra.spark.operations"))
 
   def apply(dsl: String): SparkDispatch[_] = {
-    apply(parser.parse(dsl))
+    apply(parser.parse(dsl).get)
   }
 
   def apply[S: TypeTag](d: DispatchDetails[S]): SparkDispatch[S] = {
 
-    val session = SparkSession.builder().config(d.conf).appName(d.name).getOrCreate()
+    val session = SparkSession.builder().config(d.sparkConf).appName(d.name).getOrCreate()
 
     if (d.isStreaming)
-      SparkStreamingDispatch[S](d.name, d.source, d.operations, d.dsl, session)
+      SparkStreamingDispatch[S](d.name, d.source, d.operations, d.dsl)
     else
-      SparkBatchDispatch[S](d.name, d.source, d.operations, d.dsl, session)
+      SparkBatchDispatch[S](d.name, d.source, d.operations, d.dsl)
   }
 
 }

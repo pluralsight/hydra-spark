@@ -16,7 +16,7 @@
 package hydra.spark.sources
 
 import hydra.spark.api._
-import org.apache.spark.sql.{ DataFrame, Row, SQLContext }
+import org.apache.spark.sql.{DataFrame, Row, SparkSession}
 import org.apache.spark.streaming.StreamingContext
 import org.apache.spark.streaming.dstream.DStream
 
@@ -34,7 +34,7 @@ case class JdbcSource(dbtable: String, properties: Map[String, String]) extends 
   override def createStream(sc: StreamingContext): DStream[Row] =
     throw new InvalidDslException("Jdbc Source does not support streaming.")
 
-  override def createDF(ctx: SQLContext): DataFrame = {
+  override def createDF(ctx: SparkSession): DataFrame = {
     ctx.read.format("jdbc").options(theProps).load()
   }
 

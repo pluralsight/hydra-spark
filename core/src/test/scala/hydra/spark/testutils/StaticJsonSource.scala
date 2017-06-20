@@ -15,10 +15,10 @@
 
 package hydra.spark.testutils
 
-import hydra.spark.api.{ Source, Valid }
+import hydra.spark.api.{Source, Valid}
 import hydra.spark.util.RDDConversions._
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{ DataFrame, SQLContext }
+import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.apache.spark.streaming.StreamingContext
 import org.apache.spark.streaming.dstream.DStream
 
@@ -43,7 +43,7 @@ object StaticJsonSource extends Source[String] {
 
   override def validate = Valid
 
-  override def createDF(ctx: SQLContext): DataFrame = ctx.read.json(ctx.sparkContext.parallelize(msgs))
+  override def createDF(ctx: SparkSession): DataFrame = ctx.read.json(ctx.sparkContext.parallelize(msgs))
 
   override def toDF(rdd: RDD[String]): DataFrame = rdd.toDF
 }

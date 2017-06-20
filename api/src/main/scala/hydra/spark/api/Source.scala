@@ -16,9 +16,9 @@
 package hydra.spark.api
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{ DataFrame, SQLContext }
+import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.apache.spark.streaming.dstream.DStream
-import org.apache.spark.streaming.{ Durations, StreamingContext }
+import org.apache.spark.streaming.{Durations, StreamingContext}
 
 import scala.concurrent.duration.Duration
 import scala.language.existentials
@@ -35,7 +35,7 @@ trait Source[S] extends Validatable {
 
   def createStream(sc: StreamingContext): DStream[S]
 
-  def createDF(ctx: SQLContext): DataFrame
+  def createDF(session: SparkSession): DataFrame
 
   /**
    * Called by dispatchers to signal progress of the underlying processing.

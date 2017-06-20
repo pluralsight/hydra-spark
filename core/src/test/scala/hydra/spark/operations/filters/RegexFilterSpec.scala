@@ -48,7 +48,7 @@ class RegexFilterSpec extends Matchers with FunSpecLike with BeforeAndAfterEach 
     }
 
     it("Should accept regex") {
-      val sd = SparkBatchDispatch("test", StaticJsonSource, Operations(Seq(t, ListOperation)), config, ss)
+      val sd = SparkBatchDispatch("test", StaticJsonSource, Operations(Seq(t, ListOperation)), config)
       sd.run()
       ListOperation.l.size shouldBe 6
     }

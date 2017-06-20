@@ -64,7 +64,7 @@ class SaveAsJsonSpec extends Matchers with FunSpecLike with Inside with BeforeAn
 
       val t = SaveAsJson(props)
 
-      val sd = SparkBatchDispatch("test", StaticJsonSource, Operations(t), props, ss)
+      val sd = SparkBatchDispatch("test", StaticJsonSource, Operations(t), props)
 
       sd.run()
 

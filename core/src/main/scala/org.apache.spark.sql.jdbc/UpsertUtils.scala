@@ -131,39 +131,12 @@ object UpsertUtils extends Logging {
               }
 
           }
-          //          var i = 0
-          //          while (i < numFields) {
-          //            if (row.isNullAt(i)) {
-          //              stmt.setNull(i + 1, nullTypes(i))
-          //            } else {
-          //              uschema.fields(i).dataType match {
-          //                case IntegerType => stmt.setInt(i + 1, row.getInt(i))
-          //                case LongType => stmt.setLong(i + 1, row.getLong(i))
-          //                case DoubleType => stmt.setDouble(i + 1, row.getDouble(i))
-          //                case FloatType => stmt.setFloat(i + 1, row.getFloat(i))
-          //                case ShortType => stmt.setInt(i + 1, row.getShort(i))
-          //                case ByteType => stmt.setInt(i + 1, row.getByte(i))
-          //                case BooleanType => stmt.setBoolean(i + 1, row.getBoolean(i))
-          //                case StringType => stmt.setString(i + 1, row.getString(i))
-          //                case BinaryType => stmt.setBytes(i + 1, row.getAs[Array[Byte]](i))
-          //                case TimestampType => stmt.setTimestamp(i + 1, row.getAs[java.sql.Timestamp](i))
-          //                case DateType => stmt.setDate(i + 1, row.getAs[java.sql.Date](i))
-          //                case t: DecimalType => stmt.setBigDecimal(i + 1, row.getDecimal(i))
-          //                case ArrayType(et, _) =>
-          //                  val array = conn.createArrayOf(
-          //                    getJdbcType(et, dialect).databaseTypeDefinition.toLowerCase,
-          //                    row.getSeq[AnyRef](i).toArray)
-          //                  stmt.setArray(i + 1, array)
-          //                case _ => throw new IllegalArgumentException(
-          //                  s"Can't translate non-null value for field $i")
-          //              }
-          //            }
-          //            i = i + 1
-          //          }
+          println(stmt)
           stmt.addBatch()
           rowCount += 1
           if (rowCount % batchSize == 0) {
             stmt.executeBatch()
+            conn.commit()
             rowCount = 0
           }
         }
@@ -231,10 +204,10 @@ object PostgresUpsertBuilder extends UpsertBuilder with Logging {
                       schema: StructType) = {
     idField match {
       case Some(id) => {
-        val columns = schema.fields.map(f=>dialect.quoteIdentifier(f.name)).mkString(",")
+        val columns = schema.fields.map(f => dialect.quoteIdentifier(f.name)).mkString(",")
         val placeholders = schema.fields.map(_ => "?").mkString(",")
         val updateSchema = StructType(schema.fields.filterNot(_.name == id.name))
-        val updateColumns = updateSchema.fields.map(f=>dialect.quoteIdentifier(f.name)).mkString(",")
+        val updateColumns = updateSchema.fields.map(f => dialect.quoteIdentifier(f.name)).mkString(",")
         val updatePlaceholders = updateSchema.fields.map(_ => "?").mkString(",")
         val sql =
           s"""insert into ${table} ($columns) values ($placeholders)

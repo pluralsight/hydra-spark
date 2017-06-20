@@ -42,7 +42,7 @@ class SparkBatchDispatchTest extends Matchers with FunSpecLike with BeforeAndAft
 
   describe("When creating RDDs") {
     it("Be configured properly") {
-      SparkBatchDispatch("test", StaticJsonSource, Operations(ListOperation), props, ss).run()
+      SparkBatchDispatch("test", StaticJsonSource, Operations(ListOperation), props).run()
       ListOperation.l.map(_.parseJson) should contain theSameElementsAs StaticJsonSource.msgs.map(_.parseJson)
     }
   }

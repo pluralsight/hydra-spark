@@ -24,7 +24,7 @@ import hydra.spark.api._
 import hydra.spark.testutils.SharedSparkContext
 import hydra.spark.util.RDDConversions
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{DataFrame, SQLContext}
+import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.apache.spark.streaming.StreamingContext
 import org.apache.spark.streaming.dstream.DStream
 import org.scalatest.{FunSpecLike, Matchers}
@@ -42,7 +42,7 @@ class SparkStreamingDispatchTest extends Matchers with FunSpecLike with SharedSp
     it("Be configured properly") {
 
       val c = ConfigFactory.parseMap(props.asJava)
-      val sd = SparkStreamingDispatch("test", EmptySource, Operations(Seq.empty), c, ss)
+      val sd = SparkStreamingDispatch("test", EmptySource, Operations(Seq.empty), c)
       val conf = sd.ssc.sparkContext.getConf
       sd.ssc.stop(false, false)
     }
@@ -51,7 +51,6 @@ class SparkStreamingDispatchTest extends Matchers with FunSpecLike with SharedSp
       val dsl =
         """
           |{
-          |    "transport": {
           |        "name": "test",
           |        "version": "1",
           |        "spark.master":"local[*]",
@@ -64,7 +63,6 @@ class SparkStreamingDispatchTest extends Matchers with FunSpecLike with SharedSp
           |        "operations": {
           |           "print-rows":{}
           |        }
-          |    }
           |}
           |
     """.stripMargin
@@ -80,7 +78,7 @@ object EmptySource extends Source[String] {
 
   override def createStream(sc: StreamingContext): DStream[String] = ???
 
-  override def createDF(ctx: SQLContext): DataFrame = ???
+  override def createDF(ctx: SparkSession): DataFrame = ???
 
   override def validate: ValidationResult = Valid
 
