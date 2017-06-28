@@ -19,7 +19,10 @@ import com.typesafe.config.Config
 import hydra.spark.api._
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
+import org.apache.hadoop.fs.FileSystem
 import org.apache.spark.sql.{DataFrame, SaveMode}
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 /**
   * Created by alexsilva on 6/21/16.
@@ -29,18 +32,24 @@ case class SaveAsJson(directory: String, codec: Option[String], overwrite: Boole
   override def id: String = s"save-as-json-$directory-$codec"
 
   override def transform(df: DataFrame): DataFrame = {
+    val timestmp = System.currentTimeMillis().toString
+    val path = "\\{current_timestamp\\}".r replaceAllIn (directory,timestmp)
+
     df.write.option("compression", codec.getOrElse("none"))
       .mode(if (overwrite) SaveMode.Overwrite else SaveMode.ErrorIfExists)
-      .json(directory)
+      .json(path)
     df
   }
 
   override def validate: ValidationResult = {
-    if (!directory.isEmpty) {
+    Option(directory).map {directory=>
       val d = new Path(directory)
       val fs = d.getFileSystem(new Configuration())
-      if (fs.isDirectory(d)) Valid else Invalid(ValidationError("json", s"$directory is not a directory"))
-    } else Invalid(ValidationError("json", s"Directory cannot be empty."))
+      val isFile = fs.isFile(d)
+      if (isFile) {
+        Invalid(ValidationError("json", s"$directory is not a directory"))
+      } else Valid
+    } getOrElse(Invalid(ValidationError("json", s"Directory cannot be empty.")))
 
   }
 }
