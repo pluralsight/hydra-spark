@@ -19,10 +19,7 @@ import com.typesafe.config.Config
 import hydra.spark.api._
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
-import org.apache.hadoop.fs.FileSystem
 import org.apache.spark.sql.{DataFrame, SaveMode}
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 
 /**
   * Created by alexsilva on 6/21/16.

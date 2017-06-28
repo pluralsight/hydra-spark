@@ -19,7 +19,7 @@ import java.io.File
 
 import com.google.common.io.Files
 import com.typesafe.config.ConfigFactory
-import hydra.spark.api.{Invalid, Operations, Valid, ValidationError}
+import hydra.spark.api.{Invalid, Operations}
 import hydra.spark.dispatch.SparkBatchDispatch
 import hydra.spark.testutils.{ListOperation, SharedSparkContext, StaticJsonSource}
 import org.scalatest.{BeforeAndAfterEach, FunSpecLike, Inside, Matchers}
@@ -99,7 +99,7 @@ class SaveAsJsonSpec extends Matchers with FunSpecLike with Inside with BeforeAn
       l should contain theSameElementsAs StaticJsonSource.msgs.map(_.parseJson)
     }
 
-    it("Should create timestamp subdirectory if parameter passed") {
+    it("Should create timestamp subdirectory if current_timestamp specified") {
         import spray.json._
 
         val tmpDir = Files.createTempDir()
