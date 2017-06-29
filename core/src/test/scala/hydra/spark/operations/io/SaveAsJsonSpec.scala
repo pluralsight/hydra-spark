@@ -33,24 +33,47 @@ import scala.collection.mutable
 class SaveAsJsonSpec extends Matchers with FunSpecLike with Inside with BeforeAndAfterEach with SharedSparkContext {
 
   describe("When Saving as JSON") {
+
     it("Should be configured properly") {
 
       intercept[IllegalArgumentException] {
         SaveAsJson(ConfigFactory.empty())
       }
 
-      val props = Map("directory" -> "shouldntexist")
-
-      inside(SaveAsJson(ConfigFactory.parseMap(props)).validate) { case Invalid(errors) => errors.size shouldBe 1 }
-
       val file = java.io.File.createTempFile("json", "test")
-
-      inside(SaveAsJson(ConfigFactory.parseMap(Map("directory" -> file.getAbsolutePath))).validate) {
+      inside(SaveAsJson(ConfigFactory.parseMap(Map("directory" -> file.getAbsolutePath, "overwrite" -> true))).validate) {
         case Invalid(errors) => errors.size shouldBe 1
       }
     }
 
-    it("Should save") {
+    it("Should create specified subdirectory by default") {
+      import spray.json._
+
+      val tmpDir = Files.createTempDir()
+      val path = tmpDir.getAbsolutePath + "/test3/mysubdir"
+
+      val props = ConfigFactory.parseString(
+        s"""
+           |directory = $path
+           |overwrite = false
+        """.stripMargin
+      )
+
+      val t = SaveAsJson(props)
+
+      val sbd = SparkBatchDispatch("test1", StaticJsonSource, Operations(t), props)
+
+      sbd.run()
+
+      val output = new File(t.directory)
+
+      val files = sbd.sparkSession.sparkContext.wholeTextFiles(output.getAbsolutePath, 1)
+      val l = mutable.ListBuffer[JsValue]()
+      files.collect().foreach(s => s._2.split("\\n").foreach(r => l += r.parseJson))
+      l should contain theSameElementsAs StaticJsonSource.msgs.map(_.parseJson)
+    }
+
+    it("Should save with overwrite if true") {
       import spray.json._
 
       val tmpDir = Files.createTempDir()
@@ -64,18 +87,76 @@ class SaveAsJsonSpec extends Matchers with FunSpecLike with Inside with BeforeAn
 
       val t = SaveAsJson(props)
 
-      val sd = SparkBatchDispatch("test", StaticJsonSource, Operations(t), props)
+      val sbd = SparkBatchDispatch("test2", StaticJsonSource, Operations(t), props)
 
-      sd.run()
+      sbd.run()
 
       val output = new File(t.directory)
 
-      val files = sd.sparkSession.sparkContext.wholeTextFiles(output.getAbsolutePath, 1)
+      val files = sbd.sparkSession.sparkContext.wholeTextFiles(output.getAbsolutePath, 1)
       val l = mutable.ListBuffer[JsValue]()
       files.collect().foreach(s => s._2.split("\\n").foreach(r => l += r.parseJson))
       l should contain theSameElementsAs StaticJsonSource.msgs.map(_.parseJson)
-      sd.stop()
     }
+
+    it("Should create timestamp subdirectory if current_timestamp specified") {
+        import spray.json._
+
+        val tmpDir = Files.createTempDir()
+
+        val props = ConfigFactory.parseString(
+          s"""
+             |directory = s"${tmpDir.getAbsolutePath}/{current_timestamp}"
+             |overwrite = false
+        """.stripMargin
+        )
+
+        val t = SaveAsJson(props)
+
+        val sbd = SparkBatchDispatch("test3", StaticJsonSource, Operations(t), props)
+
+        sbd.run()
+
+        //find created sub-directory to compare files in subdir to input
+        val dir = t.directory.replace("{current_timestamp}","")
+        val dir_list = new File(dir).listFiles()
+        val subdir = dir_list.filter(_.isDirectory)(0)
+
+
+        val files = sbd.sparkSession.sparkContext.wholeTextFiles(subdir.getAbsolutePath, 1)
+        val l = mutable.ListBuffer[JsValue]()
+        files.collect().foreach(s => s._2.split("\\n").foreach(r => l += r.parseJson))
+        l should contain theSameElementsAs StaticJsonSource.msgs.map(_.parseJson)
+      }
+
+    it("Should save as codec specified") {
+      import spray.json._
+
+      val tmpDir2 = Files.createTempDir()
+
+      val props = ConfigFactory.parseString(
+        s"""
+           |directory = "${tmpDir2.getAbsolutePath}"
+           |codec = gzip
+           |overwrite = true
+        """.stripMargin
+      )
+
+      val t = SaveAsJson(props)
+
+      val sbd = SparkBatchDispatch("test4", StaticJsonSource, Operations(t), props)
+
+      sbd.run()
+
+      val output = new File(t.directory)
+
+      val files = sbd.sparkSession.sparkContext.wholeTextFiles(output.getAbsolutePath, 1)
+      val l = mutable.ListBuffer[JsValue]()
+      files.collect().foreach(s => s._2.split("\\n").foreach(r => l += r.parseJson))
+      l should contain theSameElementsAs StaticJsonSource.msgs.map(_.parseJson)
+    }
+
+
   }
 
   override def beforeEach = ListOperation.reset
