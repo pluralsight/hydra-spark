@@ -106,7 +106,7 @@ class SaveAsJsonSpec extends Matchers with FunSpecLike with Inside with BeforeAn
 
         val props = ConfigFactory.parseString(
           s"""
-             |directory = s"${tmpDir.getAbsolutePath}/{current_timestamp}"
+             |directory = s"${tmpDir.getAbsolutePath}/#{current_timestamp()}"
              |overwrite = false
         """.stripMargin
         )
@@ -118,7 +118,7 @@ class SaveAsJsonSpec extends Matchers with FunSpecLike with Inside with BeforeAn
         sbd.run()
 
         //find created sub-directory to compare files in subdir to input
-        val dir = t.directory.replace("{current_timestamp}","")
+        val dir = t.directory.replace("#{current_timestamp()}","")
         val dir_list = new File(dir).listFiles()
         val subdir = dir_list.filter(_.isDirectory)(0)
 

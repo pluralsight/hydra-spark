@@ -17,6 +17,8 @@ package hydra.spark.operations.io
 
 import com.typesafe.config.Config
 import hydra.spark.api._
+import hydra.spark.internal.Logging
+import hydra.spark.util.Expressions
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
 import org.apache.spark.sql.{DataFrame, SaveMode}
@@ -24,29 +26,30 @@ import org.apache.spark.sql.{DataFrame, SaveMode}
 /**
   * Created by alexsilva on 6/21/16.
   */
-case class SaveAsJson(directory: String, codec: Option[String], overwrite: Boolean = false) extends DFOperation {
+case class SaveAsJson(directory: String, codec: Option[String], overwrite: Boolean = false)
+  extends DFOperation with Logging{
 
   override def id: String = s"save-as-json-$directory-$codec"
 
-  override def transform(df: DataFrame): DataFrame = {
-    val timestmp = System.currentTimeMillis().toString
-    val path = "\\{current_timestamp\\}".r replaceAllIn (directory,timestmp)
+  private lazy val interpretedPath = Expressions.parseExpression(directory)
 
+  override def transform(df: DataFrame): DataFrame = {
+    log.debug(s"Saving json file to $interpretedPath")
     df.write.option("compression", codec.getOrElse("none"))
       .mode(if (overwrite) SaveMode.Overwrite else SaveMode.ErrorIfExists)
-      .json(path)
+      .json(interpretedPath)
     df
   }
 
   override def validate: ValidationResult = {
-    Option(directory).map {directory=>
-      val d = new Path(directory)
+    Option(directory).map { directory =>
+      val d = new Path(interpretedPath)
       val fs = d.getFileSystem(new Configuration())
-      val isFile = fs.isFile(d)
+      val isFile = fs.exists(d) && fs.isFile(d)
       if (isFile) {
-        Invalid(ValidationError("json", s"$directory is not a directory"))
+        Invalid(ValidationError("save-as-json", s"$directory seems to be a file.  Please use a directory instead."))
       } else Valid
-    } getOrElse(Invalid(ValidationError("json", s"Directory cannot be empty.")))
+    } getOrElse (Invalid(ValidationError("json", s"Directory cannot be empty.")))
 
   }
 }
