@@ -34,7 +34,7 @@ import scala.collection.JavaConverters._
 /**
   * Created by alexsilva on 6/20/16.
   */
-class SparkStreamingDispatchTest extends Matchers with FunSpecLike with SharedSparkContext {
+class SparkStreamingTransformationTest extends Matchers with FunSpecLike with SharedSparkContext {
 
   val props = Map("streaming.interval" -> "5s", "spark.local.dir" -> "/tmp/hydra", "spark.master" -> "local[*]")
 
@@ -42,7 +42,7 @@ class SparkStreamingDispatchTest extends Matchers with FunSpecLike with SharedSp
     it("Be configured properly") {
 
       val c = ConfigFactory.parseMap(props.asJava)
-      val sd = SparkStreamingDispatch("test", EmptySource, Seq.empty, c)
+      val sd = SparkStreamingTransformation("test", EmptySource, Seq.empty, c)
       val conf = sd.ssc.sparkContext.getConf
       sd.ssc.stop(false, false)
     }
@@ -67,7 +67,7 @@ class SparkStreamingDispatchTest extends Matchers with FunSpecLike with SharedSp
           |
     """.stripMargin
 
-      val d = SparkDispatch(dsl)
+      val d = SparkTransformation(dsl)
       d.validate shouldBe Valid
     }
   }

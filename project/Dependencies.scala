@@ -23,7 +23,7 @@ object Dependencies {
 
   lazy val dbTesting = Seq("com.typesafe.slick" %% "slick" % "3.2.0" % "test",
     "com.typesafe.slick" %% "slick-testkit" % "3.2.0" % "test",
-    "ru.yandex.qatools.embed" % "postgresql-embedded" % "1.22" % "test",
+    "ru.yandex.qatools.embed" % "postgresql-embedded" % "2.2" % "test",
     "com.h2database" % "h2" % "1.4.192" % "test") ++ postgres.map(_ % "test")
 
   lazy val serviceContainer = Seq("com.github.vonnagy" %% "service-container" % serviceContainerVersion)

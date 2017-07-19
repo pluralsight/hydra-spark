@@ -21,17 +21,17 @@ import hydra.spark.api._
 /**
   * Created by alexsilva on 6/20/16.
   */
-case class SparkBatchDispatch[S](override val name: String, source: Source[S], operations: Seq[DFOperation],
-                                 dsl: Config)
-  extends SparkDispatch[S](name, source, operations, dsl) {
+case class SparkBatchTransformation[S](override val name: String, source: Source[S], operations: Seq[DFOperation],
+                                       dsl: Config)
+  extends SparkTransformation[S](name, source, operations, dsl) {
 
 
   override def run(): Unit = {
     val ops = operations
-    val initialDf = source.createDF(sparkSession)
+    val initialDf = source.createDF(spark)
     ops.foldLeft(initialDf)((df, trans) => trans.transform(df))
     source.checkpoint(None)
   }
 
-  override def stop(): Unit = sparkSession.stop()
+  override def stop(): Unit = spark.stop()
 }

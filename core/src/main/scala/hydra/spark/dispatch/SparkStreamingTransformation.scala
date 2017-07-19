@@ -19,7 +19,7 @@ import com.typesafe.config.{Config, ConfigFactory}
 import hydra.spark.api._
 import hydra.spark.internal.Logging
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.DataFrame
+import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.apache.spark.streaming.{Seconds, StreamingContext}
 
 import scala.concurrent.duration.FiniteDuration
@@ -28,9 +28,11 @@ import scala.reflect.runtime.universe._
 /**
   * Created by alexsilva on 6/20/16.
   */
-case class SparkStreamingDispatch[S: TypeTag](override val name: String, source: Source[S],
-                                              operations: Seq[DFOperation], dsl: Config)
-  extends SparkDispatch[S](name, source, operations, dsl) with Logging {
+case class SparkStreamingTransformation[S: TypeTag](override val name: String,
+                                                    source: Source[S],
+                                                    operations: Seq[DFOperation],
+                                                    dsl: Config)
+  extends SparkTransformation[S](name, source, operations, dsl) with Logging {
 
   import configs.syntax._
   import hydra.spark.configs._
@@ -44,7 +46,7 @@ case class SparkStreamingDispatch[S: TypeTag](override val name: String, source:
   val interval = streamingConf.get[FiniteDuration]("streaming.interval").map(d => Seconds(d.toSeconds)).toOption
 
   lazy val ssc = StreamingContext.getActiveOrCreate { () =>
-    new StreamingContext(sparkSession.sparkContext, interval.get)
+    new StreamingContext(spark.sparkContext, interval.get)
   }
 
   override def run(): Unit = {

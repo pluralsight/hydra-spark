@@ -15,7 +15,7 @@
 
 package hydra.spark.dsl.parser
 
-import hydra.spark.api.DispatchDetails
+import hydra.spark.api.TransformationDetails
 
 import scala.util.Try
 
@@ -23,5 +23,5 @@ import scala.util.Try
  * Created by alexsilva on 1/3/17.
  */
 trait DSLParser {
-  def parse(dsl: String): Try[DispatchDetails[_]]
+  def parse(dsl: String): Try[TransformationDetails[_]]
 }

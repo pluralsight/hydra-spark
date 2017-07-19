@@ -20,7 +20,7 @@ import java.util.Properties
 
 import com.typesafe.config.ConfigFactory
 import hydra.spark.api.{Invalid, Valid}
-import hydra.spark.dispatch.SparkBatchDispatch
+import hydra.spark.dispatch.SparkBatchTransformation
 import hydra.spark.testutils.{SharedSparkContext, StaticJsonSource}
 import kafka.serializer.StringEncoder
 import net.manub.embeddedkafka.{EmbeddedKafka, EmbeddedKafkaConfig, KafkaUnavailableException}
@@ -79,7 +79,7 @@ class PublishToKafkaSpec extends Matchers with FunSpecLike with Inside with Befo
 
       val op = PublishToKafka("test-und-topic", properties = kafkaProps)
 
-      val sd = SparkBatchDispatch("test", StaticJsonSource, Seq(op), props)
+      val sd = SparkBatchTransformation("test", StaticJsonSource, Seq(op), props)
 
       sd.validate shouldBe Valid
 
@@ -98,7 +98,7 @@ class PublishToKafkaSpec extends Matchers with FunSpecLike with Inside with Befo
 
       val op = PublishToKafka("test-ord-topic", orderBy = Some("msg_no desc"), properties = kafkaProps)
 
-      val sd = SparkBatchDispatch("test", StaticJsonSource, Seq(op), props)
+      val sd = SparkBatchTransformation("test", StaticJsonSource, Seq(op), props)
 
       sd.validate shouldBe Valid
 
@@ -121,7 +121,7 @@ class PublishToKafkaSpec extends Matchers with FunSpecLike with Inside with Befo
 
       val op = PublishToKafka("test-sel-topic", columns = Some(List("msg_no")), properties = kafkaProps)
 
-      val sd = SparkBatchDispatch("test", StaticJsonSource, Seq(op), props)
+      val sd = SparkBatchTransformation("test", StaticJsonSource, Seq(op), props)
 
       sd.validate shouldBe Valid
 
@@ -146,7 +146,7 @@ class PublishToKafkaSpec extends Matchers with FunSpecLike with Inside with Befo
       key = Some("msg_no"), orderBy = Some("msg_no desc"),
       properties = kafkaProps)
 
-    val sd = SparkBatchDispatch("test", StaticJsonSource, Seq(op), props)
+    val sd = SparkBatchTransformation("test", StaticJsonSource, Seq(op), props)
 
     sd.validate shouldBe Valid
 

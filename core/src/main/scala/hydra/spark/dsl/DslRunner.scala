@@ -16,7 +16,7 @@
 package hydra.spark.dsl
 
 import hydra.spark.api._
-import hydra.spark.dispatch.SparkDispatch
+import hydra.spark.dispatch.SparkTransformation
 import org.apache.spark.SparkException
 
 import scala.language.existentials
@@ -34,7 +34,7 @@ object DslRunner extends App {
 
   def runJob(dsl: String) = {
 
-    val sparkDispatch = SparkDispatch(dsl)
+    val sparkDispatch = SparkTransformation(dsl)
 
     sparkDispatch.validate match {
       case Invalid(errors) =>

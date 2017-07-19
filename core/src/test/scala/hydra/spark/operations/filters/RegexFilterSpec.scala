@@ -17,7 +17,7 @@ package hydra.spark.operations.filters
 
 import com.typesafe.config.ConfigFactory
 import hydra.spark.api.Invalid
-import hydra.spark.dispatch.SparkBatchDispatch
+import hydra.spark.dispatch.SparkBatchTransformation
 import hydra.spark.testutils.{ListOperation, SharedSparkContext, StaticJsonSource}
 import org.scalatest.{BeforeAndAfterEach, FunSpecLike, Matchers}
 
@@ -48,7 +48,7 @@ class RegexFilterSpec extends Matchers with FunSpecLike with BeforeAndAfterEach 
     }
 
     it("Should accept regex") {
-      val sd = SparkBatchDispatch("test", StaticJsonSource, Seq(t, ListOperation), config)
+      val sd = SparkBatchTransformation("test", StaticJsonSource, Seq(t, ListOperation), config)
       sd.run()
       ListOperation.l.size shouldBe 6
     }

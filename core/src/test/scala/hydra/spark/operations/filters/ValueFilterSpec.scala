@@ -16,7 +16,7 @@
 package hydra.spark.operations.filters
 
 import com.typesafe.config.ConfigFactory
-import hydra.spark.dispatch.SparkBatchDispatch
+import hydra.spark.dispatch.SparkBatchTransformation
 import hydra.spark.testutils.{ListOperation, SharedSparkContext, StaticJsonSource}
 import org.scalatest.{BeforeAndAfterEach, FunSpecLike, Matchers}
 import spray.json._
@@ -39,7 +39,7 @@ class ValueFilterSpec extends Matchers with FunSpecLike with BeforeAndAfterEach 
   describe("When Filtering by a value") {
     it("Should only include matching rows") {
       val json = StaticJsonSource.msgs(0).parseJson
-      SparkBatchDispatch("test", StaticJsonSource, Seq(t, ListOperation), config).run()
+      SparkBatchTransformation("test", StaticJsonSource, Seq(t, ListOperation), config).run()
       ListOperation.l.size shouldBe 1
       ListOperation.l.map(_.parseJson) should contain(json)
     }

@@ -27,7 +27,7 @@ import spray.json._
 /**
   * Created by alexsilva on 6/20/16.
   */
-class SparkBatchDispatchTest extends Matchers with FunSpecLike with BeforeAndAfterEach with SharedSparkContext {
+class SparkBatchTransformationTest extends Matchers with FunSpecLike with BeforeAndAfterEach with SharedSparkContext {
 
   val props = ConfigFactory.parseString(
     s"""
@@ -41,7 +41,7 @@ class SparkBatchDispatchTest extends Matchers with FunSpecLike with BeforeAndAft
 
   describe("When creating RDDs") {
     it("Be configured properly") {
-      SparkBatchDispatch("test", StaticJsonSource, Seq(ListOperation), props).run()
+      SparkBatchTransformation("test", StaticJsonSource, Seq(ListOperation), props).run()
       ListOperation.l.map(_.parseJson) should contain theSameElementsAs StaticJsonSource.msgs.map(_.parseJson)
     }
   }

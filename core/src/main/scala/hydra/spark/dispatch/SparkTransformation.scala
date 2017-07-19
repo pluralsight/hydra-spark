@@ -18,38 +18,40 @@ package hydra.spark.dispatch
 import com.typesafe.config.Config
 import hydra.spark.api._
 import configs.syntax._
+import hydra.spark.configs.ConfigSupport
 import hydra.spark.dsl.parser.TypesafeDSLParser
 import org.apache.spark.sql.SparkSession
 
 /**
   * Created by alexsilva on 6/21/16.
   */
-abstract class SparkDispatch[S](name: String, source: Source[S], operations: Seq[DFOperation],
-                                dsl: Config) extends Dispatch[S] {
+abstract class SparkTransformation[S](name: String,
+                                      source: Source[S],
+                                      operations: Seq[DFOperation],
+                                      dsl: Config) extends Transformation[S] with ConfigSupport {
 
-  lazy val sparkSession = SparkSession.builder().getOrCreate()
+
+  lazy val spark = SparkSession.builder().config(sparkConf(dsl, name)).getOrCreate()
 
   val author = dsl.get[String]("author").valueOrElse("Unknown")
 }
 
-object SparkDispatch {
+object SparkTransformation {
 
   import scala.reflect.runtime.universe._
 
   val parser = TypesafeDSLParser(Seq("hydra.spark.sources"), Seq("hydra.spark.operations"))
 
-  def apply(dsl: String): SparkDispatch[_] = {
+  def apply(dsl: String): SparkTransformation[_] = {
     apply(parser.parse(dsl).get)
   }
 
-  def apply[S: TypeTag](d: DispatchDetails[S]): SparkDispatch[S] = {
-
-    val session = SparkSession.builder().config(d.sparkConf).appName(d.name).getOrCreate()
+  def apply[S: TypeTag](d: TransformationDetails[S]): SparkTransformation[S] = {
 
     if (d.isStreaming)
-      SparkStreamingDispatch[S](d.name, d.source, d.operations, d.dsl)
+      SparkStreamingTransformation[S](d.name, d.source, d.operations, d.dsl)
     else
-      SparkBatchDispatch[S](d.name, d.source, d.operations, d.dsl)
+      SparkBatchTransformation[S](d.name, d.source, d.operations, d.dsl)
   }
 
 }

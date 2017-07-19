@@ -24,7 +24,7 @@ import scala.language.existentials
 /**
   * Created by alexsilva on 6/17/16.
   */
-trait Dispatch[S] extends Validatable {
+trait Transformation[S] extends Validatable {
 
   /**
     * A unique id identifying this dispatch job.  It is important it is unique but reproducible because it is used in

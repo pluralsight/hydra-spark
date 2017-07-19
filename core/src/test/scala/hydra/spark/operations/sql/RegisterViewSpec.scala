@@ -1,7 +1,7 @@
 package hydra.spark.operations.sql
 
 import hydra.spark.api.Invalid
-import hydra.spark.dispatch.SparkDispatch
+import hydra.spark.dispatch.SparkTransformation
 import hydra.spark.testutils.SharedSparkContext
 import org.scalatest.{BeforeAndAfterEach, FunSpecLike, Matchers}
 
@@ -39,7 +39,7 @@ class RegisterViewSpec extends Matchers with FunSpecLike with BeforeAndAfterEach
     """.stripMargin
 
 
-      val d = SparkDispatch(dsl)
+      val d = SparkTransformation(dsl)
       d.run()
 
       val ctx = ss.sqlContext
@@ -70,7 +70,7 @@ class RegisterViewSpec extends Matchers with FunSpecLike with BeforeAndAfterEach
     """.stripMargin
 
 
-      val d = SparkDispatch(dsl)
+      val d = SparkTransformation(dsl)
       d.run()
       val df = ss.sql("select * from  global_temp.test_view_global")
       df.count() shouldBe 3
