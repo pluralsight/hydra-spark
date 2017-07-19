@@ -19,7 +19,7 @@ import java.io.File
 
 import com.google.common.io.Files
 import com.typesafe.config.ConfigFactory
-import hydra.spark.api.{Invalid, Operations}
+import hydra.spark.api.Invalid
 import hydra.spark.dispatch.SparkBatchDispatch
 import hydra.spark.testutils.{ListOperation, SharedSparkContext, StaticJsonSource}
 import org.scalatest.{BeforeAndAfterEach, FunSpecLike, Inside, Matchers}
@@ -61,7 +61,7 @@ class SaveAsJsonSpec extends Matchers with FunSpecLike with Inside with BeforeAn
 
       val t = SaveAsJson(props)
 
-      val sbd = SparkBatchDispatch("test1", StaticJsonSource, Operations(t), props)
+      val sbd = SparkBatchDispatch("test1", StaticJsonSource, Seq(t), props)
 
       sbd.run()
 
@@ -87,7 +87,7 @@ class SaveAsJsonSpec extends Matchers with FunSpecLike with Inside with BeforeAn
 
       val t = SaveAsJson(props)
 
-      val sbd = SparkBatchDispatch("test2", StaticJsonSource, Operations(t), props)
+      val sbd = SparkBatchDispatch("test2", StaticJsonSource, Seq(t), props)
 
       sbd.run()
 
@@ -113,7 +113,7 @@ class SaveAsJsonSpec extends Matchers with FunSpecLike with Inside with BeforeAn
 
         val t = SaveAsJson(props)
 
-        val sbd = SparkBatchDispatch("test3", StaticJsonSource, Operations(t), props)
+        val sbd = SparkBatchDispatch("test3", StaticJsonSource, Seq(t), props)
 
         sbd.run()
 
@@ -144,7 +144,7 @@ class SaveAsJsonSpec extends Matchers with FunSpecLike with Inside with BeforeAn
 
       val t = SaveAsJson(props)
 
-      val sbd = SparkBatchDispatch("test4", StaticJsonSource, Operations(t), props)
+      val sbd = SparkBatchDispatch("test4", StaticJsonSource, Seq(t), props)
 
       sbd.run()
 

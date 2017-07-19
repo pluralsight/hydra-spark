@@ -24,7 +24,7 @@ import scala.reflect.runtime.universe._
 /**
   * Created by alexsilva on 1/3/17.
   */
-case class StreamingTestDispatch[S: TypeTag](source: Source[S], operations: Operations)
+case class StreamingTestDispatch[S: TypeTag](source: Source[S], operations: Seq[DFOperation])
   extends Dispatch[S] {
 
   val dsl = ConfigFactory.parseString(

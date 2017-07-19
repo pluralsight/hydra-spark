@@ -24,7 +24,7 @@ import org.apache.spark.sql.SparkSession
 /**
   * Created by alexsilva on 6/21/16.
   */
-abstract class SparkDispatch[S](name: String, source: Source[S], operations: Operations,
+abstract class SparkDispatch[S](name: String, source: Source[S], operations: Seq[DFOperation],
                                 dsl: Config) extends Dispatch[S] {
 
   lazy val sparkSession = SparkSession.builder().getOrCreate()

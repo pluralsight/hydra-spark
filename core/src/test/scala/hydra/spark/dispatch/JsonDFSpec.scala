@@ -15,7 +15,7 @@
 
 package hydra.spark.dispatch
 
-import hydra.spark.api.Operations
+import hydra.spark.api.DFOperation
 import hydra.spark.testutils.{SharedSparkContext, StaticJsonSource, StreamingTestDispatch}
 import org.apache.spark.sql.DataFrame
 import org.scalatest.concurrent.{Eventually, PatienceConfiguration, ScalaFutures}
@@ -34,13 +34,15 @@ class JsonDFSpec extends Matchers with FunSpecLike with ScalaFutures with Patien
   val source = StaticJsonSource
 
   var ldf: Option[DataFrame] = None
-  val add100 = (df: DataFrame) => {
-    val ndf = df.withColumn("msg_no", df("msg_no") + 100)
-    ldf = Some(ndf)
-    ndf
+  val add100 = new DFOperation {
+    override def transform(df: DataFrame): DataFrame = {
+      val ndf = df.withColumn("msg_no", df("msg_no") + 100)
+      ldf = Some(ndf)
+      ndf
+    }
   }
 
-  val t = Operations(add100, "add100")
+  val t = Seq(add100)
 
   var disp: StreamingTestDispatch[String] = _
 

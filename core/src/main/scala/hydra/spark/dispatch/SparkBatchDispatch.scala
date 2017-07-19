@@ -17,18 +17,17 @@ package hydra.spark.dispatch
 
 import com.typesafe.config.Config
 import hydra.spark.api._
-import org.apache.spark.sql.SparkSession
 
 /**
   * Created by alexsilva on 6/20/16.
   */
-case class SparkBatchDispatch[S](override val name: String, source: Source[S], operations: Operations,
+case class SparkBatchDispatch[S](override val name: String, source: Source[S], operations: Seq[DFOperation],
                                  dsl: Config)
   extends SparkDispatch[S](name, source, operations, dsl) {
 
 
   override def run(): Unit = {
-    val ops = operations.steps
+    val ops = operations
     val initialDf = source.createDF(sparkSession)
     ops.foldLeft(initialDf)((df, trans) => trans.transform(df))
     source.checkpoint(None)

@@ -1,7 +1,7 @@
 package hydra.spark.submit
 
 import com.typesafe.config.ConfigFactory
-import hydra.spark.api.{DispatchDetails, Operations}
+import hydra.spark.api.DispatchDetails
 import org.scalatest.{FunSpecLike, Matchers}
 
 import scala.collection.JavaConverters._
@@ -39,7 +39,7 @@ class HydraSparkLauncherSpec extends Matchers with FunSpecLike {
 
     it("builds the right environment variables") {
 
-      val d = DispatchDetails("test", EmptySource("test"), Operations(NoOpOperation), false, dslC,
+      val d = DispatchDetails("test", EmptySource("test"), Seq(NoOpOperation), false, dslC,
         ConfigFactory.empty())
 
       val env = HydraSparkLauncher.env(d, sparkInfo)
@@ -48,7 +48,7 @@ class HydraSparkLauncherSpec extends Matchers with FunSpecLike {
     }
 
     it("submits") {
-      val d = DispatchDetails("test", EmptySource("test"), Operations(NoOpOperation), false, dslC,
+      val d = DispatchDetails("test", EmptySource("test"), Seq(NoOpOperation), false, dslC,
         ConfigFactory.empty())
       val launcher = HydraSparkLauncher.createLauncher(sparkInfo, d)
 

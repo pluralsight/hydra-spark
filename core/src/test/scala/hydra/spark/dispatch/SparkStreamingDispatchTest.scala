@@ -42,7 +42,7 @@ class SparkStreamingDispatchTest extends Matchers with FunSpecLike with SharedSp
     it("Be configured properly") {
 
       val c = ConfigFactory.parseMap(props.asJava)
-      val sd = SparkStreamingDispatch("test", EmptySource, Operations(Seq.empty), c)
+      val sd = SparkStreamingDispatch("test", EmptySource, Seq.empty, c)
       val conf = sd.ssc.sparkContext.getConf
       sd.ssc.stop(false, false)
     }

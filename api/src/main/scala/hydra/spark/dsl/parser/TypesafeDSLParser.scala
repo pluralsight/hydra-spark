@@ -54,7 +54,7 @@ case class TypesafeDSLParser(sourcesPkg: Seq[String] = Seq("hydra.spark.sources"
 
       val isStreaming = streamingProps.get("streaming.interval").isDefined
 
-      DispatchDetails(name, source, Operations(operations), isStreaming, dsl, TypesafeDSLParser.sparkDefaults)
+      DispatchDetails(name, source, operations, isStreaming, dsl, TypesafeDSLParser.sparkDefaults)
     }
   }
 }

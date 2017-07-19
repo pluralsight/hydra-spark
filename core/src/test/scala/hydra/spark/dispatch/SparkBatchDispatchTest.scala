@@ -20,7 +20,6 @@ package hydra.spark.dispatch
   */
 
 import com.typesafe.config.ConfigFactory
-import hydra.spark.api._
 import hydra.spark.testutils.{ListOperation, SharedSparkContext, StaticJsonSource}
 import org.scalatest.{BeforeAndAfterEach, FunSpecLike, Matchers}
 import spray.json._
@@ -42,7 +41,7 @@ class SparkBatchDispatchTest extends Matchers with FunSpecLike with BeforeAndAft
 
   describe("When creating RDDs") {
     it("Be configured properly") {
-      SparkBatchDispatch("test", StaticJsonSource, Operations(ListOperation), props).run()
+      SparkBatchDispatch("test", StaticJsonSource, Seq(ListOperation), props).run()
       ListOperation.l.map(_.parseJson) should contain theSameElementsAs StaticJsonSource.msgs.map(_.parseJson)
     }
   }

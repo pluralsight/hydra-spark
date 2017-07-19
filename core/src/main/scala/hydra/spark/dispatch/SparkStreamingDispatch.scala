@@ -28,8 +28,8 @@ import scala.reflect.runtime.universe._
 /**
   * Created by alexsilva on 6/20/16.
   */
-case class SparkStreamingDispatch[S: TypeTag](override val name: String, source: Source[S], operations: Operations,
-                                              dsl: Config)
+case class SparkStreamingDispatch[S: TypeTag](override val name: String, source: Source[S],
+                                              operations: Seq[DFOperation], dsl: Config)
   extends SparkDispatch[S](name, source, operations, dsl) with Logging {
 
   import configs.syntax._
@@ -55,7 +55,7 @@ case class SparkStreamingDispatch[S: TypeTag](override val name: String, source:
       if (!rdd.isEmpty()) {
         //todo: handle exceptions
         val idf: DataFrame = source.toDF(rdd)
-        operations.steps.foldLeft(idf)((df, trans) => trans.transform(df))
+        operations.foldLeft(idf)((df, trans) => trans.transform(df))
         source.checkpoint(Some(rdd))
       }
     }

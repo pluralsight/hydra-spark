@@ -16,14 +16,14 @@
 package hydra.spark.operations.filters
 
 import com.typesafe.config.ConfigFactory
-import hydra.spark.api.{ Invalid, Operations }
+import hydra.spark.api.Invalid
 import hydra.spark.dispatch.SparkBatchDispatch
-import hydra.spark.testutils.{ ListOperation, SharedSparkContext, StaticJsonSource }
-import org.scalatest.{ BeforeAndAfterEach, FunSpecLike, Matchers }
+import hydra.spark.testutils.{ListOperation, SharedSparkContext, StaticJsonSource}
+import org.scalatest.{BeforeAndAfterEach, FunSpecLike, Matchers}
 
 /**
- * Created by alexsilva on 6/24/16.
- */
+  * Created by alexsilva on 6/24/16.
+  */
 class RegexFilterSpec extends Matchers with FunSpecLike with BeforeAndAfterEach with SharedSparkContext {
 
   val config = ConfigFactory.parseString(
@@ -48,7 +48,7 @@ class RegexFilterSpec extends Matchers with FunSpecLike with BeforeAndAfterEach 
     }
 
     it("Should accept regex") {
-      val sd = SparkBatchDispatch("test", StaticJsonSource, Operations(Seq(t, ListOperation)), config)
+      val sd = SparkBatchDispatch("test", StaticJsonSource, Seq(t, ListOperation), config)
       sd.run()
       ListOperation.l.size shouldBe 6
     }

@@ -30,7 +30,7 @@ import org.apache.spark.SparkConf
   *
   *                    Created by alexsilva on 1/3/17.
   */
-case class DispatchDetails[S](name: String, source: Source[S], operations: Operations, isStreaming: Boolean,
+case class DispatchDetails[S](name: String, source: Source[S], operations: Seq[DFOperation], isStreaming: Boolean,
                               dsl: Config, sparkDefaults: Config) {
 
   lazy val sparkConf: SparkConf = {
