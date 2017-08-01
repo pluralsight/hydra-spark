@@ -131,7 +131,6 @@ object UpsertUtils extends Logging {
               }
 
           }
-          println(stmt)
           stmt.addBatch()
           rowCount += 1
           if (rowCount % batchSize == 0) {
@@ -211,7 +210,7 @@ object PostgresUpsertBuilder extends UpsertBuilder with Logging {
         val updatePlaceholders = updateSchema.fields.map(_ => "?").mkString(",")
         val sql =
           s"""insert into ${table} ($columns) values ($placeholders)
-             |on conflict (${id.name})
+             |on conflict (${dialect.quoteIdentifier(id.name)})
              |do update set ($updateColumns) = ($updatePlaceholders)
              |where ${table}.${id.name} = ?;""".stripMargin
 
