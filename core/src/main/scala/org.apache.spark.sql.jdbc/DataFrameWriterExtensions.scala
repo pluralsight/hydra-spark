@@ -35,7 +35,7 @@ object DataFrameWriterExtensions {
       val conn = JdbcUtils.createConnectionFactory(jdbcOptions)()
 
       try {
-        var tableExists = JdbcUtils.tableExists(conn, url, table)
+        var tableExists = JdbcUtils.tableExists(conn, new JDBCOptions(url, table, Map.empty))
 
         if (mode == SaveMode.Ignore && tableExists) {
           return
@@ -52,7 +52,7 @@ object DataFrameWriterExtensions {
 
         // Create the table if the table didn't exist.
         if (!tableExists) {
-          val schema = JdbcUtils.schemaString(df.schema, url)
+          val schema = JdbcUtils.schemaString(df, url)
           val dialect = JdbcDialects.get(url)
           val pk = idColumn.collect { case c: StructField => s", primary key(${dialect.quoteIdentifier(c.name)})" }
             .getOrElse("")
@@ -71,7 +71,7 @@ object DataFrameWriterExtensions {
       //todo: make this a single method
       idColumn match {
         case Some(id) => UpsertUtils.upsert(df, idColumn, jdbcOptions)
-        case None => JdbcUtils.saveTable(df, url, table, jdbcOptions)
+        case None => JdbcUtils.saveTable(df, None, true, options=jdbcOptions)
       }
 
     }

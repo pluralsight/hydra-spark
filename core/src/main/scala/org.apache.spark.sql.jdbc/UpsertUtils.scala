@@ -222,7 +222,7 @@ object PostgresUpsertBuilder extends UpsertBuilder with Logging {
         UpsertInfo(conn.prepareStatement(sql), upsertSchema)
       }
       case None => {
-        UpsertInfo(JdbcUtils.insertStatement(conn, table, schema, dialect), schema)
+        UpsertInfo(conn.prepareStatement(JdbcUtils.getInsertStatement(table, schema, None, true, dialect)), schema)
       }
     }
   }
@@ -243,7 +243,7 @@ object H2UpsertBuilder extends UpsertBuilder {
         UpsertInfo(conn.prepareStatement(sql), schema)
       }
       case None => {
-        UpsertInfo(JdbcUtils.insertStatement(conn, table, schema, dialect), schema)
+        UpsertInfo(conn.prepareStatement(JdbcUtils.getInsertStatement(table, schema, None, true, dialect)), schema)
       }
     }
   }
