@@ -36,7 +36,7 @@ object Versions {
   val log4jVersion = "2.7"
   lazy val reflectionsVersion = "0.9.10"
   lazy val scoptVersion = "3.5.0"
-  lazy val sparkVersion = "2.1.0"
+  lazy val sparkVersion = "2.2.0"
   lazy val avroSparkVersion = "3.2.0"
   lazy val jacksonVersion = "2.6.5"
   lazy val akkaHttpVersion = "10.0.5"
