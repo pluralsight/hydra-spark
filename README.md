@@ -11,7 +11,7 @@ This repo contains the complete Hydra Spark project, including unit tests and de
 
 ## Features
 
-- *"Declarative Spak Jobs"*: Simple JSON/HOCON based syntax to describe Spark jobs
+- *"Declarative Spark Jobs"*: Simple JSON/HOCON based syntax to describe Spark jobs
 - Support for Hadoop, Hive, Kafka (both as a source and sink), Elastic Search and many others. See [Sources](doc/sources.md).
 - Support for both batch and Streaming jobs using a unified API. 
 - Supports different Spark deploy modes (local, yarn-client) which can also be overriden at the DSL level.
@@ -21,9 +21,7 @@ This repo contains the complete Hydra Spark project, including unit tests and de
 
 | Version     | Spark Version |
 |-------------|---------------|
-| 0.5.0       | 1.6.2         |
-| master      | 1.6.2         |
-| spark-2.0   | 2.0           |
+| master      | 2.2           |
 
 For release notes, look in the `notes/` directory.  They should also be up on [notes.implicit.ly](http://notes.implicit.ly/search/spark-jobserver).
 
