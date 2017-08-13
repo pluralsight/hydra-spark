@@ -8,7 +8,7 @@ import org.apache.spark.sql.DataFrame
 case class ToJson(columns: Seq[String]) extends DFOperation {
 
   override def transform(df: DataFrame): DataFrame = {
-    import org.apache.spark.sql.functions.{to_json, col}
+    import org.apache.spark.sql.functions._
     import df.sqlContext.implicits._
     ifNotEmpty(df) { df =>
       columns.foldLeft(df)((df,c)=>df.withColumn(c, to_json(col(c)).as[String]))
