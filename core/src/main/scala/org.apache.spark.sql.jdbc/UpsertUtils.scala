@@ -29,7 +29,7 @@ import scala.util.control.NonFatal
   */
 object UpsertUtils extends Logging {
 
-  def upsert(df: DataFrame, idCol: Option[StructField], jdbcOptions: JDBCOptions, isCaseSensitive: Boolean = true) {
+  def upsert(df: DataFrame, idCol: Option[StructField], jdbcOptions: JDBCOptions, isCaseSensitive: Boolean) {
     val dialect = JdbcDialects.get(jdbcOptions.url)
     val nullTypes: Array[Int] = df.schema.fields.map { field =>
       getJdbcType(field.dataType, dialect).jdbcNullType
@@ -39,7 +39,7 @@ object UpsertUtils extends Logging {
     val getConnection: () => Connection = JdbcUtils.createConnectionFactory(jdbcOptions)
     df.foreachPartition { iterator =>
       upsertPartition(getConnection, jdbcOptions.table, iterator, idCol, rddSchema, nullTypes, jdbcOptions.batchSize,
-        dialect)
+        dialect, isCaseSensitive)
     }
   }
 
@@ -71,7 +71,8 @@ object UpsertUtils extends Logging {
                        rddSchema: StructType,
                        nullTypes: Array[Int],
                        batchSize: Int,
-                       dialect: JdbcDialect
+                       dialect: JdbcDialect,
+                       isCaseSensitive: Boolean
                      ): Iterator[Byte] = {
     val conn = getConnection()
     var committed = false
@@ -89,7 +90,7 @@ object UpsertUtils extends Logging {
         conn.setAutoCommit(false) // Everything in the same db transaction.
       }
       val upsert = UpsertBuilder.forDriver(conn.getMetaData.getDriverName)
-        .upsertStatement(conn, table, dialect, idColumn, rddSchema)
+        .upsertStatement(conn, table, dialect, idColumn, rddSchema, isCaseSensitive)
 
       val stmt = upsert.stmt
       val uschema = upsert.schema
@@ -176,7 +177,7 @@ object UpsertUtils extends Logging {
 trait UpsertBuilder {
 
   def upsertStatement(conn: Connection, table: String, dialect: JdbcDialect, idField: Option[StructField],
-                      schema: StructType, isCaseSensitive: Boolean = true): UpsertInfo
+                      schema: StructType, isCaseSensitive: Boolean): UpsertInfo
 }
 
 /**

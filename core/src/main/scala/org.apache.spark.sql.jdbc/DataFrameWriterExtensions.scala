@@ -71,7 +71,7 @@ object DataFrameWriterExtensions {
 
       //todo: make this a single method
       idColumn match {
-        case Some(id) => UpsertUtils.upsert(df, idColumn, jdbcOptions)
+        case Some(id) => UpsertUtils.upsert(df, idColumn, jdbcOptions, isCaseSensitive)
         case None => JdbcUtils.saveTable(df, Some(df.schema), isCaseSensitive, options=jdbcOptions)
       }
 
