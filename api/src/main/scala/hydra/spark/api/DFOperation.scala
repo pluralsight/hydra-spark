@@ -38,6 +38,8 @@ trait DFOperation extends Validatable {
     }
   }
 
+  override def validate: ValidationResult = Valid
+
   def checkRequiredParams(params: Seq[(String, Any)]): ValidationResult = {
     val nullParams = params.collect { case (n, "") => n case (n, null) => n }
 

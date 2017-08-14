@@ -36,21 +36,20 @@ trait PostgresSpec extends Suite with BeforeAndAfterAll with Logging {
 
   lazy val pg = Database.forURL(url, driver = driver)
 
-  var exec: Option[PostgresExecutable] = None
+  var exec: PostgresExecutable = _
 
   val runtime: PostgresStarter[PostgresExecutable, PostgresProcess] = PostgresStarter.getDefaultInstance()
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    exec = Some(runtime.prepare(pgConfig))
-    exec.foreach(_.start())
+    exec = runtime.prepare(pgConfig)
+    exec.start()
   }
 
   override def afterAll() {
     super.afterAll()
     log.info("STOPPING POSTGRES")
-    exec.foreach(_.stop())
-
+    exec.stop()
   }
 
   lazy val database = Database.forURL(url, driver = driver)

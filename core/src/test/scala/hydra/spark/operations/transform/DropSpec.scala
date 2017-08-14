@@ -52,7 +52,7 @@ class DropSpec extends Matchers with FunSpecLike with SharedSparkContext {
         """.stripMargin
 
       val dispatch = TypesafeDSLParser().parse(dsl).get
-      val d = dispatch.operations.steps.head.asInstanceOf[Drop]
+      val d = dispatch.operations.head.asInstanceOf[Drop]
       d.columns shouldBe Seq("col1", "col2")
     }
   }

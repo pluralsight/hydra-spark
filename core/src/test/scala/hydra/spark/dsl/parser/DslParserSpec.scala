@@ -127,16 +127,16 @@ class DslParserSpec extends Matchers with FunSpecLike with BeforeAndAfterEach wi
       kafkaSource.topics shouldEqual Map("segment" -> Map("format" -> "json", "start" -> OffsetRequest.LatestTime.toString))
 
       val operations = d.operations
-      operations.steps.size shouldBe 3
+      operations.size shouldBe 3
 
-      val e = operations.steps(0)
+      val e = operations(0)
 
       e shouldBe a[ValueFilter]
 
       e.asInstanceOf[ValueFilter].column shouldBe "ip"
       e.asInstanceOf[ValueFilter].value shouldBe "alex"
 
-      val t = operations.steps(1)
+      val t = operations(1)
 
       t shouldBe a[DatabaseUpsert]
 
@@ -152,7 +152,7 @@ class DslParserSpec extends Matchers with FunSpecLike with BeforeAndAfterEach wi
         ColumnMapping("context.ip", "ip_address", StringType)
       )
 
-      val r = operations.steps(2)
+      val r = operations(2)
       r shouldBe a[RegexFilter]
       val regex = r.asInstanceOf[RegexFilter]
       regex.expr shouldBe "alex"
@@ -309,7 +309,7 @@ class DslParserSpec extends Matchers with FunSpecLike with BeforeAndAfterEach wi
         """.stripMargin
       val sd = TypesafeDSLParser().parse(defDsl).get
       sd.source.asInstanceOf[KafkaSource].properties("schema.registry.url") shouldBe "testschema"
-      val op = sd.operations.steps.head.asInstanceOf[SaveAsJson]
+      val op = sd.operations.head.asInstanceOf[SaveAsJson]
       op.directory shouldBe "/test"
     }
 
@@ -351,7 +351,7 @@ class DslParserSpec extends Matchers with FunSpecLike with BeforeAndAfterEach wi
       sd.source.asInstanceOf[KafkaSource].properties("mydb-un") shouldBe "test-user"
       sd.source.asInstanceOf[KafkaSource].properties("mydb-pwd") shouldBe "password"
 
-      val op = sd.operations.steps.head.asInstanceOf[SaveAsJson]
+      val op = sd.operations.head.asInstanceOf[SaveAsJson]
       op.directory shouldBe "/test"
     }
 

@@ -19,8 +19,8 @@ import java.io.File
 
 import com.google.common.io.Files
 import com.typesafe.config.ConfigFactory
-import hydra.spark.api.{Invalid, Operations}
-import hydra.spark.dispatch.SparkBatchDispatch
+import hydra.spark.api.Invalid
+import hydra.spark.dispatch.SparkBatchTransformation
 import hydra.spark.testutils.{ListOperation, SharedSparkContext, StaticJsonSource}
 import org.scalatest.{BeforeAndAfterEach, FunSpecLike, Inside, Matchers}
 
@@ -61,13 +61,13 @@ class SaveAsJsonSpec extends Matchers with FunSpecLike with Inside with BeforeAn
 
       val t = SaveAsJson(props)
 
-      val sbd = SparkBatchDispatch("test1", StaticJsonSource, Operations(t), props)
+      val sbd = SparkBatchTransformation("test1", StaticJsonSource, Seq(t), props)
 
       sbd.run()
 
       val output = new File(t.directory)
 
-      val files = sbd.sparkSession.sparkContext.wholeTextFiles(output.getAbsolutePath, 1)
+      val files = sbd.spark.sparkContext.wholeTextFiles(output.getAbsolutePath, 1)
       val l = mutable.ListBuffer[JsValue]()
       files.collect().foreach(s => s._2.split("\\n").foreach(r => l += r.parseJson))
       l should contain theSameElementsAs StaticJsonSource.msgs.map(_.parseJson)
@@ -87,13 +87,13 @@ class SaveAsJsonSpec extends Matchers with FunSpecLike with Inside with BeforeAn
 
       val t = SaveAsJson(props)
 
-      val sbd = SparkBatchDispatch("test2", StaticJsonSource, Operations(t), props)
+      val sbd = SparkBatchTransformation("test2", StaticJsonSource, Seq(t), props)
 
       sbd.run()
 
       val output = new File(t.directory)
 
-      val files = sbd.sparkSession.sparkContext.wholeTextFiles(output.getAbsolutePath, 1)
+      val files = sbd.spark.sparkContext.wholeTextFiles(output.getAbsolutePath, 1)
       val l = mutable.ListBuffer[JsValue]()
       files.collect().foreach(s => s._2.split("\\n").foreach(r => l += r.parseJson))
       l should contain theSameElementsAs StaticJsonSource.msgs.map(_.parseJson)
@@ -113,7 +113,7 @@ class SaveAsJsonSpec extends Matchers with FunSpecLike with Inside with BeforeAn
 
         val t = SaveAsJson(props)
 
-        val sbd = SparkBatchDispatch("test3", StaticJsonSource, Operations(t), props)
+        val sbd = SparkBatchTransformation("test3", StaticJsonSource, Seq(t), props)
 
         sbd.run()
 
@@ -123,7 +123,7 @@ class SaveAsJsonSpec extends Matchers with FunSpecLike with Inside with BeforeAn
         val subdir = dir_list.filter(_.isDirectory)(0)
 
 
-        val files = sbd.sparkSession.sparkContext.wholeTextFiles(subdir.getAbsolutePath, 1)
+        val files = sbd.spark.sparkContext.wholeTextFiles(subdir.getAbsolutePath, 1)
         val l = mutable.ListBuffer[JsValue]()
         files.collect().foreach(s => s._2.split("\\n").foreach(r => l += r.parseJson))
         l should contain theSameElementsAs StaticJsonSource.msgs.map(_.parseJson)
@@ -144,13 +144,13 @@ class SaveAsJsonSpec extends Matchers with FunSpecLike with Inside with BeforeAn
 
       val t = SaveAsJson(props)
 
-      val sbd = SparkBatchDispatch("test4", StaticJsonSource, Operations(t), props)
+      val sbd = SparkBatchTransformation("test4", StaticJsonSource, Seq(t), props)
 
       sbd.run()
 
       val output = new File(t.directory)
 
-      val files = sbd.sparkSession.sparkContext.wholeTextFiles(output.getAbsolutePath, 1)
+      val files = sbd.spark.sparkContext.wholeTextFiles(output.getAbsolutePath, 1)
       val l = mutable.ListBuffer[JsValue]()
       files.collect().foreach(s => s._2.split("\\n").foreach(r => l += r.parseJson))
       l should contain theSameElementsAs StaticJsonSource.msgs.map(_.parseJson)

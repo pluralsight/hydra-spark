@@ -24,7 +24,7 @@ import scala.language.existentials
 /**
   * Created by alexsilva on 6/17/16.
   */
-trait Dispatch[S] extends Validatable {
+trait Transformation[S] extends Validatable {
 
   /**
     * A unique id identifying this dispatch job.  It is important it is unique but reproducible because it is used in
@@ -33,7 +33,7 @@ trait Dispatch[S] extends Validatable {
     * @return
     */
   val id: String = {
-    val idString = source.name + operations.steps.map(_.id).mkString("-")
+    val idString = source.name + operations.map(_.id).mkString("-")
     val digest = MessageDigest.getInstance("MD5")
     "hydra-" + digest.digest(idString.getBytes).map("%02x".format(_)).mkString
   }
@@ -54,7 +54,7 @@ trait Dispatch[S] extends Validatable {
 
   def source: Source[S]
 
-  def operations: Operations
+  def operations: Seq[DFOperation]
 
   def run(): Unit
 
@@ -71,7 +71,7 @@ trait Dispatch[S] extends Validatable {
   def dsl: Config
 
   override def validate: ValidationResult = {
-    val validation = operations.steps.map(_.validate) :+ source.validate
+    val validation = operations.map(_.validate) :+ source.validate
     val errors: Seq[ValidationError] = validation.flatMap {
       case Invalid(e) => e
       case Valid => None

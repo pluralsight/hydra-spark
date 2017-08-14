@@ -131,7 +131,6 @@ object UpsertUtils extends Logging {
               }
 
           }
-          println(stmt)
           stmt.addBatch()
           rowCount += 1
           if (rowCount % batchSize == 0) {

@@ -32,11 +32,11 @@ case class TypesafeDSLParser(sourcesPkg: Seq[String] = Seq("hydra.spark.sources"
 
   val factory = ClasspathDslElementFactory(sourcesPkg, operationsPkg)
 
-  override def parse(dsl: String): Try[DispatchDetails[_]] = {
+  override def parse(dsl: String): Try[TransformationDetails[_]] = {
     parse(ConfigFactory.parseString(dsl, ConfigParseOptions.defaults().setSyntax(ConfigSyntax.CONF)))
   }
 
-  def parse(dsl: Config): Try[DispatchDetails[_]] = {
+  def parse(dsl: Config): Try[TransformationDetails[_]] = {
 
     Try(dsl.resolve()).map { transport =>
 
@@ -54,13 +54,7 @@ case class TypesafeDSLParser(sourcesPkg: Seq[String] = Seq("hydra.spark.sources"
 
       val isStreaming = streamingProps.get("streaming.interval").isDefined
 
-      DispatchDetails(name, source, Operations(operations), isStreaming, dsl, TypesafeDSLParser.sparkDefaults)
+      TransformationDetails(name, source, operations, isStreaming, dsl)
     }
   }
-}
-
-object TypesafeDSLParser extends ConfigSupport {
-
-  val sparkDefaults = config.get[Config]("spark").valueOrElse(ConfigFactory.empty).atKey("spark")
-
 }

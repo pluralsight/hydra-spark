@@ -16,7 +16,6 @@
 package hydra.spark.api
 
 import com.typesafe.config.Config
-import org.apache.spark.SparkConf
 
 /**
   * Contains all the information needed to run a dispatch, but without
@@ -30,20 +29,5 @@ import org.apache.spark.SparkConf
   *
   *                    Created by alexsilva on 1/3/17.
   */
-case class DispatchDetails[S](name: String, source: Source[S], operations: Operations, isStreaming: Boolean,
-                              dsl: Config, sparkDefaults: Config) {
-
-  lazy val sparkConf: SparkConf = {
-    import configs.syntax._
-    import hydra.spark.configs._
-    val sparkDslConf = dsl.flattenAtKey("spark")
-    val sparkConf = sparkDslConf ++ sparkDefaults.flattenAtKey("spark")
-    val jars = dsl.get[List[String]]("spark.jars").valueOrElse(List.empty)
-    val appName = sparkDslConf.get("spark.app.name").getOrElse(name)
-
-    new SparkConf().setAll(sparkConf)
-      .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
-      .registerKryoClasses(Array(classOf[org.apache.avro.generic.GenericData.Record]))
-      .setAppName(appName).setJars(jars)
-  }
-}
+case class TransformationDetails[S](name: String, source: Source[S], operations: Seq[DFOperation], isStreaming: Boolean,
+                              dsl: Config)

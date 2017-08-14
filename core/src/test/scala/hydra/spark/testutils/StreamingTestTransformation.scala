@@ -17,15 +17,15 @@ package hydra.spark.testutils
 
 import com.typesafe.config.ConfigFactory
 import hydra.spark.api._
-import hydra.spark.dispatch.SparkStreamingDispatch
+import hydra.spark.dispatch.SparkStreamingTransformation
 
 import scala.reflect.runtime.universe._
 
 /**
   * Created by alexsilva on 1/3/17.
   */
-case class StreamingTestDispatch[S: TypeTag](source: Source[S], operations: Operations)
-  extends Dispatch[S] {
+case class StreamingTestTransformation[S: TypeTag](source: Source[S], operations: Seq[DFOperation])
+  extends Transformation[S] {
 
   val dsl = ConfigFactory.parseString(
     """
@@ -38,7 +38,7 @@ case class StreamingTestDispatch[S: TypeTag](source: Source[S], operations: Oper
     """.stripMargin
   )
 
-  val dispatch = SparkStreamingDispatch("test", source, operations, dsl)
+  val dispatch = SparkStreamingTransformation("test", source, operations, dsl)
 
   def run() = dispatch.run()
 

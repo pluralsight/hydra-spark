@@ -43,7 +43,7 @@ class PublishToWebhookSpec extends Matchers with FunSpecLike {
           |}
         """.stripMargin
 
-      val publish = TypesafeDSLParser().parse(dsl).get.operations.steps.head.asInstanceOf[PublishToWebhook]
+      val publish = TypesafeDSLParser().parse(dsl).get.operations.head.asInstanceOf[PublishToWebhook]
       publish.url shouldBe "test.com"
     }
   }

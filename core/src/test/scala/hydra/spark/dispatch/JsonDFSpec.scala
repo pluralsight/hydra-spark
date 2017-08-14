@@ -15,8 +15,8 @@
 
 package hydra.spark.dispatch
 
-import hydra.spark.api.Operations
-import hydra.spark.testutils.{SharedSparkContext, StaticJsonSource, StreamingTestDispatch}
+import hydra.spark.api.DFOperation
+import hydra.spark.testutils.{SharedSparkContext, StaticJsonSource, StreamingTestTransformation}
 import org.apache.spark.sql.DataFrame
 import org.scalatest.concurrent.{Eventually, PatienceConfiguration, ScalaFutures}
 import org.scalatest.time.{Seconds, Span}
@@ -34,19 +34,21 @@ class JsonDFSpec extends Matchers with FunSpecLike with ScalaFutures with Patien
   val source = StaticJsonSource
 
   var ldf: Option[DataFrame] = None
-  val add100 = (df: DataFrame) => {
-    val ndf = df.withColumn("msg_no", df("msg_no") + 100)
-    ldf = Some(ndf)
-    ndf
+  val add100 = new DFOperation {
+    override def transform(df: DataFrame): DataFrame = {
+      val ndf = df.withColumn("msg_no", df("msg_no") + 100)
+      ldf = Some(ndf)
+      ndf
+    }
   }
 
-  val t = Operations(add100, "add100")
+  val t = Seq(add100)
 
-  var disp: StreamingTestDispatch[String] = _
+  var disp: StreamingTestTransformation[String] = _
 
   override def beforeAll() = {
     super.beforeAll()
-    disp = StreamingTestDispatch(StaticJsonSource, t)
+    disp = StreamingTestTransformation(StaticJsonSource, t)
 
   }
 
@@ -62,7 +64,7 @@ class JsonDFSpec extends Matchers with FunSpecLike with ScalaFutures with Patien
         msgs shouldBe msgNos
       }
 
-      disp.dispatch.asInstanceOf[SparkStreamingDispatch[_]].ssc.awaitTerminationOrTimeout(2000)
+      disp.dispatch.asInstanceOf[SparkStreamingTransformation[_]].ssc.awaitTerminationOrTimeout(2000)
       disp.stop()
     }
   }

@@ -3,7 +3,8 @@ package hydra.spark.submit
 import java.util.UUID
 
 import com.typesafe.config.{ConfigFactory, ConfigRenderOptions}
-import hydra.spark.api.DispatchDetails
+import hydra.spark.api.TransformationDetails
+import hydra.spark.configs.ConfigSupport
 import hydra.spark.internal.Logging
 import org.apache.spark.launcher.SparkLauncher
 
@@ -12,9 +13,9 @@ import scala.collection.JavaConverters._
 /**
   * Created by alexsilva on 1/18/17.
   */
-object HydraSparkLauncher extends Logging {
+object HydraSparkLauncher extends Logging with ConfigSupport {
 
-  private[submit] def env[T](dispatchDetails: DispatchDetails[T], sparkInfo: SparkSubmitInfo): Map[String, String] = {
+  private[submit] def env[T](dispatchDetails: TransformationDetails[T], sparkInfo: SparkSubmitInfo): Map[String, String] = {
     import hydra.spark.configs._
     val env: Map[String, String] = Map(
       "HADOOP_CONF_DIR" -> sparkInfo.hadoopConfDir,
@@ -27,20 +28,21 @@ object HydraSparkLauncher extends Logging {
 
   }
 
-  def createLauncher[T](sparkInfo: SparkSubmitInfo, dispatch: DispatchDetails[T]): SparkLauncher = {
+  def createLauncher[T](sparkInfo: SparkSubmitInfo, dispatch: TransformationDetails[T]): SparkLauncher = {
     import configs.syntax._
-
+    val name = dispatch.dsl.get[String]("name").valueOrElse(UUID.randomUUID().toString)
+    val sparkCfg = sparkConf(dispatch.dsl, name)
     val dsl = dispatch.dsl.root().render(ConfigRenderOptions.concise())
     val launcher = new SparkLauncher(env(dispatch, sparkInfo).asJava)
       .setSparkHome(sparkInfo.sparkHome)
       .setAppResource(sparkInfo.hydraSparkJar)
-      .setAppName(dispatch.dsl.get[String]("name").valueOrElse(UUID.randomUUID().toString))
+      .setAppName(name)
       .setMainClass("hydra.spark.dsl.DslRunner")
       .addAppArgs(dsl)
-      .setMaster(dispatch.sparkConf.get("spark.master"))
+      .setMaster(sparkCfg.get("spark.master"))
       .setVerbose(true)
 
-    dispatch.sparkConf.getAll.foreach(entry => launcher.setConf(entry._1, entry._2))
+    sparkCfg.getAll.foreach(entry => launcher.setConf(entry._1, entry._2))
 
     launcher
   }
