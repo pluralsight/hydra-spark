@@ -31,7 +31,7 @@ object Versions {
   lazy val postgresVersion = "9.4.1209"
   lazy val commonsDbcpVersion = "1.4"
   lazy val flywayVersion = "3.2.1"
-  lazy val guavaVersion = "18.0"
+  lazy val guavaVersion = "14.0.1"
   lazy val avroVersion = "1.8.1"
   val log4jVersion = "2.7"
   lazy val reflectionsVersion = "0.9.10"

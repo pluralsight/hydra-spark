@@ -30,12 +30,14 @@ import scala.concurrent.Future
 class DatabaseUpsertPostgresSpec extends Matchers with FunSpecLike with ScalaFutures with PatienceConfiguration
   with Eventually with BeforeAndAfterEach with PostgresSpec with SharedSparkContext {
 
+  import TestImplicits._
   implicit override val patienceConfig = PatienceConfig(timeout = Span(2, Seconds), interval = Span(1, Seconds))
 
   val table = "TEST_TABLE"
   val inferredTable = "INFERRED_TEST_TABLE"
 
   val json = """{ "context": { "ip": "127.0.0.1" }, "user": { "handle": "alex", "id": 123 } }"""
+  val jsonCaseSensitive = """{ "context": { "userIp": "127.0.0.1" }, "user": { "userName": "alex", "userId": 123 } }"""
 
   override def beforeEach(): Unit = {
     super.beforeEach()
@@ -70,9 +72,9 @@ class DatabaseUpsertPostgresSpec extends Matchers with FunSpecLike with ScalaFut
 
       val dbUpsert = DatabaseUpsert("NEW_TABLE", props, None, mappings)
 
-      val rdd = sc.parallelize(json :: Nil)
+      val ds = ss.createDataset(Seq(json))
 
-      val df = ss.sqlContext.read.json(rdd)
+      val df = ss.sqlContext.read.json(ds)
 
       dbUpsert.transform(df)
 
@@ -99,9 +101,9 @@ class DatabaseUpsertPostgresSpec extends Matchers with FunSpecLike with ScalaFut
 
       val dbUpsert = DatabaseUpsert("NEW_TABLE", props, idCol, mappings)
 
-      val rdd = sc.parallelize(json :: Nil)
+      val ds = ss.createDataset(Seq(json))
 
-      val df = ss.sqlContext.read.json(rdd)
+      val df = ss.sqlContext.read.json(ds)
 
       dbUpsert.transform(df)
 
@@ -122,9 +124,9 @@ class DatabaseUpsertPostgresSpec extends Matchers with FunSpecLike with ScalaFut
 
       val dbUpsert = DatabaseUpsert("TEST_TABLE", Map("url" -> url), None, mappings)
 
-      val rdd = sc.parallelize(json :: Nil)
+      val ds = ss.createDataset(Seq(json))
 
-      val df = ss.sqlContext.read.json(rdd)
+      val df = ss.sqlContext.read.json(ds)
 
       dbUpsert.transform(df)
 
@@ -148,7 +150,7 @@ class DatabaseUpsertPostgresSpec extends Matchers with FunSpecLike with ScalaFut
       val dbUpsert = DatabaseUpsert("TEST_TABLE", Map("url" -> url),
         Some(ColumnMapping("user.id", "user_id", "long")), mappings)
 
-      val df = ss.sqlContext.read.json(sc.parallelize(json :: Nil))
+      val df = ss.sqlContext.read.json(ss.createDataset(Seq(json)))
 
       dbUpsert.transform(df)
 
@@ -158,7 +160,7 @@ class DatabaseUpsertPostgresSpec extends Matchers with FunSpecLike with ScalaFut
 
       val njson = """{ "context": { "ip": "127.0.0.1" }, "user": { "handle": "alex_updated", "id": 123 } }"""
 
-      val ndf = ss.sqlContext.read.json(sc.parallelize(njson :: Nil))
+      val ndf = ss.sqlContext.read.json(ss.createDataset(Seq(njson)))
 
       dbUpsert.transform(ndf)
 
@@ -175,7 +177,7 @@ class DatabaseUpsertPostgresSpec extends Matchers with FunSpecLike with ScalaFut
       val dbUpsert = DatabaseUpsert(inferredTable, Map("url" -> url),
         Some(ColumnMapping("user_id", "user_id", "int")), mappings)
 
-      val df = ss.sqlContext.read.json(sc.parallelize(json :: Nil))
+      val df = ss.sqlContext.read.json(ss.createDataset(Seq(json)))
 
       dbUpsert.transform(df)
 
@@ -184,7 +186,7 @@ class DatabaseUpsertPostgresSpec extends Matchers with FunSpecLike with ScalaFut
       }
 
       val njson = """{ "context_ip": "127.0.0.1", "user_handle": "alex_updated", "user_id": 123 }"""
-      val ndf = ss.sqlContext.read.json(sc.parallelize(njson :: Nil))
+      val ndf = ss.sqlContext.read.json(ss.createDataset(Seq(njson)))
 
       dbUpsert.transform(ndf)
 
@@ -193,6 +195,41 @@ class DatabaseUpsertPostgresSpec extends Matchers with FunSpecLike with ScalaFut
       }
     }
 
+    it("Should create with PK and upsert for case sensitive columns") {
+      import slick.driver.PostgresDriver.api._
+
+      val mappings = List(
+        ColumnMapping("context.userIp", "ipAddress", "string"),
+        ColumnMapping("user.userName", "userName", "string")
+      )
+      val idCol = Some(ColumnMapping("user.userId", "userId", "int"))
+
+      val props = Map("savemode" -> "overwrite", "url" -> url)
+
+      val dbUpsert = DatabaseUpsert("NEW_TABLE", props, idCol, mappings)
+
+      val ds = ss.createDataset(Seq(jsonCaseSensitive))
+      ss.sqlContext.setConf("spark.sql.caseSensitive", "true") //not important but want to test as well
+      val df = ss.sqlContext.read.json(ds)
+
+      dbUpsert.transform(df)
+
+      whenReady(database.run(sql"select conname from pg_constraint where conname = 'new_table_pkey'".as[String])) { r =>
+        r should contain("new_table_pkey")
+      }
+
+      val njson = """{ "context": { "userIp": "127.0.0.1" }, "user": { "userName": "alex_updated", "userId": 123 } }"""
+
+      val ndf = ss.sqlContext.read.json(ss.createDataset(Seq(njson)))
+
+      dbUpsert.transform(ndf)
+
+      whenReady(database.run(sql"select * from NEW_TABLE".as[(Int, String, String)])) { r =>
+        r shouldBe Seq((123, "127.0.0.1", "alex_updated"))
+        val f: Future[Int] = database.run(basicUpdate(s"DROP TABLE NEW_TABLE"))
+        eventually(f.value.get.get shouldBe 0)
+      }
+    }
   }
 }
 

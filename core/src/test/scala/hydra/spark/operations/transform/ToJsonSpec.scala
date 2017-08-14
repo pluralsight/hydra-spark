@@ -26,6 +26,7 @@ import scala.io.Source
   * Created by alexsilva on 8/12/16.
   */
 class ToJsonSpec extends Matchers with FunSpecLike with SharedSparkContext {
+  import TestImplicits._
 
   describe("When converting columns to json") {
     it("works with complex types") {
@@ -59,8 +60,8 @@ class ToJsonSpec extends Matchers with FunSpecLike with SharedSparkContext {
     ndf.columns should contain allOf("batters", "id", "name", "ppu", "topping", "type")
   }
     it("does not fail with empty dataset") {
-      val rdd = sc.parallelize("" :: Nil)
-      val df = ss.sqlContext.read.json(rdd)
+      val ds = ss.createDataset(Seq.empty[String])
+      val df = ss.sqlContext.read.json(ds)
       val ndf = ToJson(Seq("batters")).transform(df)
       ndf.collect() shouldBe empty
     }

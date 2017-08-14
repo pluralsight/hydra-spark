@@ -33,6 +33,7 @@ object DataFrameWriterExtensions {
       modeF.setAccessible(true)
       val mode = modeF.get(w).asInstanceOf[SaveMode]
       val conn = JdbcUtils.createConnectionFactory(jdbcOptions)()
+      val isCaseSensitive = df.sqlContext.conf.caseSensitiveAnalysis
 
       try {
         var tableExists = JdbcUtils.tableExists(conn, new JDBCOptions(url, table, Map.empty))
@@ -71,7 +72,7 @@ object DataFrameWriterExtensions {
       //todo: make this a single method
       idColumn match {
         case Some(id) => UpsertUtils.upsert(df, idColumn, jdbcOptions)
-        case None => JdbcUtils.saveTable(df, None, true, options=jdbcOptions)
+        case None => JdbcUtils.saveTable(df, Some(df.schema), isCaseSensitive, options=jdbcOptions)
       }
 
     }
