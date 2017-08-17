@@ -38,7 +38,6 @@ import scala.collection.mutable
   */
 class SaveAsAvroSpec extends Matchers with FunSpecLike with Inside with BeforeAndAfterAll
   with SharedSparkContext {
-
   val tmpDir = Files.createTempDir()
 
   override def afterAll(): Unit = {
@@ -106,7 +105,10 @@ object AvroSpecSource extends Source[String] {
 
   override def validate = Valid
 
-  override def createDF(ctx: SparkSession): DataFrame = ctx.read.json(ctx.sparkContext.parallelize(msgs))
+  override def createDF(ctx: SparkSession): DataFrame = {
+    import ctx.implicits._
+    ctx.read.json(ctx.createDataset(msgs))
+  }
 
   override def toDF(rdd: RDD[String]): DataFrame = rdd.toDF
 }
