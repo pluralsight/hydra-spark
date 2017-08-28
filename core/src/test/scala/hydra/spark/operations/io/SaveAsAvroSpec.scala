@@ -60,7 +60,7 @@ class SaveAsAvroSpec extends Matchers with FunSpecLike with Inside with BeforeAn
       }
     }
 
-    it("Should save a string source") {
+    ignore("Should save a string source") {
       val t = SaveAsAvro(tmpDir.getAbsolutePath, "classpath:schema.avsc", None, Map.empty,
         overwrite = true)
       t.transform(AvroSpecSource.createDF(ss))
