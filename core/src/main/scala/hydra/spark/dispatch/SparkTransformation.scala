@@ -16,24 +16,30 @@
 package hydra.spark.dispatch
 
 import com.typesafe.config.Config
-import hydra.spark.api._
 import configs.syntax._
+import hydra.spark.api._
 import hydra.spark.configs.ConfigSupport
 import hydra.spark.dsl.parser.TypesafeDSLParser
-import org.apache.spark.sql.SparkSession
+import hydra.spark.events.HydraListener
 
 /**
   * Created by alexsilva on 6/21/16.
   */
-abstract class SparkTransformation[S](name: String,
-                                      source: Source[S],
+abstract class SparkTransformation[S](source: Source[S],
                                       operations: Seq[DFOperation],
                                       dsl: Config) extends Transformation[S] with ConfigSupport {
 
-
-  lazy val spark = SparkSession.builder().config(sparkConf(dsl, name)).getOrCreate()
+  lazy val hydraContext = HydraContext.builder().setConfig(dsl).getOrCreate()
 
   val author = dsl.get[String]("author").valueOrElse("Unknown")
+
+  def init(): Unit = {
+    (operations :+ source) foreach { op =>
+      if (op.getClass.isAssignableFrom(classOf[HydraListener])) {
+        hydraContext.addHydraListener(op.asInstanceOf[HydraListener])
+      }
+    }
+  }
 }
 
 object SparkTransformation {
@@ -49,9 +55,9 @@ object SparkTransformation {
   def apply[S: TypeTag](d: TransformationDetails[S]): SparkTransformation[S] = {
 
     if (d.isStreaming)
-      SparkStreamingTransformation[S](d.name, d.source, d.operations, d.dsl)
+      SparkStreamingTransformation[S](d.source, d.operations, d.dsl)
     else
-      SparkBatchTransformation[S](d.name, d.source, d.operations, d.dsl)
+      SparkBatchTransformation[S](d.source, d.operations, d.dsl)
   }
 
 }

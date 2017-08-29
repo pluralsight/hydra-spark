@@ -61,7 +61,7 @@ class SaveAsJsonSpec extends Matchers with FunSpecLike with Inside with BeforeAn
 
       val t = SaveAsJson(props)
 
-      val sbd = SparkBatchTransformation("test1", StaticJsonSource, Seq(t), props)
+      val sbd = SparkBatchTransformation(StaticJsonSource, Seq(t), props)
 
       sbd.run()
 
@@ -87,7 +87,7 @@ class SaveAsJsonSpec extends Matchers with FunSpecLike with Inside with BeforeAn
 
       val t = SaveAsJson(props)
 
-      val sbd = SparkBatchTransformation("test2", StaticJsonSource, Seq(t), props)
+      val sbd = SparkBatchTransformation(StaticJsonSource, Seq(t), props)
 
       sbd.run()
 
@@ -100,34 +100,34 @@ class SaveAsJsonSpec extends Matchers with FunSpecLike with Inside with BeforeAn
     }
 
     it("Should create timestamp subdirectory if current_timestamp specified") {
-        import spray.json._
+      import spray.json._
 
-        val tmpDir = Files.createTempDir()
+      val tmpDir = Files.createTempDir()
 
-        val props = ConfigFactory.parseString(
-          s"""
-             |directory = s"${tmpDir.getAbsolutePath}/#{current_timestamp()}"
-             |overwrite = false
+      val props = ConfigFactory.parseString(
+        s"""
+           |directory = s"${tmpDir.getAbsolutePath}/#{current_timestamp()}"
+           |overwrite = false
         """.stripMargin
-        )
+      )
 
-        val t = SaveAsJson(props)
+      val t = SaveAsJson(props)
 
-        val sbd = SparkBatchTransformation("test3", StaticJsonSource, Seq(t), props)
+      val sbd = SparkBatchTransformation(StaticJsonSource, Seq(t), props)
 
-        sbd.run()
+      sbd.run()
 
-        //find created sub-directory to compare files in subdir to input
-        val dir = t.directory.replace("#{current_timestamp()}","")
-        val dir_list = new File(dir).listFiles()
-        val subdir = dir_list.filter(_.isDirectory)(0)
+      //find created sub-directory to compare files in subdir to input
+      val dir = t.directory.replace("#{current_timestamp()}", "")
+      val dir_list = new File(dir).listFiles()
+      val subdir = dir_list.filter(_.isDirectory)(0)
 
 
-        val files = sbd.spark.sparkContext.wholeTextFiles(subdir.getAbsolutePath, 1)
-        val l = mutable.ListBuffer[JsValue]()
-        files.collect().foreach(s => s._2.split("\\n").foreach(r => l += r.parseJson))
-        l should contain theSameElementsAs StaticJsonSource.msgs.map(_.parseJson)
-      }
+      val files = sbd.spark.sparkContext.wholeTextFiles(subdir.getAbsolutePath, 1)
+      val l = mutable.ListBuffer[JsValue]()
+      files.collect().foreach(s => s._2.split("\\n").foreach(r => l += r.parseJson))
+      l should contain theSameElementsAs StaticJsonSource.msgs.map(_.parseJson)
+    }
 
     it("Should save as codec specified") {
       import spray.json._
@@ -144,7 +144,7 @@ class SaveAsJsonSpec extends Matchers with FunSpecLike with Inside with BeforeAn
 
       val t = SaveAsJson(props)
 
-      val sbd = SparkBatchTransformation("test4", StaticJsonSource, Seq(t), props)
+      val sbd = SparkBatchTransformation(StaticJsonSource, Seq(t), props)
 
       sbd.run()
 

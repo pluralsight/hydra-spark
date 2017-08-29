@@ -22,7 +22,7 @@ import org.slf4j.{ Logger, LoggerFactory }
  */
 private[spark] trait Logging {
 
-  @transient lazy val log: Logger = LoggerFactory.getLogger(logName)
+  @transient protected lazy val log: Logger = LoggerFactory.getLogger(logName)
 
   protected def logName = getClass.getName.stripSuffix("$")
 }

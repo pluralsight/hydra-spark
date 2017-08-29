@@ -19,8 +19,8 @@ import scala.reflect.runtime.universe._
 import scala.reflect.runtime.{currentMirror => cm, universe => ru}
 
 /**
- * Created by alexsilva on 1/4/16.
- */
+  * Created by alexsilva on 1/4/16.
+  */
 object ReflectionUtils {
 
   private lazy val universeMirror = ru.runtimeMirror(getClass.getClassLoader)
@@ -58,6 +58,10 @@ object ReflectionUtils {
     val ctorm = clazz.reflectConstructor(ctor)
     val obj = ctorm(args: _*).asInstanceOf[M]
     obj
+  }
+
+  def getFormattedClassName(obj: AnyRef): String = {
+    obj.getClass.getSimpleName.replace("$", "")
   }
 }
 

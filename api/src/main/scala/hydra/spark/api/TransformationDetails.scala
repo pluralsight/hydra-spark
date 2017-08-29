@@ -16,12 +16,12 @@
 package hydra.spark.api
 
 import com.typesafe.config.Config
+import configs.syntax._
 
 /**
   * Contains all the information needed to run a dispatch, but without
   * a context associated with it.
   *
-  * @param name        The unique name for this dispatch job.
   * @param source      The materialized source
   * @param operations  The list of operations
   * @param isStreaming Whether or not this is a streaming dispatch
@@ -29,5 +29,6 @@ import com.typesafe.config.Config
   *
   *                    Created by alexsilva on 1/3/17.
   */
-case class TransformationDetails[S](name: String, source: Source[S], operations: Seq[DFOperation], isStreaming: Boolean,
-                              dsl: Config)
+case class TransformationDetails[S](source: Source[S], operations: Seq[DFOperation], isStreaming: Boolean, dsl: Config) {
+  def name:Option[String] = dsl.get[String]("name").toOption
+}

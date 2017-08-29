@@ -41,7 +41,7 @@ class SparkBatchTransformationTest extends Matchers with FunSpecLike with Before
 
   describe("When creating RDDs") {
     it("Be configured properly") {
-      SparkBatchTransformation("test", StaticJsonSource, Seq(ListOperation), props).run()
+      SparkBatchTransformation(StaticJsonSource, Seq(ListOperation), props).run()
       ListOperation.l.map(_.parseJson) should contain theSameElementsAs StaticJsonSource.msgs.map(_.parseJson)
     }
   }
