@@ -15,8 +15,6 @@
 
 package hydra.spark.dsl.parser
 
-import java.util.UUID
-
 import com.typesafe.config._
 import configs.syntax._
 import hydra.spark.api._
@@ -48,13 +46,12 @@ case class TypesafeDSLParser(sourcesPkg: Seq[String] = Seq("hydra.spark.sources"
         .map(ops => factory.createOperations(ops, transport))
         .valueOrThrow(e => InvalidDslException(s"Invalid DSL: ${e.head.throwable.getMessage}"))
 
-      val name = transport.get[String]("name").valueOrElse(UUID.randomUUID().toString)
 
       val streamingProps = transport.flattenAtKey("streaming")
 
       val isStreaming = streamingProps.get("streaming.interval").isDefined
 
-      TransformationDetails(name, source, operations, isStreaming, dsl)
+      TransformationDetails(source, operations, isStreaming, dsl)
     }
   }
 }

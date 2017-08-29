@@ -21,10 +21,11 @@ import hydra.spark.api._
 /**
   * Created by alexsilva on 6/20/16.
   */
-case class SparkBatchTransformation[S](override val name: String, source: Source[S], operations: Seq[DFOperation],
+case class SparkBatchTransformation[S](source: Source[S], operations: Seq[DFOperation],
                                        dsl: Config)
-  extends SparkTransformation[S](name, source, operations, dsl) {
+  extends SparkTransformation[S](source, operations, dsl) {
 
+  lazy val spark = hydraContext.spark
 
   override def run(): Unit = {
     val ops = operations

@@ -23,7 +23,7 @@ import scala.util.{Failure, Try, Success}
 trait DFOperation extends Validatable {
 
   /**
-   * A unique id indentifying this operation.
+   * A unique id identifying this operation.
    *
    * @return
    */

@@ -39,7 +39,7 @@ class HydraSparkLauncherSpec extends Matchers with FunSpecLike {
 
     it("builds the right environment variables") {
 
-      val d = TransformationDetails("test", EmptySource("test"), Seq(NoOpOperation), false, dslC)
+      val d = TransformationDetails(EmptySource("test"), Seq(NoOpOperation), false, dslC)
 
       val env = HydraSparkLauncher.env(d, sparkInfo)
 
@@ -47,7 +47,7 @@ class HydraSparkLauncherSpec extends Matchers with FunSpecLike {
     }
 
     it("submits") {
-      val d = TransformationDetails("test", EmptySource("test"), Seq(NoOpOperation), false, dslC)
+      val d = TransformationDetails(EmptySource("test"), Seq(NoOpOperation), false, dslC)
       val launcher = HydraSparkLauncher.createLauncher(sparkInfo, d)
 
       import org.scalatest.PrivateMethodTester._

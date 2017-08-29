@@ -79,7 +79,7 @@ class PublishToKafkaSpec extends Matchers with FunSpecLike with Inside with Befo
 
       val op = PublishToKafka("test-und-topic", properties = kafkaProps)
 
-      val sd = SparkBatchTransformation("test", StaticJsonSource, Seq(op), props)
+      val sd = SparkBatchTransformation(StaticJsonSource, Seq(op), props)
 
       sd.validate shouldBe Valid
 
@@ -98,7 +98,7 @@ class PublishToKafkaSpec extends Matchers with FunSpecLike with Inside with Befo
 
       val op = PublishToKafka("test-ord-topic", orderBy = Some("msg_no desc"), properties = kafkaProps)
 
-      val sd = SparkBatchTransformation("test", StaticJsonSource, Seq(op), props)
+      val sd = SparkBatchTransformation(StaticJsonSource, Seq(op), props)
 
       sd.validate shouldBe Valid
 
@@ -121,7 +121,7 @@ class PublishToKafkaSpec extends Matchers with FunSpecLike with Inside with Befo
 
       val op = PublishToKafka("test-sel-topic", columns = Some(List("msg_no")), properties = kafkaProps)
 
-      val sd = SparkBatchTransformation("test", StaticJsonSource, Seq(op), props)
+      val sd = SparkBatchTransformation(StaticJsonSource, Seq(op), props)
 
       sd.validate shouldBe Valid
 
@@ -146,7 +146,7 @@ class PublishToKafkaSpec extends Matchers with FunSpecLike with Inside with Befo
       key = Some("msg_no"), orderBy = Some("msg_no desc"),
       properties = kafkaProps)
 
-    val sd = SparkBatchTransformation("test", StaticJsonSource, Seq(op), props)
+    val sd = SparkBatchTransformation(StaticJsonSource, Seq(op), props)
 
     sd.validate shouldBe Valid
 

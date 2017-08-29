@@ -15,12 +15,14 @@
 
 package hydra.spark.operations.jdbc
 
-import java.security.MessageDigest
+import java.util.Properties
 
 import com.typesafe.config.Config
 import hydra.spark.api._
+import hydra.spark.events.{BaseHydraListener, HydraTransformationEnd, HydraTransformationStart}
 import hydra.spark.internal.Logging
 import hydra.spark.operations.common.{ColumnMapping, TableMapping}
+import org.apache.commons.lang3.ClassUtils
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions
 import org.apache.spark.sql.jdbc.DataFrameWriterExtensions._
@@ -32,7 +34,8 @@ import scala.collection.mutable
   * Created by alexsilva on 6/18/16.
   */
 case class DatabaseUpsert(table: String, properties: Map[String, String],
-                          idColumn: Option[ColumnMapping], columns: Seq[ColumnMapping]) extends DFOperation with Logging {
+                          idColumn: Option[ColumnMapping], columns: Seq[ColumnMapping]) extends DFOperation
+  with Logging with BaseHydraListener {
 
   val mapping = TableMapping(idColumn, columns)
 
@@ -57,11 +60,23 @@ case class DatabaseUpsert(table: String, properties: Map[String, String],
     if (errors.size > 0) Invalid(errors) else Valid
   }
 
-  override val id: String = {
-    val idString = table + properties.map(k => k._1 + "->" + k._2).mkString +
-      idColumn.map(_.toString) + columns.map(_.toString).mkString
-    val digest = MessageDigest.getInstance("MD5")
-    digest.digest(idString.getBytes).map("%02x".format(_)).mkString
+  override val id: String = s"${ClassUtils.getShortCanonicalName(getClass)}_$table".toUpperCase
+
+  override def onTransformationStart(evt: HydraTransformationStart): Unit = {
+    postCount("INITIAL_ROW_COUNT", evt.hydraContext)
+  }
+
+  override def onTransformationEnd(evt: HydraTransformationEnd): Unit = {
+    postCount("FINAL_ROW_COUNT", evt.hydraContext)
+  }
+
+  private def postCount(name: String, hydraContext: HydraContext) = {
+    import scala.collection.JavaConverters._
+    val props = new Properties()
+    props.putAll(properties.asJava)
+    val reader = hydraContext.spark.read.jdbc(properties("url"), table, props)
+    val count = reader.count()
+    hydraContext.getAccumulator(s"${this.id}_$name").add(count)
   }
 }
 

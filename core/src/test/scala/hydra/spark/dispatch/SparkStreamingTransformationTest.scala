@@ -42,7 +42,7 @@ class SparkStreamingTransformationTest extends Matchers with FunSpecLike with Sh
     it("Be configured properly") {
 
       val c = ConfigFactory.parseMap(props.asJava)
-      val sd = SparkStreamingTransformation("test", EmptySource, Seq.empty, c)
+      val sd = SparkStreamingTransformation(EmptySource, Seq.empty, c)
       val conf = sd.ssc.sparkContext.getConf
       sd.ssc.stop(false, false)
     }

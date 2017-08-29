@@ -38,7 +38,7 @@ case class StreamingTestTransformation[S: TypeTag](source: Source[S], operations
     """.stripMargin
   )
 
-  val dispatch = SparkStreamingTransformation("test", source, operations, dsl)
+  val dispatch = SparkStreamingTransformation(source, operations, dsl)
 
   def run() = dispatch.run()
 

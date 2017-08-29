@@ -103,7 +103,7 @@ class DslParserSpec extends Matchers with FunSpecLike with BeforeAndAfterEach wi
       import configs.syntax._
       val d = TypesafeDSLParser().parse(dsl).get
 
-      d.name shouldBe "test-job"
+      d.name.get shouldBe "test-job"
 
       d.isStreaming shouldBe true
 
