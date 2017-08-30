@@ -1,8 +1,7 @@
 package hydra.spark.operations.transform
 
 import hydra.spark.api._
-import org.apache.spark.sql.{DataFrame, TypedColumn}
-
+import org.apache.spark.sql.DataFrame
 /**
   * Created by alexsilva on 1/25/17.
   */
@@ -12,8 +11,7 @@ case class ToJson(columns: Seq[String]) extends DFOperation {
     import org.apache.spark.sql.functions._
     import df.sqlContext.implicits._
     ifNotEmpty(df) { df =>
-      val typedCols: Seq[TypedColumn[Any, String]] = columns.map(c => to_json(col(c)).as[String])
-      df.select(typedCols: _*)
+      columns.foldLeft(df)((df,c)=>df.withColumn(c, to_json(col(c)).as[String]))
     }
   }
 
@@ -23,4 +21,3 @@ case class ToJson(columns: Seq[String]) extends DFOperation {
     else Valid
   }
 }
-

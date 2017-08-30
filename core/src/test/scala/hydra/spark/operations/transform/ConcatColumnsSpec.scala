@@ -8,6 +8,7 @@ import org.scalatest.{FunSpecLike, Matchers}
   * Created by dustinvannoy on 1/20/17.
   */
 class ConcatColumnsSpec extends Matchers with FunSpecLike with SharedSparkContext {
+  import TestImplicits._
 
   describe("It should concatenate two columns") {
     it("Should allow use of two dataframe columns to make one column") {
@@ -18,7 +19,7 @@ class ConcatColumnsSpec extends Matchers with FunSpecLike with SharedSparkContex
     }
     it("Should not break on an empty dataset") {
       // ConcatColumns accepts a sequence but dsl will actually send the subtype list
-      val df =  ss.sqlContext.read.json(sc.parallelize(""::Nil))
+      val df =  ss.sqlContext.read.json(ss.createDataset(Seq.empty[String]))
       val df1 = ConcatColumns(List("email","msg_no"), "newColumn").transform(df)
       df1.collect() shouldBe empty
     }

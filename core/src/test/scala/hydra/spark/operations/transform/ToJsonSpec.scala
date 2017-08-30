@@ -26,6 +26,7 @@ import scala.io.Source
   * Created by alexsilva on 8/12/16.
   */
 class ToJsonSpec extends Matchers with FunSpecLike with SharedSparkContext {
+  import TestImplicits._
 
   describe("When converting columns to json") {
     it("works with complex types") {
@@ -39,9 +40,28 @@ class ToJsonSpec extends Matchers with FunSpecLike with SharedSparkContext {
         data(idx.toInt) shouldBe (row.getString(0).parseJson)
       }
     }
+    it("keeps all non-json columns") {
+      import spray.json._
+      val sqlContext = ss.sqlContext
+      val path = Thread.currentThread().getContextClassLoader.getResource("data.txt").getFile
+      val data = Source.fromFile(new File(path)).getLines().toArray.map(_.parseJson.asJsObject.fields("batters"))
+      val df = sqlContext.read.json(path).repartition(1)
+      val ndf = ToJson(Seq("batters")).transform(df)
+      ndf.columns should contain allOf("batters", "id", "name", "ppu", "topping", "type")
+    }
+    it("works with arrays of json") {
+    import spray.json._
+
+      val sqlContext = ss.sqlContext
+    val path = Thread.currentThread().getContextClassLoader.getResource("data.txt").getFile
+    val data = Source.fromFile(new File(path)).getLines().toArray.map(_.parseJson.asJsObject.fields("batters"))
+    val df = sqlContext.read.json(path).repartition(1)
+    val ndf = ToJson(Seq("topping")).transform(df)
+    ndf.columns should contain allOf("batters", "id", "name", "ppu", "topping", "type")
+  }
     it("does not fail with empty dataset") {
-      val rdd = sc.parallelize("" :: Nil)
-      val df = ss.sqlContext.read.json(rdd)
+      val ds = ss.createDataset(Seq.empty[String])
+      val df = ss.sqlContext.read.json(ds)
       val ndf = ToJson(Seq("batters")).transform(df)
       ndf.collect() shouldBe empty
     }

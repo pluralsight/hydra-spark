@@ -29,7 +29,7 @@ import scala.util.control.NonFatal
   */
 object UpsertUtils extends Logging {
 
-  def upsert(df: DataFrame, idCol: Option[StructField], jdbcOptions: JDBCOptions) {
+  def upsert(df: DataFrame, idCol: Option[StructField], jdbcOptions: JDBCOptions, isCaseSensitive: Boolean) {
     val dialect = JdbcDialects.get(jdbcOptions.url)
     val nullTypes: Array[Int] = df.schema.fields.map { field =>
       getJdbcType(field.dataType, dialect).jdbcNullType
@@ -39,7 +39,7 @@ object UpsertUtils extends Logging {
     val getConnection: () => Connection = JdbcUtils.createConnectionFactory(jdbcOptions)
     df.foreachPartition { iterator =>
       upsertPartition(getConnection, jdbcOptions.table, iterator, idCol, rddSchema, nullTypes, jdbcOptions.batchSize,
-        dialect)
+        dialect, isCaseSensitive)
     }
   }
 
@@ -71,7 +71,8 @@ object UpsertUtils extends Logging {
                        rddSchema: StructType,
                        nullTypes: Array[Int],
                        batchSize: Int,
-                       dialect: JdbcDialect
+                       dialect: JdbcDialect,
+                       isCaseSensitive: Boolean
                      ): Iterator[Byte] = {
     val conn = getConnection()
     var committed = false
@@ -89,7 +90,7 @@ object UpsertUtils extends Logging {
         conn.setAutoCommit(false) // Everything in the same db transaction.
       }
       val upsert = UpsertBuilder.forDriver(conn.getMetaData.getDriverName)
-        .upsertStatement(conn, table, dialect, idColumn, rddSchema)
+        .upsertStatement(conn, table, dialect, idColumn, rddSchema, isCaseSensitive)
 
       val stmt = upsert.stmt
       val uschema = upsert.schema
@@ -176,7 +177,7 @@ object UpsertUtils extends Logging {
 trait UpsertBuilder {
 
   def upsertStatement(conn: Connection, table: String, dialect: JdbcDialect, idField: Option[StructField],
-                      schema: StructType): UpsertInfo
+                      schema: StructType, isCaseSensitive: Boolean): UpsertInfo
 }
 
 /**
@@ -200,7 +201,7 @@ object UpsertBuilder {
 
 object PostgresUpsertBuilder extends UpsertBuilder with Logging {
   def upsertStatement(conn: Connection, table: String, dialect: JdbcDialect, idField: Option[StructField],
-                      schema: StructType) = {
+                      schema: StructType, isCaseSensitive: Boolean) = {
     idField match {
       case Some(id) => {
         val columns = schema.fields.map(f => dialect.quoteIdentifier(f.name)).mkString(",")
@@ -212,7 +213,7 @@ object PostgresUpsertBuilder extends UpsertBuilder with Logging {
           s"""insert into ${table} ($columns) values ($placeholders)
              |on conflict (${dialect.quoteIdentifier(id.name)})
              |do update set ($updateColumns) = ($updatePlaceholders)
-             |where ${table}.${id.name} = ?;""".stripMargin
+             |where ${table}.${dialect.quoteIdentifier(id.name)} = ?;""".stripMargin
 
         log.debug(s"Using sql $sql")
 
@@ -221,7 +222,7 @@ object PostgresUpsertBuilder extends UpsertBuilder with Logging {
         UpsertInfo(conn.prepareStatement(sql), upsertSchema)
       }
       case None => {
-        UpsertInfo(JdbcUtils.insertStatement(conn, table, schema, dialect), schema)
+        UpsertInfo(conn.prepareStatement(JdbcUtils.getInsertStatement(table, schema, None, isCaseSensitive, dialect)), schema)
       }
     }
   }
@@ -229,7 +230,7 @@ object PostgresUpsertBuilder extends UpsertBuilder with Logging {
 
 object H2UpsertBuilder extends UpsertBuilder {
   def upsertStatement(conn: Connection, table: String, dialect: JdbcDialect, idField: Option[StructField],
-                      schema: StructType) = {
+                      schema: StructType, isCaseSensitive: Boolean) = {
     idField match {
       case Some(id) => {
         val columns = schema.fields.map(c => dialect.quoteIdentifier(c.name)).mkString(",")
@@ -242,7 +243,7 @@ object H2UpsertBuilder extends UpsertBuilder {
         UpsertInfo(conn.prepareStatement(sql), schema)
       }
       case None => {
-        UpsertInfo(JdbcUtils.insertStatement(conn, table, schema, dialect), schema)
+        UpsertInfo(conn.prepareStatement(JdbcUtils.getInsertStatement(table, schema, None, isCaseSensitive, dialect)), schema)
       }
     }
   }

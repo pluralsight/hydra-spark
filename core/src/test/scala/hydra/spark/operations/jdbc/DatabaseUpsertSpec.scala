@@ -36,6 +36,7 @@ import scala.concurrent.Future
 class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures with PatienceConfiguration
   with Eventually with BeforeAndAfterAll with BeforeAndAfterEach with H2Spec with Inside with SharedSparkContext {
 
+  import TestImplicits._
   implicit override val patienceConfig = PatienceConfig(timeout = Span(5, Seconds), interval = Span(1, Seconds))
 
   val table = "TEST_TABLE"
@@ -112,9 +113,9 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
       val dbUpsert = DatabaseUpsert("table", Map("url" -> "url"), Some(ColumnMapping("user.id", "user_id", "int")),
         mappings)
 
-      val rdd = sc.parallelize(json :: Nil)
+      val ds = ss.createDataset(Seq(json))
 
-      val df = ss.sqlContext.read.json(rdd)
+      val df = ss.sqlContext.read.json(ds)
 
       val ndf = dbUpsert.mapping.targetDF(df)
 
@@ -140,9 +141,9 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
       val dbUpsert = DatabaseUpsert("TEST_TABLE", Map("url" -> url),
         Some(ColumnMapping("user.id", "user_id", "int")), mappings)
 
-      val rdd = sc.parallelize(json :: Nil)
+      val ds = ss.createDataset(Seq(json))
 
-      val df = ss.sqlContext.read.json(rdd)
+      val df = ss.sqlContext.read.json(ds)
 
       dbUpsert.transform(df)
 
@@ -166,9 +167,9 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
 
       val dbUpsert = DatabaseUpsert("NEW_TABLE", props, None, mappings)
 
-      val rdd = sc.parallelize(json :: Nil)
+      val ds = ss.createDataset(Seq(json))
 
-      val df = ss.sqlContext.read.json(rdd)
+      val df = ss.sqlContext.read.json(ds)
 
       dbUpsert.transform(df)
 
@@ -197,9 +198,9 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
 
       val dbUpsert = DatabaseUpsert("NEW_TABLE", props, idCol, mappings)
 
-      val rdd = sc.parallelize(json :: Nil)
+      val ds = ss.createDataset(Seq(json))
 
-      val df = ss.sqlContext.read.json(rdd)
+      val df = ss.sqlContext.read.json(ds)
 
       dbUpsert.transform(df)
 
@@ -224,7 +225,7 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
       val dbUpsert = DatabaseUpsert(table, Map("url" -> url),
         Some(ColumnMapping("user.id", "user_id", "int")), mappings)
 
-      val df = ss.sqlContext.read.json(sc.parallelize(json :: Nil))
+      val df = ss.sqlContext.read.json(ss.createDataset(Seq(json)))
 
       dbUpsert.transform(df)
 
@@ -234,7 +235,7 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
 
       val njson = """{ "context": { "ip": "127.0.0.1" }, "user": { "handle": "alex_updated", "id": 123 } }"""
 
-      val ndf = ss.sqlContext.read.json(sc.parallelize(njson :: Nil))
+      val ndf = ss.sqlContext.read.json(ss.createDataset(Seq(njson)))
 
       dbUpsert.transform(ndf)
 
@@ -258,7 +259,7 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
       val dbUpsert = DatabaseUpsert(table, Map("url" -> url),
         Some(ColumnMapping("user.id", "user_id", "int")), mappings)
 
-      val df = ss.sqlContext.read.json(sc.parallelize(sjson :: Nil))
+      val df = ss.sqlContext.read.json(ss.createDataset(Seq(sjson)))
 
       dbUpsert.transform(df)
 
@@ -268,7 +269,7 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
 
       val njson = """{ "context": { "ip": "127.0.0.1" }, "user": { "handle": "alex_updated", "id": "123" } }"""
 
-      val ndf = ss.sqlContext.read.json(sc.parallelize(njson :: Nil))
+      val ndf = ss.sqlContext.read.json(ss.createDataset(Seq(njson)))
 
       dbUpsert.transform(ndf)
 
@@ -283,9 +284,9 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
       val mappings = Seq.empty
       val dbu = DatabaseUpsert(inferredTable, props, Some(ColumnMapping("user.id", "user_id", "int")), mappings)
 
-      val rdd = sc.parallelize(json :: Nil)
+      val ds = ss.createDataset(Seq(json))
 
-      val df = ss.sqlContext.read.json(rdd)
+      val df = ss.sqlContext.read.json(ds)
 
       val ndf = dbu.transform(df)
 
@@ -310,9 +311,9 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
 
       val dbUpsert = DatabaseUpsert("INFERRED_NEW_TABLE", props, None, mappings)
 
-      val rdd = sc.parallelize(json :: Nil)
+      val ds = ss.createDataset(Seq(json))
 
-      val df = ss.sqlContext.read.json(rdd)
+      val df = ss.sqlContext.read.json(ds)
 
       dbUpsert.transform(df)
 
@@ -334,7 +335,7 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
       val dbUpsert = DatabaseUpsert(inferredTable, Map("url" -> url),
         Some(ColumnMapping("user_id", "user_id", "int")), mappings)
 
-      val df = ss.sqlContext.read.json(sc.parallelize(sjson :: Nil))
+      val df = ss.sqlContext.read.json(ss.createDataset(Seq(sjson)))
 
       dbUpsert.transform(df)
 
@@ -343,7 +344,7 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
       }
 
       val njson = """{ "context_ip": "127.0.0.1", "user_handle": "alex_updated", "user_id": 123 }"""
-      val ndf = ss.sqlContext.read.json(sc.parallelize(njson :: Nil))
+      val ndf = ss.sqlContext.read.json(ss.createDataset(Seq(njson)))
 
       dbUpsert.transform(ndf)
 
@@ -398,12 +399,12 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
         ColumnMapping("user.handle", "username", "string")
       )
 
-      val dbUpsert = DatabaseUpsert(table, Map("url" -> "url"), Some(ColumnMapping("user.id", "user_id", "int")),
+      val dbUpsert = DatabaseUpsert(table, Map("url" -> "jdbc:h2:mem:test"), Some(ColumnMapping("user.id", "user_id", "int")),
         mappings)
 
-      val rdd = sc.parallelize("" :: Nil)
+      val ds = ss.createDataset(Seq.empty[String])
 
-      val df = ss.sqlContext.read.json(rdd)
+      val df = ss.sqlContext.read.json(ds)
 
       val ndf = dbUpsert.transform(df)
 
@@ -423,9 +424,9 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
       val dbUpsert = DatabaseUpsert(table, Map("url" -> url),
         Some(ColumnMapping("user.id", "user_id", "int")), mappings)
 
-      val rdd = sc.parallelize(json :: Nil)
+      val ds = ss.createDataset(Seq(json))
 
-      val df = ss.sqlContext.read.json(rdd)
+      val df = ss.sqlContext.read.json(ds)
 
       dbUpsert.transform(df)
 
