@@ -10,10 +10,10 @@ import org.apache.spark.SparkConf
   * Created by alexsilva on 5/25/17.
   */
 trait ConfigSupport {
- protected val config = ConfigFactory.load()
+ protected val rootConfig = ConfigFactory.load()
    .withFallback(ConfigFactory.parseFile(new File("/etc/hydra/hydra-spark.conf")))
 
-  protected val sparkDefaults = config.get[Config]("spark").valueOrElse(ConfigFactory.empty).atKey("spark")
+  protected val sparkDefaults = rootConfig.get[Config]("spark").valueOrElse(ConfigFactory.empty).atKey("spark")
 
   protected def sparkConf(dsl: Config, name: String): SparkConf = {
     import hydra.spark.configs._

@@ -38,7 +38,8 @@ case class ListSource(seq: Seq[String]) extends Source[String] {
     sc.queueStream[String](lines, false, rdd)
   }
 
-  override def createDF(ctx: SparkSession): DataFrame = ctx.read.json(ctx.sparkContext.parallelize(seq))
+  override def createDF(ctx: SparkSession): DataFrame =
+    ctx.read.json(ctx.sparkContext.parallelize(seq))
 
   override def toDF(rdd: RDD[String]): DataFrame = rdd.toDF
 }

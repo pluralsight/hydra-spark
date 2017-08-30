@@ -66,9 +66,9 @@ class DatabaseUpsertPostgresSpec extends Matchers with FunSpecLike with ScalaFut
         ColumnMapping("user.handle", "username", "string")
       )
 
-      val props = Map("savemode" -> "overwrite", "url" -> url)
+      val props = Map("savemode" -> "overwrite")
 
-      val dbUpsert = DatabaseUpsert("NEW_TABLE", props, None, mappings)
+      val dbUpsert = DatabaseUpsert("NEW_TABLE", url, props, None, mappings)
 
       val rdd = sc.parallelize(json :: Nil)
 
@@ -95,9 +95,9 @@ class DatabaseUpsertPostgresSpec extends Matchers with FunSpecLike with ScalaFut
       )
       val idCol = Some(ColumnMapping("user.id", "user_id", "int"))
 
-      val props = Map("savemode" -> "overwrite", "url" -> url)
+      val props = Map("savemode" -> "overwrite")
 
-      val dbUpsert = DatabaseUpsert("NEW_TABLE", props, idCol, mappings)
+      val dbUpsert = DatabaseUpsert("NEW_TABLE", url, props, idCol, mappings)
 
       val rdd = sc.parallelize(json :: Nil)
 
@@ -120,7 +120,7 @@ class DatabaseUpsertPostgresSpec extends Matchers with FunSpecLike with ScalaFut
         ColumnMapping("user.handle", "username", "string")
       )
 
-      val dbUpsert = DatabaseUpsert("TEST_TABLE", Map("url" -> url), None, mappings)
+      val dbUpsert = DatabaseUpsert("TEST_TABLE", url, Map.empty, None, mappings)
 
       val rdd = sc.parallelize(json :: Nil)
 
@@ -145,7 +145,7 @@ class DatabaseUpsertPostgresSpec extends Matchers with FunSpecLike with ScalaFut
         ColumnMapping("user.handle", "username", "string")
       )
 
-      val dbUpsert = DatabaseUpsert("TEST_TABLE", Map("url" -> url),
+      val dbUpsert = DatabaseUpsert("TEST_TABLE", url, Map.empty,
         Some(ColumnMapping("user.id", "user_id", "long")), mappings)
 
       val df = ss.sqlContext.read.json(sc.parallelize(json :: Nil))
@@ -172,7 +172,7 @@ class DatabaseUpsertPostgresSpec extends Matchers with FunSpecLike with ScalaFut
 
       val mappings = Seq.empty
 
-      val dbUpsert = DatabaseUpsert(inferredTable, Map("url" -> url),
+      val dbUpsert = DatabaseUpsert(inferredTable,  url, Map.empty,
         Some(ColumnMapping("user_id", "user_id", "int")), mappings)
 
       val df = ss.sqlContext.read.json(sc.parallelize(json :: Nil))

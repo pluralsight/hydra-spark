@@ -17,34 +17,58 @@ package hydra.spark.api
 
 
 import com.google.common.base.CaseFormat
+import org.apache.commons.lang3.ClassUtils
+import org.apache.spark.SparkContext
 import org.apache.spark.sql.DataFrame
-import scala.util.{Failure, Try, Success}
+import org.apache.spark.util.LongAccumulator
+
+import scala.util.{Failure, Success, Try}
 
 trait DFOperation extends Validatable {
 
   /**
-   * A unique id identifying this operation.
-   *
-   * @return
-   */
+    * A unique id identifying this operation.
+    *
+    * @return
+    */
   def id: String = CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_HYPHEN, getClass.getSimpleName)
 
   def transform(df: DataFrame): DataFrame
 
-  def ifNotEmpty(df:DataFrame)(f:DataFrame=>DataFrame):DataFrame = {
+  private val counters = new scala.collection.mutable.HashMap[String, LongAccumulator]()
+
+  def preStart(sparkContext: SparkContext): Unit = {}
+
+  def postStop(): Unit = {}
+
+  def processedRows = counters(id + "_PROCESSED_ROWS")
+
+  def outputRows = counters(id + "_OUTPUT_ROWS")
+
+  /**
+    * Can be overridden to intercept calls to `preStart`. Calls `preStart` by default.
+    */
+  protected[hydra] def aroundPreStart(sparkContext: SparkContext): Unit = {
+    counters.put(id + "_PROCESSED_ROWS", sparkContext.longAccumulator(id + "_PROCESSED_ROWS"))
+    counters.put(id + "_OUTPUT_ROWS", sparkContext.longAccumulator(id + "_OUTPUT_ROWS"))
+    preStart(sparkContext)
+  }
+
+  def ifNotEmpty(df: DataFrame)(f: DataFrame => DataFrame): DataFrame = {
     Try(df.first) match {
       case Success(_) => f.apply(df)
-      case Failure(x)=> df
+      case Failure(x) => df
     }
   }
 
   override def validate: ValidationResult = Valid
 
   def checkRequiredParams(params: Seq[(String, Any)]): ValidationResult = {
+    val name = ClassUtils.getShortCanonicalName(getClass())
     val nullParams = params.collect { case (n, "") => n case (n, null) => n }
 
     val result = Either.cond(
-      nullParams.isEmpty, Valid, s"The following parameter(s) are required:${nullParams.mkString(", ")}"
+      nullParams.isEmpty, Valid, s"The following parameter(s) are required for $name: ${nullParams.mkString(", ")}"
     )
 
     if (result.isLeft) Invalid(ValidationError(id, result.left.get)) else result.right.get
