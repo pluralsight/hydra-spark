@@ -16,7 +16,7 @@
 package hydra.spark.sources
 
 import hydra.spark.util.RDDConversions._
-import org.apache.hadoop.io.{ LongWritable, Text }
+import org.apache.hadoop.io.{LongWritable, Text}
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.DataFrame

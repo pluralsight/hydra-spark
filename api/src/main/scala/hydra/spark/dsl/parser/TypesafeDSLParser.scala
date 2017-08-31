@@ -40,12 +40,11 @@ case class TypesafeDSLParser(sourcesPkg: Seq[String] = Seq("hydra.spark.sources"
 
       val source = transport.get[ConfigObject]("source")
         .map(s => factory.createSource(s, transport))
-        .valueOrThrow(e => InvalidDslException(s"Invalid DSL: ${e.head.throwable.getMessage}"))
+        .valueOrThrow(e => InvalidDslException(s"Invalid DSL: ${e.messages}"))
 
       val operations: Seq[DFOperation] = transport.get[ConfigObject]("operations")
         .map(ops => factory.createOperations(ops, transport))
-        .valueOrThrow(e => InvalidDslException(s"Invalid DSL: ${e.head.throwable.getMessage}"))
-
+        .valueOrThrow { e => InvalidDslException(s"Invalid DSL: ${e.head.throwable.getCause.getMessage}") }
 
       val streamingProps = transport.flattenAtKey("streaming")
 

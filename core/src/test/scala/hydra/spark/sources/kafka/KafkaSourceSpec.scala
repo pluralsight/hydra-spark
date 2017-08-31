@@ -42,19 +42,9 @@ class KafkaSourceSpec extends Matchers with FunSpecLike with ScalaFutures with P
 
   var sctx: StreamingContext = _
 
-  override def beforeAll() = {
-    super.beforeAll()
-    startKafka()
-  }
-
-  override def afterAll() = {
-    super.afterAll()
-    stopKafka()
-  }
-
   override def afterEach(): Unit = {
     super.afterEach()
-    Option(sctx).foreach(_.stop(false, true))
+    Option(sctx).foreach(_.stop(false, false))
   }
 
   override def beforeEach() = {

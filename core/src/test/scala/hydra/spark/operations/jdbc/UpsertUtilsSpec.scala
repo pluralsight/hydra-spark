@@ -16,7 +16,6 @@
 package hydra.spark.operations.jdbc
 
 import hydra.spark.testutils.SharedSparkContext
-import org.apache.spark.sql.SQLContext
 import org.scalatest._
 
 /**
@@ -43,17 +42,21 @@ class UpsertUtilsSpec extends Matchers with FunSpecLike with SharedSparkContext 
 
 
   describe("when using upsert utils") {
-    it ("returns all column paths") {
+    it("returns all column paths") {
+      val spark = ss
+      import spark.implicits._
       val rdd = sc.parallelize(json :: Nil)
-      val df =  ss.sqlContext.read.json(rdd)
+      val df = ss.sqlContext.read.json(spark.createDataset(rdd))
       val flattened = UpsertUtils.columnPaths(df.schema)
-      flattened should contain allOf("context.ip","user.handle", "user.id", "user.names.first", "user.names.last")
+      flattened should contain allOf("context.ip", "user.handle", "user.id", "user.names.first", "user.names.last")
     }
 
-    it ("flattens a dataframe") {
+    it("flattens a dataframe") {
+      val spark = ss
+      import spark.implicits._
 
       val rdd = sc.parallelize(json :: Nil)
-      val df =  ss.sqlContext.read.json(rdd)
+      val df = ss.sqlContext.read.json(spark.createDataset(rdd))
 
       val flattenedJson =
         """
@@ -67,9 +70,9 @@ class UpsertUtilsSpec extends Matchers with FunSpecLike with SharedSparkContext 
         """.stripMargin
 
       val frdd = sc.parallelize(flattenedJson :: Nil)
-      val fdf =  ss.sqlContext.read.json(frdd)
+      val fdf = ss.sqlContext.read.json(spark.createDataset(frdd))
 
-      val flat = UpsertUtils.flatten(df,"_")
+      val flat = UpsertUtils.flatten(df, "_")
       flat.schema shouldBe fdf.schema
       fdf.first() shouldBe flat.first()
     }

@@ -41,18 +41,21 @@ abstract class KafkaFormat[K: ClassTag, V: ClassTag]
                topicProps: Map[String, Any],
                properties: Map[String, String],
                key: Option[K]): DataFrame = {
+
+    import ctx.implicits._
     val rdd = createRDD(ctx, topic, topicProps, properties, key)
 
     val fxn = rdd.map(_.value.toString)
 
-    schemaOpt(topicProps).map(s => ctx.read.schema(s).json(fxn)) getOrElse ctx.read.json(fxn)
+    schemaOpt(topicProps).map(s => ctx.read.schema(s).json(ctx.createDataset(fxn)))
+      .getOrElse(ctx.read.json(ctx.createDataset(fxn)))
   }
 
   def createRDD(s: SparkSession,
-                 topic: String,
-                 topicProps: Map[String, Any],
-                 properties: Map[String, String],
-                 key: Option[K]
+                topic: String,
+                topicProps: Map[String, Any],
+                properties: Map[String, String],
+                key: Option[K]
                ): RDD[KafkaRecord[K, V]] = {
 
     SparkKafkaUtils.createRDD[K, V](s.sparkContext, topic, topicProps.map(kv => kv._1 -> kv._2.toString),

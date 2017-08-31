@@ -72,6 +72,7 @@ class DslParserSpec extends Matchers with FunSpecLike with BeforeAndAfterEach wi
       |  }
       |  "2:database-upsert" {
       |    table = youbora
+      |     url = "jdbc:postgresql://localhost/youbora"
       |    idColumn {
       |      name = id
       |      type = long
@@ -86,7 +87,6 @@ class DslParserSpec extends Matchers with FunSpecLike with BeforeAndAfterEach wi
       |      name = ip_address
       |    }]
       |    properties {
-      |      url = "jdbc:postgresql://localhost/youbora"
       |      user = youbora
       |      password = password
       |    }
@@ -142,8 +142,8 @@ class DslParserSpec extends Matchers with FunSpecLike with BeforeAndAfterEach wi
 
       val db = t.asInstanceOf[DatabaseUpsert]
 
-      db.properties shouldBe
-        Map("url" -> "jdbc:postgresql://localhost/youbora", "user" -> "youbora", "password" -> "password")
+      db.properties shouldBe Map("user" -> "youbora", "password" -> "password")
+      db.url shouldBe "jdbc:postgresql://localhost/youbora"
 
       db.idColumn shouldBe Some(ColumnMapping("id", "id", LongType))
 

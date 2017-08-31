@@ -47,7 +47,7 @@ trait Source[S] extends Validatable {
   def checkpoint(rdd: Option[RDD[S]]): Unit = {}
 
   /**
-   * Converts an RDD of type S to a dataframe of the same type.
+   * Converts an rdd of type S to a dataframe of the same type.
    * Implementations should use the type class RDDConversions
    *
    * @param rdd

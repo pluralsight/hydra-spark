@@ -20,7 +20,10 @@ import configs.syntax._
 import hydra.spark.api._
 import hydra.spark.configs.ConfigSupport
 import hydra.spark.dsl.parser.TypesafeDSLParser
-import hydra.spark.events.HydraListener
+import org.apache.spark.scheduler.SparkListener
+import org.apache.spark.sql.SparkSession
+
+import scala.util.Random
 
 /**
   * Created by alexsilva on 6/21/16.
@@ -29,14 +32,17 @@ abstract class SparkTransformation[S](source: Source[S],
                                       operations: Seq[DFOperation],
                                       dsl: Config) extends Transformation[S] with ConfigSupport {
 
-  lazy val hydraContext = HydraContext.builder().setConfig(dsl).getOrCreate()
+  override lazy val name = dsl.get[String]("name").valueOrElse(Random.nextString(10))
+
+  lazy val spark = SparkSession.builder().config(sparkConf(dsl, name)).getOrCreate()
+
 
   val author = dsl.get[String]("author").valueOrElse("Unknown")
 
   def init(): Unit = {
     (operations :+ source) foreach { op =>
-      if (op.getClass.isAssignableFrom(classOf[HydraListener])) {
-        hydraContext.addHydraListener(op.asInstanceOf[HydraListener])
+      if (classOf[SparkListener].isAssignableFrom(op.getClass)) {
+        spark.sparkContext.addSparkListener(op.asInstanceOf[SparkListener])
       }
     }
   }

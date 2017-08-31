@@ -45,7 +45,7 @@ case class SparkStreamingTransformation[S: TypeTag](source: Source[S],
   val interval = streamingConf.get[FiniteDuration]("streaming.interval").map(d => Seconds(d.toSeconds)).toOption
 
   lazy val ssc = StreamingContext.getActiveOrCreate { () =>
-    new StreamingContext(hydraContext.spark.sparkContext, interval.get)
+    new StreamingContext(spark.sparkContext, interval.get)
   }
 
   override def run(): Unit = {

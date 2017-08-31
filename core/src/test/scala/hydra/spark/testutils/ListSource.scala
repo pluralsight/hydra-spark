@@ -26,8 +26,8 @@ import org.apache.spark.streaming.dstream.DStream
 import scala.collection.mutable
 
 /**
- * Created by alexsilva on 11/21/16.
- */
+  * Created by alexsilva on 11/21/16.
+  */
 case class ListSource(seq: Seq[String]) extends Source[String] {
 
   override def validate = Valid
@@ -38,7 +38,10 @@ case class ListSource(seq: Seq[String]) extends Source[String] {
     sc.queueStream[String](lines, false, rdd)
   }
 
-  override def createDF(ctx: SparkSession): DataFrame = ctx.read.json(ctx.sparkContext.parallelize(seq))
+  override def createDF(ctx: SparkSession): DataFrame = {
+    import ctx.implicits._
+    ctx.read.json(ctx.createDataset(ctx.sparkContext.parallelize(seq)))
+  }
 
   override def toDF(rdd: RDD[String]): DataFrame = rdd.toDF
 }

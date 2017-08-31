@@ -18,7 +18,7 @@ package hydra.spark.util
 import hydra.spark.sources.kafka.KafkaRecord
 import org.apache.hadoop.io.Text
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{DataFrame, Row, SQLContext, SparkSession}
+import org.apache.spark.sql._
 
 /**
   * Created by alexsilva on 8/15/16.
@@ -26,35 +26,35 @@ import org.apache.spark.sql.{DataFrame, Row, SQLContext, SparkSession}
 object RDDConversions {
 
   trait DFLike[T] extends Serializable {
+    lazy val spark: SparkSession = SparkSession.builder().getOrCreate
+
     def toDF(rdd: RDD[T]): DataFrame
   }
 
   implicit object StringDF extends DFLike[String] {
+    import spark.implicits._
     override def toDF(rdd: RDD[String]): DataFrame = {
-      val spark: SQLContext = SparkSession.builder().getOrCreate.sqlContext
-      spark.read.json(rdd)
+      spark.read.json(spark.createDataset(rdd))
     }
   }
 
   implicit object TextDF extends DFLike[Text] {
+    import spark.implicits._
     override def toDF(rdd: RDD[Text]): DataFrame = {
-      val spark: SQLContext = SparkSession.builder().getOrCreate.sqlContext
-      spark.read.json(rdd.map(_.toString))
+      spark.read.json(spark.createDataset(rdd.map(_.toString)))
     }
   }
 
   implicit object KafkaDF extends DFLike[KafkaRecord[_, _]] {
+    import spark.implicits._
     type RKMMD = RDD[KafkaRecord[_, _]]
-
     override def toDF(rdd: RKMMD): DataFrame = {
-      val spark: SQLContext = SparkSession.builder().getOrCreate.sqlContext
-      spark.read.json(rdd.asInstanceOf[RKMMD].map(_.value.toString)).toDF()
+      spark.read.json(spark.createDataset(rdd.asInstanceOf[RKMMD].map(_.value.toString))).toDF()
     }
   }
 
   implicit object RowDF extends DFLike[Row] {
     override def toDF(rdd: RDD[Row]): DataFrame = {
-      val spark: SQLContext = SparkSession.builder().getOrCreate.sqlContext
       val schema = rdd.asInstanceOf[RDD[Row]].first().schema
       spark.createDataFrame(rdd.asInstanceOf[RDD[Row]], schema)
     }

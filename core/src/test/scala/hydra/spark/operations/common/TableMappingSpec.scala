@@ -53,25 +53,34 @@ class TableMappingSpec extends Matchers with FunSpecLike with SharedSparkContext
     """.stripMargin
 
   describe("when using TableMapping") {
+
     it("returns a flat df if no cols are specified") {
+      val spark = ss
+      import spark.implicits._
       val mapping = TableMapping(None, Nil)
       val rdd = sc.parallelize(json :: Nil)
-      val tdf = mapping.targetDF(ss.sqlContext.read.json(rdd))
-      val fdf = ss.sqlContext.read.json(sc.parallelize(flattenedJson :: Nil))
+      val ds = ss.createDataset(rdd)
+      val tdf = mapping.targetDF(ss.sqlContext.read.json(ds))
+      val fdf = ss.sqlContext.read.json(spark.createDataset(sc.parallelize(flattenedJson :: Nil)))
       fdf.schema shouldBe tdf.schema
       fdf.first() shouldBe tdf.first()
     }
 
     it("returns a flat df if only the id is specified") {
+      val spark = ss
+      import spark.implicits._
       val mapping = TableMapping(Some(ColumnMapping("user.id", "user_id", LongType)), Nil)
       val rdd = sc.parallelize(json :: Nil)
-      val tdf = mapping.targetDF(ss.sqlContext.read.json(rdd))
-      val fdf = ss.sqlContext.read.json(sc.parallelize(flattenedJson :: Nil))
+      val ds = ss.createDataset(rdd)
+      val tdf = mapping.targetDF(ss.sqlContext.read.json(ds))
+      val fdf = ss.sqlContext.read.json(spark.createDataset(sc.parallelize(flattenedJson :: Nil)))
       fdf.schema shouldBe tdf.schema
       fdf.first() shouldBe tdf.first()
     }
 
     it("returns a flat df and allows id col to be renamed") {
+      val spark = ss
+      import spark.implicits._
       val renamedIdJson =
         """
           |{
@@ -84,18 +93,21 @@ class TableMappingSpec extends Matchers with FunSpecLike with SharedSparkContext
         """.stripMargin
       val mapping = TableMapping(Some(ColumnMapping("user.id", "userId", LongType)), Nil)
       val rdd = sc.parallelize(json :: Nil)
-      val tdf = mapping.targetDF(ss.sqlContext.read.json(rdd))
-      val fdf = ss.sqlContext.read.json(sc.parallelize(renamedIdJson :: Nil))
+      val ds = ss.createDataset(rdd)
+      val tdf = mapping.targetDF(ss.sqlContext.read.json(ds))
+      val fdf = ss.sqlContext.read.json(spark.createDataset(sc.parallelize(renamedIdJson :: Nil)))
       fdf.schema.fields should contain theSameElementsAs (tdf.schema.fields)
       fdf.first().toSeq should contain theSameElementsAs (tdf.first().toSeq)
     }
 
     it("selects only the columns specified in the mapping") {
+      val spark = ss
+      import spark.implicits._
       val mapping = TableMapping(None,
         Seq(ColumnMapping("context.ip", "ip", StringType),
           ColumnMapping("user.names.first", "firstName", StringType)))
       val rdd = sc.parallelize(json :: Nil)
-      val df = ss.sqlContext.read.json(rdd)
+      val df = spark.sqlContext.read.json(spark.createDataset(rdd))
       val tdf = mapping.targetDF(df)
       val schema = StructType(Seq(StructField("ip", StringType), StructField("firstName", StringType)))
       tdf.schema shouldBe schema
@@ -103,11 +115,13 @@ class TableMappingSpec extends Matchers with FunSpecLike with SharedSparkContext
     }
 
     it("selects only the columns specified in the mapping with an id") {
+      val spark = ss
+      import spark.implicits._
       val mapping = TableMapping(Some(ColumnMapping("user.id", "userId", LongType)),
         Seq(ColumnMapping("context.ip", "ip", StringType),
           ColumnMapping("user.names.first", "firstName", StringType)))
       val rdd = sc.parallelize(json :: Nil)
-      val df = ss.sqlContext.read.json(rdd)
+      val df = spark.sqlContext.read.json(spark.createDataset(rdd))
       val tdf = mapping.targetDF(df)
       val schema = StructType(Seq(
         StructField("userId", LongType), StructField("ip", StringType), StructField("firstName", StringType)))

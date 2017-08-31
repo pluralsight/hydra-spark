@@ -39,7 +39,7 @@ object Dependencies {
 
   lazy val configExt = Seq("com.github.kxbmap" %% "configs" % kxbmapConfigVersion)
 
-  lazy val embeddedKafka = "net.manub" %% "scalatest-embedded-kafka" % "0.12.0" % "test"
+  lazy val embeddedKafka = "net.manub" %% "scalatest-embedded-kafka" % "0.13.0" % "test"
 
   lazy val kafka = Seq("org.apache.kafka" %% "kafka" % kafkaVersion,
     "org.apache.kafka" % "kafka-clients" % kafkaVersion, embeddedKafka)
@@ -69,8 +69,6 @@ object Dependencies {
       ExclusionRule(organization = "com.fasterxml.jackson.core")
     ))
 
-  lazy val avro = Seq("org.apache.avro" % "avro" % avroVersion)
-
   lazy val guava = Seq("com.google.guava" % "guava" % guavaVersion).map(_.force())
 
   val logging = Seq(
@@ -91,7 +89,8 @@ object Dependencies {
     "org.apache.spark" %% "spark-sql" % sparkVersion % "provided",
     "org.apache.spark" %% "spark-hive" % sparkVersion % "provided",
     "org.apache.spark" %% "spark-yarn" % sparkVersion % "provided",
-    "com.databricks" %% "spark-avro" % avroSparkVersion,
+   // "com.databricks" %% "spark-avro" % avroSparkVersion,
+    "com.github.databricks" %% "spark-avro" % "204864b6cf",
     sparkStreamingKafka, sparkTags)
 
   lazy val slick = Seq(

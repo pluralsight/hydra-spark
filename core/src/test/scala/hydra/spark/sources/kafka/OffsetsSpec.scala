@@ -33,7 +33,7 @@ import scala.collection.JavaConverters._
   * Created by alexsilva on 12/12/16.
   */
 class OffsetsSpec extends Matchers with FunSpecLike with Eventually with KafkaTestSupport
-with BeforeAndAfterAll {
+  with BeforeAndAfterAll {
 
   implicit override val patienceConfig = PatienceConfig(timeout = Span(5, Seconds), interval = Span(1, Seconds))
 
@@ -45,10 +45,6 @@ with BeforeAndAfterAll {
 
   val cfg = new ConsumerConfig(props)
 
-  override def beforeAll() = {
-    super.beforeAll()
-    startKafka()
-  }
 
   describe("Kafka offsets") {
     it("Should translate topic start/stop values into the correct number") {

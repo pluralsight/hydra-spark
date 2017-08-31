@@ -109,6 +109,8 @@ class JdbcSourceSpec extends Matchers with FunSpecLike with ScalaFutures with Pa
     }
 
     it("should return the correct RDD type") {
+      val spark = ss
+      import spark.implicits._
       val dsl =
         """
      {
@@ -129,8 +131,8 @@ class JdbcSourceSpec extends Matchers with FunSpecLike with ScalaFutures with Pa
           |      "operations": {
           |        "database-upsert": {
           |          "table": "rabbit.user_sign_in_export",
+          |           "url": "jdbc:postgresql://localhost/prod",
           |              "properties": {
-          |                "url": "jdbc:postgresql://lovlhost/prod",
           |                "user": "test",
           |                "password":"test"
           |              }
@@ -139,7 +141,7 @@ class JdbcSourceSpec extends Matchers with FunSpecLike with ScalaFutures with Pa
           |}
         """.stripMargin
 
-      val rdd = ctx.read.json(sc.parallelize(Seq("""{"name":"alex"}"""))).rdd
+      val rdd = ctx.read.json(spark.createDataset(sc.parallelize(Seq("""{"name":"alex"}""")))).rdd
       val disp = TypesafeDSLParser().parse(dsl).get
       disp.source.asInstanceOf[Source[Row]].toDF(rdd).count() shouldBe 1
     }

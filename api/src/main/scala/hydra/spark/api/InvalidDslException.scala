@@ -19,7 +19,7 @@ package hydra.spark.api
  * Created by alexsilva on 7/13/16.
  */
 case class InvalidDslException(message: String = null, cause: Throwable = null)
-  extends RuntimeException(InvalidDslException.defaultMessage(message, cause), cause)
+  extends HydraException(InvalidDslException.defaultMessage(message, cause), cause)
 
 object InvalidDslException {
   def defaultMessage(message: String, cause: Throwable) =

@@ -15,12 +15,12 @@
 
 package hydra.spark.operations.jdbc
 
-import java.security.MessageDigest
-
+import com.typesafe.config.ConfigFactory
 import hydra.spark.api.{Invalid, Valid}
+import hydra.spark.dispatch.SparkBatchTransformation
 import hydra.spark.dsl.parser.TypesafeDSLParser
 import hydra.spark.operations.common.ColumnMapping
-import hydra.spark.testutils.SharedSparkContext
+import hydra.spark.testutils.{ListSource, SharedSparkContext}
 import hydra.spark.util.DataTypes._
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.types._
@@ -37,6 +37,7 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
   with Eventually with BeforeAndAfterAll with BeforeAndAfterEach with H2Spec with Inside with SharedSparkContext {
 
   import TestImplicits._
+
   implicit override val patienceConfig = PatienceConfig(timeout = Span(5, Seconds), interval = Span(1, Seconds))
 
   val table = "TEST_TABLE"
@@ -47,9 +48,10 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
   override def beforeEach(): Unit = {
     super.beforeEach()
     val f: Future[Int] = database.run(basicUpdate(
-      s"""CREATE TABLE $table ("user_id" integer,"username" varchar(100),"ip_address" varchar(10))"""))
+      s"""CREATE TABLE $table ("user_id" integer PRIMARY KEY,"username" varchar(100),"ip_address" varchar(10))"""))
 
-    val f2: Future[Int] = database.run(basicUpdate(s"""CREATE TABLE $inferredTable ("user_id" integer,"user_handle"
+    val f2: Future[Int] = database.run(basicUpdate(
+      s"""CREATE TABLE $inferredTable ("user_id" integer PRIMARY KEY,"user_handle"
       varchar(100), "context_ip" varchar(10))"""))
 
     eventually(f.value.get.get shouldBe 0)
@@ -75,20 +77,16 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
     it("Should create consistent ids") {
 
       val mappings = List(ColumnMapping("context.ip", "ip_address", "string"))
-      val props = Map("url" -> h2Url)
-      val dbu = DatabaseUpsert("table", props, None, mappings)
-      val idString = "table" +
-        props.map(k => k._1 + "->" + k._2).mkString + "None" + mappings.map(_.toString).mkString
-      val digest = MessageDigest.getInstance("MD5")
-      val tid = digest.digest(idString.getBytes).map("%02x".format(_)).mkString
-      dbu.id shouldEqual tid
+      val dbu = DatabaseUpsert("table", h2Url, Map.empty, None, mappings)
+      val idString = "database-upsert-table"
+      dbu.id shouldEqual idString
     }
 
     it("Should perform validation") {
       val mappings = List(ColumnMapping("context.ip", "ip_address", "string"))
-      DatabaseUpsert("table", Map("url" -> h2Url), None, mappings).validate shouldBe Valid
+      DatabaseUpsert("table", h2Url, Map("user" -> "test"), None, mappings).validate shouldBe Valid
 
-      inside(DatabaseUpsert("table", Map.empty, None, Seq.empty).validate) {
+      inside(DatabaseUpsert("table", h2Url, Map.empty, None, Seq.empty).validate) {
         case Invalid(errors) => errors should have size 1
       }
     }
@@ -110,7 +108,7 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
         ColumnMapping("user.handle", "username", "string")
       )
 
-      val dbUpsert = DatabaseUpsert("table", Map("url" -> "url"), Some(ColumnMapping("user.id", "user_id", "int")),
+      val dbUpsert = DatabaseUpsert("table", h2Url, Map.empty, Some(ColumnMapping("user.id", "user_id", "int")),
         mappings)
 
       val ds = ss.createDataset(Seq(json))
@@ -138,13 +136,14 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
         ColumnMapping("user.handle", "username", "string")
       )
 
-      val dbUpsert = DatabaseUpsert("TEST_TABLE", Map("url" -> url),
+      val dbUpsert = DatabaseUpsert("TEST_TABLE", url, Map.empty,
         Some(ColumnMapping("user.id", "user_id", "int")), mappings)
 
       val ds = ss.createDataset(Seq(json))
 
       val df = ss.sqlContext.read.json(ds)
 
+      dbUpsert.aroundPreStart(sc)
       dbUpsert.transform(df)
 
       whenReady(database.run(sql"select * from TEST_TABLE".as[(Int, String, String)])) { r =>
@@ -152,9 +151,33 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
       }
     }
 
+
+    it("collects metrics on upserts") {
+      val mappings = List(
+        ColumnMapping("context.ip", "ip_address", "string"),
+        ColumnMapping("user.handle", "username", "string")
+      )
+
+      val url = s"jdbc:h2:mem:$dbname;DB_CLOSE_DELAY=-1"
+
+      val db = DatabaseUpsert("TEST_TABLE", url,
+        Map("driver" -> "org.h2.Driver"),
+        Some(ColumnMapping("user.id", "user_id", "int")), mappings)
+
+      db.collectMetrics.get() shouldBe false
+
+      val s = """{ "context": { "ip": "127.0.0.1" }, "user": { "handle": "alex_new", "id": 123 } }"""
+
+      val trans = SparkBatchTransformation(ListSource(Seq(json, s)), Seq(db), ConfigFactory.empty)
+      trans.init()
+      trans.run()
+
+      db.processedRows.value shouldBe 2
+    }
+
     it("Should create the table without PK") {
 
-      import slick.driver.H2Driver.api._
+      import slick.jdbc.H2Profile.api._
 
       val url = s"jdbc:h2:mem:$dbname;DB_CLOSE_DELAY=-1"
 
@@ -163,14 +186,15 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
         ColumnMapping("user.handle", "username", "string")
       )
 
-      val props = Map("savemode" -> "overwrite", "url" -> url)
+      val props = Map("savemode" -> "overwrite")
 
-      val dbUpsert = DatabaseUpsert("NEW_TABLE", props, None, mappings)
+      val dbUpsert = DatabaseUpsert("NEW_TABLE", url, props, None, mappings)
 
       val ds = ss.createDataset(Seq(json))
 
       val df = ss.sqlContext.read.json(ds)
 
+      dbUpsert.aroundPreStart(sc)
       dbUpsert.transform(df)
 
       whenReady(database.run(sql"SELECT SQL FROM INFORMATION_SCHEMA.CONSTRAINTS WHERE TABLE_NAME = 'NEW_TABLE'".as[String])) { r =>
@@ -194,14 +218,15 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
       )
       val idCol = Some(ColumnMapping("user.id", "user_id", "int"))
 
-      val props = Map("savemode" -> "overwrite", "url" -> url)
+      val props = Map("savemode" -> "overwrite")
 
-      val dbUpsert = DatabaseUpsert("NEW_TABLE", props, idCol, mappings)
+      val dbUpsert = DatabaseUpsert("NEW_TABLE", url, props, idCol, mappings)
 
       val ds = ss.createDataset(Seq(json))
 
       val df = ss.sqlContext.read.json(ds)
 
+      dbUpsert.aroundPreStart(sc)
       dbUpsert.transform(df)
 
       whenReady(database.run(sql"SELECT SQL FROM INFORMATION_SCHEMA.CONSTRAINTS WHERE TABLE_NAME = 'NEW_TABLE'".as[String])) { r =>
@@ -222,11 +247,12 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
         ColumnMapping("user.handle", "username", "string")
       )
 
-      val dbUpsert = DatabaseUpsert(table, Map("url" -> url),
+      val dbUpsert = DatabaseUpsert(table, url, Map.empty,
         Some(ColumnMapping("user.id", "user_id", "int")), mappings)
 
       val df = ss.sqlContext.read.json(ss.createDataset(Seq(json)))
 
+      dbUpsert.aroundPreStart(sc)
       dbUpsert.transform(df)
 
       whenReady(database.run(sql"select * from TEST_TABLE".as[(Int, String, String)])) { r =>
@@ -237,6 +263,7 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
 
       val ndf = ss.sqlContext.read.json(ss.createDataset(Seq(njson)))
 
+      dbUpsert.aroundPreStart(sc)
       dbUpsert.transform(ndf)
 
       whenReady(database.run(sql"select * from TEST_TABLE".as[(Int, String, String)])) { r =>
@@ -256,11 +283,12 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
         ColumnMapping("user.handle", "username", "string")
       )
 
-      val dbUpsert = DatabaseUpsert(table, Map("url" -> url),
+      val dbUpsert = DatabaseUpsert(table, url, Map.empty,
         Some(ColumnMapping("user.id", "user_id", "int")), mappings)
 
       val df = ss.sqlContext.read.json(ss.createDataset(Seq(sjson)))
 
+      dbUpsert.aroundPreStart(sc)
       dbUpsert.transform(df)
 
       whenReady(database.run(sql"select * from TEST_TABLE".as[(Int, String, String)])) { r =>
@@ -271,6 +299,7 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
 
       val ndf = ss.sqlContext.read.json(ss.createDataset(Seq(njson)))
 
+      dbUpsert.aroundPreStart(sc)
       dbUpsert.transform(ndf)
 
       whenReady(database.run(sql"select * from TEST_TABLE".as[(Int, String, String)])) { r =>
@@ -280,13 +309,15 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
 
     it("Should use all source fields if no columns are specified") {
 
-      val props = Map("url" -> h2Url)
       val mappings = Seq.empty
-      val dbu = DatabaseUpsert(inferredTable, props, Some(ColumnMapping("user.id", "user_id", "int")), mappings)
+      val dbu = DatabaseUpsert(inferredTable, h2Url, Map.empty,
+        Some(ColumnMapping("user.id", "user_id", "int")), mappings)
 
       val ds = ss.createDataset(Seq(json))
 
       val df = ss.sqlContext.read.json(ds)
+
+      dbu.aroundPreStart(sc)
 
       val ndf = dbu.transform(df)
 
@@ -307,14 +338,15 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
 
       val mappings = Seq.empty
 
-      val props = Map("savemode" -> "overwrite", "url" -> url)
+      val props = Map("savemode" -> "overwrite")
 
-      val dbUpsert = DatabaseUpsert("INFERRED_NEW_TABLE", props, None, mappings)
+      val dbUpsert = DatabaseUpsert("INFERRED_NEW_TABLE", url, props, None, mappings)
 
       val ds = ss.createDataset(Seq(json))
 
       val df = ss.sqlContext.read.json(ds)
 
+      dbUpsert.aroundPreStart(sc)
       dbUpsert.transform(df)
 
       whenReady(database.run(sql"""select "user_id", "user_handle", "context_ip" from INFERRED_NEW_TABLE"""
@@ -332,11 +364,12 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
 
       val mappings = Seq.empty
 
-      val dbUpsert = DatabaseUpsert(inferredTable, Map("url" -> url),
+      val dbUpsert = DatabaseUpsert(inferredTable, url, Map.empty,
         Some(ColumnMapping("user_id", "user_id", "int")), mappings)
 
       val df = ss.sqlContext.read.json(ss.createDataset(Seq(sjson)))
 
+      dbUpsert.aroundPreStart(sc)
       dbUpsert.transform(df)
 
       whenReady(database.run(sql"""select "user_id", "user_handle", "context_ip" from INFERRED_TEST_TABLE""".as[(Int, String, String)])) { r =>
@@ -346,6 +379,7 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
       val njson = """{ "context_ip": "127.0.0.1", "user_handle": "alex_updated", "user_id": 123 }"""
       val ndf = ss.sqlContext.read.json(ss.createDataset(Seq(njson)))
 
+      dbUpsert.aroundPreStart(sc)
       dbUpsert.transform(ndf)
 
       whenReady(database.run(sql"""select "user_id", "user_handle", "context_ip" from INFERRED_TEST_TABLE""".as[(Int, String, String)])) { r =>
@@ -378,8 +412,8 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
           |  "operations": {
           |    "database-upsert": {
           |      "table": "test_streaming",
+          |      "url": "jdbc:postgresql://localhost/prod",
           |      "properties": {
-          |        "url": "jdbc:postgresql://localhost/prod",
           |        "driver": "org.postgresql.Driver",
           |        "user": "test",
           |        "password": "test"
@@ -399,13 +433,13 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
         ColumnMapping("user.handle", "username", "string")
       )
 
-      val dbUpsert = DatabaseUpsert(table, Map("url" -> "jdbc:h2:mem:test"), Some(ColumnMapping("user.id", "user_id", "int")),
-        mappings)
+
+      val dbUpsert = DatabaseUpsert(table, h2Url, Map.empty, Some(ColumnMapping("user.id", "user_id", "int")), mappings)
 
       val ds = ss.createDataset(Seq.empty[String])
 
       val df = ss.sqlContext.read.json(ds)
-
+      dbUpsert.aroundPreStart(sc)
       val ndf = dbUpsert.transform(df)
 
       ndf.collect() shouldBe empty
@@ -414,25 +448,25 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
     it("does not fail with null values") {
       import slick.jdbc.H2Profile.api._
       val url = s"jdbc:h2:mem:$dbname;DB_CLOSE_DELAY=-1"
-      val json = """{ "context": { "ip": null }, "user": { "handle": "alex", "id": null } }"""
+      val json = """{ "context": { "ip": null }, "user": { "handle": "alex", "id": 1 } }"""
 
       val mappings = List(
         ColumnMapping("context.ip", "ip_address", "string"),
         ColumnMapping("user.handle", "username", "string")
       )
 
-      val dbUpsert = DatabaseUpsert(table, Map("url" -> url),
-        Some(ColumnMapping("user.id", "user_id", "int")), mappings)
+      val dbUpsert = DatabaseUpsert(table, url, Map.empty, Some(ColumnMapping("user.id", "user_id", "int")), mappings)
 
       val ds = ss.createDataset(Seq(json))
 
       val df = ss.sqlContext.read.json(ds)
 
+      dbUpsert.aroundPreStart(sc)
       dbUpsert.transform(df)
 
       // works with nulls but converts null Int to 0
       whenReady(database.run(sql"select * from TEST_TABLE".as[(Int, String, String)])) { r =>
-        r shouldBe Seq((0, "alex", null))
+        r shouldBe Seq((1, "alex", null))
       }
     }
   }

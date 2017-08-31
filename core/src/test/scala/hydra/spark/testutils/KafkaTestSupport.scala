@@ -15,14 +15,14 @@ import org.apache.avro.generic.{GenericDatumReader, GenericRecord}
 import org.apache.avro.io.{BinaryEncoder, DatumWriter, DecoderFactory, EncoderFactory}
 import org.apache.avro.specific.SpecificDatumWriter
 import org.apache.kafka.common.serialization.{Serializer, StringSerializer}
-import org.scalatest.Suite
+import org.scalatest.{BeforeAndAfterAll, Suite}
 
 import scala.io.Source
 
 /**
   * Created by alexsilva on 4/5/17.
   */
-trait KafkaTestSupport extends EmbeddedKafka {
+trait KafkaTestSupport extends EmbeddedKafka with BeforeAndAfterAll {
 
   this: Suite =>
 
@@ -52,6 +52,16 @@ trait KafkaTestSupport extends EmbeddedKafka {
   def stopKafka() = {
     EmbeddedKafka.stop()
     schemaRegistry.stop()
+  }
+
+  override def afterAll() = {
+    super.afterAll()
+    stopKafka()
+  }
+
+  override def beforeAll() = {
+    super.beforeAll()
+    startKafka()
   }
 
   def publishJson(topic: String, n: Int = 10): Seq[String] = {
