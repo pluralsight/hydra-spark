@@ -15,6 +15,7 @@
 
 package hydra.spark.operations.jdbc
 
+import hydra.spark.api.HydraContext
 import hydra.spark.operations.common.ColumnMapping
 import hydra.spark.testutils.SharedSparkContext
 import hydra.spark.util.DataTypes._
@@ -31,6 +32,7 @@ class DatabaseUpsertPostgresSpec extends Matchers with FunSpecLike with ScalaFut
   with Eventually with BeforeAndAfterEach with PostgresSpec with SharedSparkContext {
 
   import TestImplicits._
+
   implicit override val patienceConfig = PatienceConfig(timeout = Span(2, Seconds), interval = Span(1, Seconds))
 
   val table = "TEST_TABLE"
@@ -90,7 +92,7 @@ class DatabaseUpsertPostgresSpec extends Matchers with FunSpecLike with ScalaFut
 
     it("Should create the table with PK") {
       import slick.driver.PostgresDriver.api._
-
+      val hydraContext = new HydraContext(sc)
       val mappings = List(
         ColumnMapping("context.ip", "ip_address", "string"),
         ColumnMapping("user.handle", "username", "string")
@@ -105,7 +107,7 @@ class DatabaseUpsertPostgresSpec extends Matchers with FunSpecLike with ScalaFut
 
       val df = ss.sqlContext.read.json(ds)
 
-      dbUpsert.aroundPreStart(sc)
+      dbUpsert.aroundPreStart(hydraContext)
       dbUpsert.transform(df)
 
       whenReady(database.run(sql"select conname from pg_constraint where conname = 'new_table_pkey'".as[String])) { r =>
@@ -124,7 +126,8 @@ class DatabaseUpsertPostgresSpec extends Matchers with FunSpecLike with ScalaFut
       )
 
       val dbUpsert = DatabaseUpsert("TEST_TABLE", url, Map.empty, None, mappings)
-      dbUpsert.aroundPreStart(sc)
+      val hydraContext = new HydraContext(sc)
+      dbUpsert.aroundPreStart(hydraContext)
       val ds = ss.createDataset(Seq(json))
 
       val df = ss.sqlContext.read.json(ds)
@@ -152,7 +155,8 @@ class DatabaseUpsertPostgresSpec extends Matchers with FunSpecLike with ScalaFut
         Some(ColumnMapping("user.id", "user_id", "long")), mappings)
 
       val df = ss.sqlContext.read.json(ss.createDataset(Seq(json)))
-      dbUpsert.aroundPreStart(sc)
+      val hydraContext = new HydraContext(sc)
+      dbUpsert.aroundPreStart(hydraContext)
       dbUpsert.transform(df)
 
       whenReady(database.run(sql"select * from TEST_TABLE".as[(Int, String, String)])) { r =>
@@ -162,7 +166,7 @@ class DatabaseUpsertPostgresSpec extends Matchers with FunSpecLike with ScalaFut
       val njson = """{ "context": { "ip": "127.0.0.1" }, "user": { "handle": "alex_updated", "id": 123 } }"""
 
       val ndf = ss.sqlContext.read.json(ss.createDataset(Seq(njson)))
-      dbUpsert.aroundPreStart(sc)
+      dbUpsert.aroundPreStart(hydraContext)
       dbUpsert.transform(ndf)
 
       whenReady(database.run(sql"select * from TEST_TABLE".as[(Int, String, String)])) { r =>
@@ -175,11 +179,12 @@ class DatabaseUpsertPostgresSpec extends Matchers with FunSpecLike with ScalaFut
 
       val mappings = Seq.empty
 
-      val dbUpsert = DatabaseUpsert(inferredTable,  url, Map.empty,
+      val dbUpsert = DatabaseUpsert(inferredTable, url, Map.empty,
         Some(ColumnMapping("user_id", "user_id", "int")), mappings)
 
       val df = ss.sqlContext.read.json(ss.createDataset(Seq(json)))
-      dbUpsert.aroundPreStart(sc)
+      val hydraContext = new HydraContext(sc)
+      dbUpsert.aroundPreStart(hydraContext)
       dbUpsert.transform(df)
 
       whenReady(database.run(sql"select user_id, user_handle, context_ip from INFERRED_TEST_TABLE".as[(Int, String, String)])) { r =>
@@ -188,7 +193,7 @@ class DatabaseUpsertPostgresSpec extends Matchers with FunSpecLike with ScalaFut
 
       val njson = """{ "context_ip": "127.0.0.1", "user_handle": "alex_updated", "user_id": 123 }"""
       val ndf = ss.sqlContext.read.json(ss.createDataset(Seq(njson)))
-      dbUpsert.aroundPreStart(sc)
+      dbUpsert.aroundPreStart(hydraContext)
       dbUpsert.transform(ndf)
 
       whenReady(database.run(sql"select user_id, user_handle, context_ip from INFERRED_TEST_TABLE".as[(Int, String, String)])) { r =>
@@ -208,7 +213,8 @@ class DatabaseUpsertPostgresSpec extends Matchers with FunSpecLike with ScalaFut
       val props = Map("savemode" -> "overwrite")
 
       val dbUpsert = DatabaseUpsert("NEW_TABLE", url, props, idCol, mappings)
-      dbUpsert.aroundPreStart(sc)
+      val hydraContext = new HydraContext(sc)
+      dbUpsert.aroundPreStart(hydraContext)
       val ds = ss.createDataset(Seq(jsonCaseSensitive))
       ss.sqlContext.setConf("spark.sql.caseSensitive", "true") //not important but want to test as well
       val df = ss.sqlContext.read.json(ds)

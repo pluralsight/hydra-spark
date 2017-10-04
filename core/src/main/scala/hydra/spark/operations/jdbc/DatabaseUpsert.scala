@@ -18,32 +18,26 @@ package hydra.spark.operations.jdbc
 import com.typesafe.config.Config
 import hydra.spark.api._
 import hydra.spark.operations.common.{ColumnMapping, TableMapping}
-import org.apache.spark.SparkContext
-import org.apache.spark.scheduler.{SparkListener, SparkListenerStageCompleted}
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JdbcUtils}
 import org.apache.spark.sql.jdbc.DataFrameWriterExtensions
 import org.apache.spark.sql.types._
-import org.joda.time.DateTime
-import spray.json.DefaultJsonProtocol
 
 /**
   * Created by alexsilva on 6/18/16.
   */
 case class DatabaseUpsert(table: String, url: String, properties: Map[String, String],
-                          idColumn: Option[ColumnMapping], columns: Seq[ColumnMapping]) extends SparkListener
-  with DFOperation with DataFrameWriterExtensions with JdbcHelper with DefaultJsonProtocol {
+                          idColumn: Option[ColumnMapping], columns: Seq[ColumnMapping]) extends DFOperation
+  with DataFrameWriterExtensions with JdbcHelper {
 
   val mapping = TableMapping(idColumn, columns)
 
   private val jdbcOptions = new JDBCOptions(url, table, properties)
 
-  private var initialRecords: Long = 0L
-
   private[jdbc] override lazy val connectionFactory = JdbcUtils.createConnectionFactory(jdbcOptions)
 
-  override def preStart(sc: SparkContext): Unit = {
-    if (collectMetrics.get) initialRecords = getRowCount(table).getOrElse(0)
+  override def preTransform(hydraContext: HydraContext): Unit = {
+    hydraContext.metrics.getOrCreateCounter(getClass, "initialTableRows").add(getRowCount(table).getOrElse(0L))
   }
 
   override def transform(df: DataFrame): DataFrame = {
@@ -61,30 +55,12 @@ case class DatabaseUpsert(table: String, url: String, properties: Map[String, St
 
   override val id: String = s"${super.id}-${table.toLowerCase()}"
 
-  override def onStageCompleted(s: SparkListenerStageCompleted): Unit = {
-    import spray.json._
-    if (collectMetrics.get && s.stageInfo.name.startsWith("upsert")) {
-      log.debug("Upsert finished")
-      s.stageInfo.accumulables.find(_._2.name.exists(_.equalsIgnoreCase("number of output rows"))) match {
-        case Some(acc) =>
-
-          val finalRows = getRowCount(table).getOrElse(0L)
-          outputRows.add(acc._2.value.map(_.toString.toLong).getOrElse(0L))
-
-          println(
-            StageCompletionInfo(id, table, DateTime.now().getMillis,
-              initialRecords, processedRows.value, finalRows,
-              idColumn.isDefined).toJson(jsonFormat7(StageCompletionInfo)))
-
-        case None => log.warn("No accumulable found for number of output rows")
-      }
-    }
+  override def onStageCompleted(hydraContext: HydraContext): Map[String, String] = {
+    val dbRows = getRowCount(table).getOrElse(0L)
+    hydraContext.metrics.getOrCreateCounter(getClass, "finalTableRows").add(dbRows)
+    Map("table" -> table, "isUpsert" -> idColumn.isDefined.toString, "url" -> url)
   }
 }
-
-case class StageCompletionInfo(name: String, table: String,
-                               time: Long, initialTableRows: Long,processedRows: Long,
-                               finalTableRows: Long, isUpsert: Boolean)
 
 object DatabaseUpsert {
 

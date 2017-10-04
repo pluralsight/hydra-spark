@@ -26,11 +26,11 @@ case class SparkBatchTransformation[S](source: Source[S], operations: Seq[DFOper
   extends SparkTransformation[S](source, operations, dsl) {
 
   override def run(): Unit = {
+    init()
     val ops = operations
-    ops.foreach(_.aroundPreStart(spark.sparkContext))
+    ops.foreach(_.aroundPreStart(hydraContext))
     val initialDf = source.createDF(spark)
     ops.foldLeft(initialDf)((df, trans) => trans.transform(df))
-    ops.foreach(_.postStop())
     source.checkpoint(None)
   }
 

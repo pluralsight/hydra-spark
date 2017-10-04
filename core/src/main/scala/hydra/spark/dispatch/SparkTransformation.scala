@@ -20,8 +20,11 @@ import configs.syntax._
 import hydra.spark.api._
 import hydra.spark.configs.ConfigSupport
 import hydra.spark.dsl.parser.TypesafeDSLParser
-import org.apache.spark.scheduler.SparkListener
+import hydra.spark.internal.Logging
+import org.apache.commons.lang3.ClassUtils
+import org.apache.spark.scheduler._
 import org.apache.spark.sql.SparkSession
+import org.joda.time.DateTime
 
 import scala.util.Random
 
@@ -30,12 +33,18 @@ import scala.util.Random
   */
 abstract class SparkTransformation[S](source: Source[S],
                                       operations: Seq[DFOperation],
-                                      dsl: Config) extends Transformation[S] with ConfigSupport {
+                                      dsl: Config) extends SparkListener with Transformation[S]
+  with ConfigSupport with Logging {
 
   override lazy val name = dsl.get[String]("name").valueOrElse(Random.nextString(10))
 
-  lazy val spark = SparkSession.builder().config(sparkConf(dsl, name)).getOrCreate()
+  lazy val spark = {
+    val sp = SparkSession.builder().config(sparkConf(dsl, name)).getOrCreate()
+    sp.sparkContext.addSparkListener(this)
+    sp
+  }
 
+  lazy val hydraContext = new HydraContext(spark.sparkContext)
 
   val author = dsl.get[String]("author").valueOrElse("Unknown")
 
@@ -45,6 +54,34 @@ abstract class SparkTransformation[S](source: Source[S],
         spark.sparkContext.addSparkListener(op.asInstanceOf[SparkListener])
       }
     }
+  }
+
+  override def onApplicationEnd(applicationEnd: SparkListenerApplicationEnd): Unit = {
+    println("Application ended.")
+    (operations) foreach { op =>
+      println(op)
+    }
+  }
+
+  /** Listener methods **/
+  override def onStageSubmitted(s: SparkListenerStageSubmitted): Unit = {
+    operations.find(op => shouldFireEvent(s.stageInfo, op)).foreach(_.preTransform(hydraContext))
+  }
+
+  override def onStageCompleted(s: SparkListenerStageCompleted): Unit = {
+    operations.find(op => shouldFireEvent(s.stageInfo, op)).foreach { op =>
+      log.info(s"Firing stage completed for $id")
+      val recordsWritten = s.stageInfo.taskMetrics.outputMetrics.recordsWritten
+      val props = op.onStageCompleted(hydraContext)
+      val counters = hydraContext.metrics.getCounters(op.getClass).mapValues(_.value.toLong)
+      val opm = OperationMetrics(op.id, DateTime.now().toString, recordsWritten, props, counters)
+      hydraContext.metrics.addOperationMetric(op, opm)
+    }
+  }
+
+  private[spark] def shouldFireEvent(stageInfo: StageInfo, operation: DFOperation) = {
+    //todo: is there a better way to get the operation name and match it to a stage info?
+    stageInfo.name.contains(ClassUtils.getShortCanonicalName(operation.getClass))
   }
 }
 

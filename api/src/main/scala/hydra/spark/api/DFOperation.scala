@@ -16,17 +16,15 @@
 package hydra.spark.api
 
 
-import java.util.concurrent.atomic.AtomicBoolean
-
 import com.google.common.base.CaseFormat
+import hydra.spark.internal.Logging
 import org.apache.commons.lang3.ClassUtils
-import org.apache.spark.SparkContext
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.util.LongAccumulator
 
 import scala.util.{Failure, Success, Try}
 
-trait DFOperation extends Validatable {
+trait DFOperation extends Validatable with Logging {
 
   /**
     * A unique id identifying this operation.
@@ -37,38 +35,46 @@ trait DFOperation extends Validatable {
 
   def transform(df: DataFrame): DataFrame
 
-  private val counters = new scala.collection.mutable.HashMap[String, LongAccumulator]()
+  /**
+    * Called once per Spark application, before the operations run.
+    *
+    * @param hydraContext
+    */
+  def preStart(hydraContext: HydraContext): Unit = {}
 
-  private[spark] val collectMetrics = new AtomicBoolean(false)
+  /**
+    * Called by the framework when the stage for this operation has completed.
+    * Once for batch jobs or after every micro batch for streaming jobs.
+    *
+    * Returns a map of operation-specific properties to the operation (such as URL, kafka brokers, etc.).
+    */
+  def onStageCompleted(hydraContext: HydraContext): Map[String, String] = Map.empty
 
-  def preStart(sparkContext: SparkContext): Unit = {}
+  /**
+    * Fired when the stage for this operation is submitted to the scheduler.
+    *
+    * @param hydraContext
+    */
+  def preTransform(hydraContext: HydraContext): Unit = {}
 
-  def postStop(): Unit = {}
 
-  def processedRows = counters(id + "_PROCESSED_ROWS")
+  //set of "standard" counters
+  var processedRows: LongAccumulator = _
 
-  def outputRows = counters(id + "_OUTPUT_ROWS")
-
-  protected[hydra] def initCounters(sc: SparkContext) = {
-    collectMetrics.set(sc.getConf.getBoolean("spark.metrics.hydra", true))
-    counters.getOrElseUpdate(id + "_PROCESSED_ROWS", sc.longAccumulator(id + "_PROCESSED_ROWS"))
-    counters.getOrElseUpdate(id + "_OUTPUT_ROWS", sc.longAccumulator(id + "_OUTPUT_ROWS"))
-  }
-
+  var processedRowsCounter: LongAccumulator = _
 
   /**
     * Can be overridden to intercept calls to `preStart`. Initializes the counters and calls `preStart` by default.
     */
-  protected[hydra] def aroundPreStart(sc: SparkContext): Unit = {
-    initCounters(sc)
-    preStart(sc)
+  protected[hydra] final def aroundPreStart(hydraContext: HydraContext): Unit = {
+    processedRowsCounter = hydraContext.metrics.getOrCreateCounter(getClass, "processedRows")
+    preStart(hydraContext)
   }
-
 
   def ifNotEmpty(df: DataFrame)(f: DataFrame => DataFrame): DataFrame = {
     Try(df.first) match {
       case Success(_) => f.apply(df)
-      case Failure(x) => df
+      case Failure(_) => df
     }
   }
 
@@ -84,4 +90,6 @@ trait DFOperation extends Validatable {
 
     if (result.isLeft) Invalid(ValidationError(id, result.left.get)) else result.right.get
   }
+
 }
+

@@ -18,7 +18,6 @@ package org.apache.spark.sql.jdbc
 import java.sql.{BatchUpdateException, Connection}
 
 import hydra.spark.api.DFOperation
-import org.apache.spark.internal.Logging
 import org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JdbcUtils}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, DataFrameWriter, Row, SaveMode}
@@ -29,7 +28,7 @@ import scala.util.control.NonFatal
   * Created by alexsilva on 6/19/16.
   */
 
-trait DataFrameWriterExtensions extends Logging {
+trait DataFrameWriterExtensions {
 
   this: DFOperation =>
 
@@ -192,14 +191,14 @@ trait DataFrameWriterExtensions extends Logging {
           if (rowCount % batchSize == 0) {
             stmt.executeBatch()
             conn.commit()
-            processedRows.add(rowCount)
+            processedRowsCounter.add(rowCount)
             rowCount = 0
           }
         }
         if (rowCount > 0) {
           stmt.executeBatch()
           conn.commit()
-          processedRows.add(rowCount)
+          processedRowsCounter.add(rowCount)
         }
       } catch {
         case jdbce: BatchUpdateException => jdbce.getNextException().printStackTrace()
