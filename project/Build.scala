@@ -27,7 +27,7 @@ object HydraSparkBuild extends Build {
     .settings(commonSettings: _*).
     settings(
       name := "hydra-spark-api",
-      libraryDependencies ++= Seq(logging, configs, spark, coreTestDeps, reflections).flatten
+      libraryDependencies ++= Seq(logging, configs, spark, coreTestDeps, reflections, metrics).flatten
     )
 
   lazy val `core` = (project in file("core"))

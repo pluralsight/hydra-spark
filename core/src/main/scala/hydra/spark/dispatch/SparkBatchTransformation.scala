@@ -28,7 +28,7 @@ case class SparkBatchTransformation[S](source: Source[S], operations: Seq[DFOper
   override def run(): Unit = {
     init()
     val ops = operations
-    ops.foreach(_.aroundPreStart(hydraContext))
+    ops.foreach(_.aroundPreStart())
     val initialDf = source.createDF(spark)
     ops.foldLeft(initialDf)((df, trans) => trans.transform(df))
     source.checkpoint(None)

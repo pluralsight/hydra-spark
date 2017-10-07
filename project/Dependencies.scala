@@ -33,6 +33,8 @@ object Dependencies {
       ExclusionRule(organization = "com.fasterxml.jackson.core")
     ))
 
+  lazy val metrics = Seq("com.groupon.dse" % "spark-metrics" % sparkMetricsVersion)
+
   lazy val akkaHttp = Seq("com.typesafe.akka" %% "akka-http-core" % akkaHttpVersion,
     "com.typesafe.akka" %% "akka-http-spray-json" % akkaHttpVersion,
     "com.typesafe.akka" %% "akka-http" % akkaHttpVersion)
@@ -89,7 +91,8 @@ object Dependencies {
     "org.apache.spark" %% "spark-sql" % sparkVersion % "provided",
     "org.apache.spark" %% "spark-hive" % sparkVersion % "provided",
     "org.apache.spark" %% "spark-yarn" % sparkVersion % "provided",
-   // "com.databricks" %% "spark-avro" % avroSparkVersion,
+    "org.eclipse.jetty" % "jetty-servlet" % "9.2.12.v20150709" % "provided",
+    // "com.databricks" %% "spark-avro" % avroSparkVersion,
     "com.github.databricks" %% "spark-avro" % "204864b6cf",
     sparkStreamingKafka, sparkTags)
 
@@ -99,7 +102,7 @@ object Dependencies {
     "org.postgresql" % "postgresql" % postgresVersion,
     "commons-dbcp" % "commons-dbcp" % commonsDbcpVersion,
     "org.flywaydb" % "flyway-core" % flywayVersion
-   //"com.typesafe.slick" %% "slick-hikaricp" % slickVersion
+    //"com.typesafe.slick" %% "slick-hikaricp" % slickVersion
   )
 
   lazy val sparkStreamingKafka = "org.apache.spark" %% "spark-streaming-kafka-0-10" % sparkVersion

@@ -191,14 +191,14 @@ trait DataFrameWriterExtensions {
           if (rowCount % batchSize == 0) {
             stmt.executeBatch()
             conn.commit()
-            processedRowsCounter.add(rowCount)
+            processedRowsCounter.inc(rowCount)
             rowCount = 0
           }
         }
         if (rowCount > 0) {
           stmt.executeBatch()
           conn.commit()
-          processedRowsCounter.add(rowCount)
+          processedRowsCounter.inc(rowCount)
         }
       } catch {
         case jdbce: BatchUpdateException => jdbce.getNextException().printStackTrace()

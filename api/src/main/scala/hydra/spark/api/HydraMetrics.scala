@@ -1,55 +1,52 @@
 package hydra.spark.api
 
 
-import com.yammer.metrics.Metrics
-import com.yammer.metrics.core.MetricName
-import org.apache.commons.lang3.ClassUtils
-import org.apache.spark.SparkContext
-import org.apache.spark.util.LongAccumulator
+import org.apache.spark.groupon.metrics.{SparkCounter, UserMetricsSystem}
+import org.apache.spark.{SparkContext, SparkEnv}
 
 import scala.collection.mutable
 
-class HydraMetrics(sc: SparkContext) extends Serializable {
-  type Callback = Unit => Unit
+object HydraMetrics {
 
-  private val counters = new mutable.HashMap[MetricName, (LongAccumulator, Callback)]
+  private var namespace: String = _
+
+  /**
+    * Initialize the metrics system.
+    *
+    * Must be invoked in the driver before the SparkContext is started.
+    *
+    */
+  def initialize(sc: SparkContext, namespace: String): Unit = {
+    UserMetricsSystem.initialize(sc, namespace)
+    this.namespace = namespace
+  }
+
+  private val countersMap = new mutable.HashMap[String, SparkCounter]
+
+  def counter(source: String, name: String): SparkCounter = {
+    val key = s"$source::$name"
+    countersMap.getOrElseUpdate(key, UserMetricsSystem.counter(key))
+  }
+
+  private[spark] def counterValue(sourceName: String, counterName: String): Option[Long] = {
+    SparkEnv.get.metricsSystem.getSourcesByName(sourceName)
+      .find(_.metricRegistry.getCounters().get(counterName) != null)
+      .map(s => s.metricRegistry.counter(counterName).getCount)
+  }
 
   private val operationMetrics = new mutable.HashMap[String, mutable.Set[OperationMetrics]]()
     with mutable.MultiMap[String, OperationMetrics]
 
-  def getCounters(clazz: Class[_]): Map[String, LongAccumulator] = {
-    counters.filterKeys(k=>k.getGroup==clazz.getPackage.getName && k.getType == ClassUtils.getShortClassName(clazz))
-      .map(kv => kv._1.getName -> kv._2._1).toMap
+  def getCounters(namespace: String): Map[String, SparkCounter] = {
+    countersMap.filterKeys(k => k.startsWith(namespace)).toMap
   }
 
-  private def doCreateCounter(metricName: MetricName): (LongAccumulator, Callback) = {
-    val counter = Metrics.newCounter(metricName)
-    val accumulator = sc.longAccumulator(metricName.toString)
-    val callback: Callback = _ => counter.inc(accumulator.value)
-    (accumulator, callback)
+  def addOperationMetric(name: String, metrics: OperationMetrics) = {
+    operationMetrics.addBinding(name, metrics)
   }
 
-  def createCounter(metricName: String): Unit = {
-    val m = new MetricName(getClass, metricName)
-    counters.put(m, doCreateCounter(m))
-  }
-
-  def addOperationMetric(op: DFOperation, metrics: OperationMetrics) = {
-    operationMetrics.addBinding(op.id, metrics)
-  }
-
-
-  def getOperationMetrics(op: DFOperation): Seq[OperationMetrics] = {
-    operationMetrics.getOrElse(op.id, Set.empty).toSeq
-  }
-
-  def getOrCreateCounter(clazz: Class[_], metricName: String): LongAccumulator = {
-    val m = new MetricName(clazz, metricName)
-    counters.getOrElseUpdate(m, doCreateCounter(m))._1
-  }
-
-  def getCounter(clazz: Class[_], metricName: String): LongAccumulator = {
-    counters(new MetricName(clazz, metricName))._1
+  def getOperationMetrics(name: String): Seq[OperationMetrics] = {
+    operationMetrics.getOrElse(name, Set.empty).toSeq
   }
 }
 

@@ -129,8 +129,6 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
 
       import slick.jdbc.H2Profile.api._
 
-      val metrics = new HydraMetrics(sc)
-
       val url = s"jdbc:h2:mem:$dbname;DB_CLOSE_DELAY=-1"
 
       val mappings = List(
@@ -144,9 +142,7 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
       val ds = ss.createDataset(Seq(json))
 
       val df = ss.sqlContext.read.json(ds)
-
-      val hydraContext = new HydraContext(sc)
-      dbUpsert.aroundPreStart(hydraContext)
+      dbUpsert.aroundPreStart()
       dbUpsert.transform(df)
 
       whenReady(database.run(sql"select * from TEST_TABLE".as[(Int, String, String)])) { r =>
@@ -171,11 +167,11 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
       val trans = SparkBatchTransformation(ListSource(Seq(json, s)), Seq(db), ConfigFactory.empty)
 
       trans.run()
-
-      db.processedRowsCounter.value shouldBe 2
+      val sourceName = s"${sc.appName}.${trans.name}"
+      HydraMetrics.counterValue(sourceName, s"${db.id}::processedRows").get shouldBe 2
 
       eventually {
-        trans.hydraContext.metrics.getOperationMetrics(db)(0) match {
+        HydraMetrics.getOperationMetrics(db.id)(0) match {
           case OperationMetrics(id, _, recordsWritten, props, counters) =>
             id shouldBe db.id
             recordsWritten shouldBe 0L
@@ -204,8 +200,8 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
 
       val df = ss.sqlContext.read.json(ds)
 
-      val hydraContext = new HydraContext(sc)
-      dbUpsert.aroundPreStart(hydraContext)
+
+      dbUpsert.aroundPreStart()
       dbUpsert.transform(df)
 
       whenReady(database.run(sql"SELECT SQL FROM INFORMATION_SCHEMA.CONSTRAINTS WHERE TABLE_NAME = 'NEW_TABLE'".as[String])) { r =>
@@ -237,8 +233,8 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
 
       val df = ss.sqlContext.read.json(ds)
 
-      val hydraContext = new HydraContext(sc)
-      dbUpsert.aroundPreStart(hydraContext)
+
+      dbUpsert.aroundPreStart()
       dbUpsert.transform(df)
 
       whenReady(database.run(sql"SELECT SQL FROM INFORMATION_SCHEMA.CONSTRAINTS WHERE TABLE_NAME = 'NEW_TABLE'".as[String])) { r =>
@@ -264,8 +260,8 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
 
       val df = ss.sqlContext.read.json(ss.createDataset(Seq(json)))
 
-      val hydraContext = new HydraContext(sc)
-      dbUpsert.aroundPreStart(hydraContext)
+
+      dbUpsert.aroundPreStart()
       dbUpsert.transform(df)
 
       whenReady(database.run(sql"select * from TEST_TABLE".as[(Int, String, String)])) { r =>
@@ -276,7 +272,7 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
 
       val ndf = ss.sqlContext.read.json(ss.createDataset(Seq(njson)))
 
-      dbUpsert.aroundPreStart(hydraContext)
+      dbUpsert.aroundPreStart()
       dbUpsert.transform(ndf)
 
       whenReady(database.run(sql"select * from TEST_TABLE".as[(Int, String, String)])) { r =>
@@ -301,8 +297,8 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
 
       val df = ss.sqlContext.read.json(ss.createDataset(Seq(sjson)))
 
-      val hydraContext = new HydraContext(sc)
-      dbUpsert.aroundPreStart(hydraContext)
+
+      dbUpsert.aroundPreStart()
       dbUpsert.transform(df)
 
       whenReady(database.run(sql"select * from TEST_TABLE".as[(Int, String, String)])) { r =>
@@ -313,7 +309,7 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
 
       val ndf = ss.sqlContext.read.json(ss.createDataset(Seq(njson)))
 
-      dbUpsert.aroundPreStart(hydraContext)
+      dbUpsert.aroundPreStart()
       dbUpsert.transform(ndf)
 
       whenReady(database.run(sql"select * from TEST_TABLE".as[(Int, String, String)])) { r =>
@@ -331,8 +327,8 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
 
       val df = ss.sqlContext.read.json(ds)
 
-      val hydraContext = new HydraContext(sc)
-      dbu.aroundPreStart(hydraContext)
+
+      dbu.aroundPreStart()
 
       val ndf = dbu.transform(df)
 
@@ -361,8 +357,8 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
 
       val df = ss.sqlContext.read.json(ds)
 
-      val hydraContext = new HydraContext(sc)
-      dbUpsert.aroundPreStart(hydraContext)
+
+      dbUpsert.aroundPreStart()
       dbUpsert.transform(df)
 
       whenReady(database.run(sql"""select "user_id", "user_handle", "context_ip" from INFERRED_NEW_TABLE"""
@@ -385,8 +381,8 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
 
       val df = ss.sqlContext.read.json(ss.createDataset(Seq(sjson)))
 
-      val hydraContext = new HydraContext(sc)
-      dbUpsert.aroundPreStart(hydraContext)
+
+      dbUpsert.aroundPreStart()
       dbUpsert.transform(df)
 
       whenReady(database.run(sql"""select "user_id", "user_handle", "context_ip" from INFERRED_TEST_TABLE""".as[(Int, String, String)])) { r =>
@@ -396,7 +392,7 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
       val njson = """{ "context_ip": "127.0.0.1", "user_handle": "alex_updated", "user_id": 123 }"""
       val ndf = ss.sqlContext.read.json(ss.createDataset(Seq(njson)))
 
-      dbUpsert.aroundPreStart(hydraContext)
+      dbUpsert.aroundPreStart()
       dbUpsert.transform(ndf)
 
       whenReady(database.run(sql"""select "user_id", "user_handle", "context_ip" from INFERRED_TEST_TABLE""".as[(Int, String, String)])) { r =>
@@ -456,8 +452,8 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
       val ds = ss.createDataset(Seq.empty[String])
 
       val df = ss.sqlContext.read.json(ds)
-      val hydraContext = new HydraContext(sc)
-      dbUpsert.aroundPreStart(hydraContext)
+
+      dbUpsert.aroundPreStart()
       val ndf = dbUpsert.transform(df)
 
       ndf.collect() shouldBe empty
@@ -479,8 +475,8 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
 
       val df = ss.sqlContext.read.json(ds)
 
-      val hydraContext = new HydraContext(sc)
-      dbUpsert.aroundPreStart(hydraContext)
+
+      dbUpsert.aroundPreStart()
       dbUpsert.transform(df)
 
       // works with nulls but converts null Int to 0

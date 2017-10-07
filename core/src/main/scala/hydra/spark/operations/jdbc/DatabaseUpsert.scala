@@ -18,6 +18,7 @@ package hydra.spark.operations.jdbc
 import com.typesafe.config.Config
 import hydra.spark.api._
 import hydra.spark.operations.common.{ColumnMapping, TableMapping}
+import org.apache.spark.scheduler.StageInfo
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JdbcUtils}
 import org.apache.spark.sql.jdbc.DataFrameWriterExtensions
@@ -36,8 +37,8 @@ case class DatabaseUpsert(table: String, url: String, properties: Map[String, St
 
   private[jdbc] override lazy val connectionFactory = JdbcUtils.createConnectionFactory(jdbcOptions)
 
-  override def preTransform(hydraContext: HydraContext): Unit = {
-    hydraContext.metrics.getOrCreateCounter(getClass, "initialTableRows").add(getRowCount(table).getOrElse(0L))
+  override def preTransform(): Unit = {
+    HydraMetrics.counter(id, "initialTableRows").inc(getRowCount(table).getOrElse(0L))
   }
 
   override def transform(df: DataFrame): DataFrame = {
@@ -53,13 +54,17 @@ case class DatabaseUpsert(table: String, url: String, properties: Map[String, St
     checkRequiredParams(Seq("url" -> url, "table" -> table, "user" -> properties.get("user").getOrElse(null)))
   }
 
-  override val id: String = s"${super.id}-${table.toLowerCase()}"
+  override val id: String = s"${super.id}[${table.toLowerCase()}]"
 
-  override def onStageCompleted(hydraContext: HydraContext): Map[String, String] = {
+  override def onStageCompleted(stageInfo: StageInfo): Unit = {
     val dbRows = getRowCount(table).getOrElse(0L)
-    hydraContext.metrics.getOrCreateCounter(getClass, "finalTableRows").add(dbRows)
-    Map("table" -> table, "isUpsert" -> idColumn.isDefined.toString, "url" -> url)
+    HydraMetrics.counter(id, "finalTableRows").inc(dbRows)
   }
+
+  override val operationProperties: Map[String, String] =
+    Map("table" -> table,
+      "isUpsert" -> idColumn.isDefined.toString,
+      "url" -> url)
 }
 
 object DatabaseUpsert {

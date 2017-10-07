@@ -26,8 +26,6 @@ import org.apache.spark.scheduler._
 import org.apache.spark.sql.SparkSession
 import org.joda.time.DateTime
 
-import scala.util.Random
-
 /**
   * Created by alexsilva on 6/21/16.
   */
@@ -36,15 +34,13 @@ abstract class SparkTransformation[S](source: Source[S],
                                       dsl: Config) extends SparkListener with Transformation[S]
   with ConfigSupport with Logging {
 
-  override lazy val name = dsl.get[String]("name").valueOrElse(Random.nextString(10))
+  override lazy val name = dsl.get[String]("name").valueOrElse("HydraSpark")
 
   lazy val spark = {
     val sp = SparkSession.builder().config(sparkConf(dsl, name)).getOrCreate()
     sp.sparkContext.addSparkListener(this)
     sp
   }
-
-  lazy val hydraContext = new HydraContext(spark.sparkContext)
 
   val author = dsl.get[String]("author").valueOrElse("Unknown")
 
@@ -54,6 +50,8 @@ abstract class SparkTransformation[S](source: Source[S],
         spark.sparkContext.addSparkListener(op.asInstanceOf[SparkListener])
       }
     }
+
+    HydraMetrics.initialize(spark.sparkContext, name)
   }
 
   override def onApplicationEnd(applicationEnd: SparkListenerApplicationEnd): Unit = {
@@ -65,17 +63,22 @@ abstract class SparkTransformation[S](source: Source[S],
 
   /** Listener methods **/
   override def onStageSubmitted(s: SparkListenerStageSubmitted): Unit = {
-    operations.find(op => shouldFireEvent(s.stageInfo, op)).foreach(_.preTransform(hydraContext))
+    operations.find(op => shouldFireEvent(s.stageInfo, op)).foreach(_.preTransform())
   }
 
   override def onStageCompleted(s: SparkListenerStageCompleted): Unit = {
     operations.find(op => shouldFireEvent(s.stageInfo, op)).foreach { op =>
       log.info(s"Firing stage completed for $id")
       val recordsWritten = s.stageInfo.taskMetrics.outputMetrics.recordsWritten
-      val props = op.onStageCompleted(hydraContext)
-      val counters = hydraContext.metrics.getCounters(op.getClass).mapValues(_.value.toLong)
-      val opm = OperationMetrics(op.id, DateTime.now().toString, recordsWritten, props, counters)
-      hydraContext.metrics.addOperationMetric(op, opm)
+      op.onStageCompleted(s.stageInfo)
+      val sourceName = s"${spark.sparkContext.appName}.$name"
+      //todo: create kafka sink
+      val counters = HydraMetrics.getCounters(op.id).map { case (k, v) =>
+        k.substring(k.lastIndexOf("::") + 2) -> HydraMetrics.counterValue(sourceName, v.metricName).getOrElse(0L)
+      }
+
+      val opm = OperationMetrics(op.id, DateTime.now().toString, recordsWritten, op.operationProperties, counters)
+      HydraMetrics.addOperationMetric(op.id, opm)
     }
   }
 
