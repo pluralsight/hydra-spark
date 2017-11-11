@@ -31,7 +31,7 @@ trait SchemaRegistrySupport {
   }
 
   def getValueSchema(defaultName: String): Schema = {
-    val location = properties.get("schema").getOrElse(defaultName)
+    val location = properties.get("schemaName").getOrElse(defaultName)
     val fact = if (location.indexOf(":") != -1) ResourceSchemaFactory else RegistrySchemaFactory(schemaRegistryClient)
     fact.getValueSchema(location)
   }

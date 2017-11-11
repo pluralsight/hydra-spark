@@ -33,12 +33,17 @@ class ValueFilterSpec extends Matchers with FunSpecLike with BeforeAndAfterEach 
       |spark.driver.allowMultipleContexts = false
     """.stripMargin
   )
+  val email = """"email":"hydra@dataisawesome.com","""
+  val msgs = for (i <- 0 to 10)
+    yield s"""{"msg_no": $i, "timestamp": "2017-11-07 11:${("0" + i).takeRight(2)}:00", ${if (i % 2 == 0) email else ""}
+             | "data": {"value": "hello no $i", "time": ${System.currentTimeMillis}}
+      }""".stripMargin
 
-  val t = ValueFilter("msg_no", 0)
+  val t = ValueFilter("msg_no", 0, "=")
 
   describe("When Filtering by a value") {
     it("Should only include matching rows") {
-      val json = StaticJsonSource.msgs(0).parseJson
+      val json = msgs(0).parseJson
       SparkBatchTransformation("test", StaticJsonSource, Seq(t, ListOperation), config).run()
       ListOperation.l.size shouldBe 1
       ListOperation.l.map(_.parseJson) should contain(json)
