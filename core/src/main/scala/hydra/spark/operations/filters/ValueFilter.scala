@@ -38,7 +38,7 @@ case class ValueFilter(column: String, value: Any, operation: String) extends DF
   }
 
   override def validate: ValidationResult = {
-    if (Seq(Option(column), Option(value)).flatten.size == 0)
+    if (Seq(Option(column), Option(value), Option(operation)).flatten.size == 0)
       Invalid(ValidationError("value-filter", "Both column and value are required."))
     else if (!filterMap.contains(operation))
       Invalid(ValidationError("value-filter", s"Operation $operation is not supported."))
