@@ -18,6 +18,7 @@ package hydra.spark.operations.filters
 import com.typesafe.config.ConfigFactory
 import hydra.spark.dispatch.SparkBatchTransformation
 import hydra.spark.testutils.{ListOperation, SharedSparkContext, StaticJsonSource}
+import hydra.spark.api.Source
 import org.scalatest.{BeforeAndAfterEach, FunSpecLike, Matchers}
 import spray.json._
 
@@ -33,19 +34,51 @@ class ValueFilterSpec extends Matchers with FunSpecLike with BeforeAndAfterEach 
       |spark.driver.allowMultipleContexts = false
     """.stripMargin
   )
-  val email = """"email":"hydra@dataisawesome.com","""
-  val msgs = for (i <- 0 to 10)
-    yield s"""{"msg_no": $i, "timestamp": "2017-11-07 11:${("0" + i).takeRight(2)}:00", ${if (i % 2 == 0) email else ""}
-             | "data": {"value": "hello no $i", "time": ${System.currentTimeMillis}}
-      }""".stripMargin
+//  val email = """"email":"hydra@dataisawesome.com","""
+//  val msgs = for (i <- 0 to 10)
+//    yield s"""{"msg_no": $i, "timestamp": "2017-11-07 11:${("0" + i).takeRight(2)}:00"}"""
+//
+//  val source = Source[String]
 
-  val t = ValueFilter("msg_no", 0, "=")
 
   describe("When Filtering by a value") {
-    it("Should only include matching rows") {
-      val json = msgs(0).parseJson
+    it("Should only include matching rows for equal operation") {
+      val json = StaticJsonSource.msgs(0).parseJson
+      val t = ValueFilter("msg_no", 0, "=")
       SparkBatchTransformation("test", StaticJsonSource, Seq(t, ListOperation), config).run()
       ListOperation.l.size shouldBe 1
+      ListOperation.l.map(_.parseJson) should contain(json)
+    }
+    it("Should only include matching rows for > operation") {
+      val json = StaticJsonSource.msgs(3).parseJson
+      val t = ValueFilter("msg_no", 2, ">")
+      SparkBatchTransformation("test", StaticJsonSource, Seq(t, ListOperation), config).run()
+      println(ListOperation.l)
+      ListOperation.l.size shouldBe 8
+      ListOperation.l.map(_.parseJson) should contain(json)
+    }
+    it("Should only include matching rows for >= operation") {
+      val json = StaticJsonSource.msgs(2).parseJson
+      val t = ValueFilter("msg_no", 2, ">=")
+      SparkBatchTransformation("test", StaticJsonSource, Seq(t, ListOperation), config).run()
+      println(ListOperation.l)
+      ListOperation.l.size shouldBe 9
+      ListOperation.l.map(_.parseJson) should contain(json)
+    }
+    it("Should only include matching rows for < operation") {
+      val json = StaticJsonSource.msgs(1).parseJson
+      val t = ValueFilter("msg_no", 2, "<")
+      SparkBatchTransformation("test", StaticJsonSource, Seq(t, ListOperation), config).run()
+      println(ListOperation.l)
+      ListOperation.l.size shouldBe 2
+      ListOperation.l.map(_.parseJson) should contain(json)
+    }
+    it("Should only include matching rows for <= operation") {
+      val json = StaticJsonSource.msgs(2).parseJson
+      val t = ValueFilter("msg_no", 2, "<=")
+      SparkBatchTransformation("test", StaticJsonSource, Seq(t, ListOperation), config).run()
+      println(ListOperation.l)
+      ListOperation.l.size shouldBe 3
       ListOperation.l.map(_.parseJson) should contain(json)
     }
   }
