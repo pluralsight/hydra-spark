@@ -32,11 +32,13 @@ class ChangeCaseSpec extends Matchers with FunSpecLike with BeforeAndAfterEach w
     it("should recognize invalid CaseFormat") {
       val cfg = ConfigFactory.parseString("from = LOWER_UNDERSCORE, to = INVALID").resolve
       val validation = ChangeCase(cfg).validate.asInstanceOf[Invalid]
+      println(validation)
       validation.errors shouldBe Invalid.unapply(validation).get
     }
     it("should recognize invalid input") {
       val cfg = ConfigFactory.parseString("from = LOWER_UNDERSCORE").resolve
       val validation = ChangeCase(cfg).validate.asInstanceOf[Invalid]
+      println(validation)
       validation.errors shouldBe Invalid.unapply(validation).get
     }
   }

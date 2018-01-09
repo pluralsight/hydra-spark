@@ -16,11 +16,7 @@ case class ChangeCase(from: String, to: String) extends DFOperation {
   }
 
   override def validate: ValidationResult = {
-    val r = checkRequiredParams(Seq("from"->from, "to"->to))
-    r match {
-      case Valid => validateCaseFormats(Seq(from, to))
-      case r: Invalid => r
-    }
+    checkRequiredParams(Seq("from"->from, "to"->to)).and(()=>validateCaseFormats(Seq(from,to)))
   }
 
   def validateCaseFormats(values: Seq[String]): ValidationResult = {
