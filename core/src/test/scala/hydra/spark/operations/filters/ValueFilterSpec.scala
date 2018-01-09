@@ -34,12 +34,6 @@ class ValueFilterSpec extends Matchers with FunSpecLike with BeforeAndAfterEach 
       |spark.driver.allowMultipleContexts = false
     """.stripMargin
   )
-//  val email = """"email":"hydra@dataisawesome.com","""
-//  val msgs = for (i <- 0 to 10)
-//    yield s"""{"msg_no": $i, "timestamp": "2017-11-07 11:${("0" + i).takeRight(2)}:00"}"""
-//
-//  val source = Source[String]
-
 
   describe("When Filtering by a value") {
     it("Should only include matching rows for = operation") {
