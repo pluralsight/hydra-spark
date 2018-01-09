@@ -105,7 +105,6 @@ case class PublishToKafka(topic: String, format: String = "json", orderBy: Optio
     Try {
       val bsc = ProducerConfig.BOOTSTRAP_SERVERS_CONFIG
       require(!topic.isEmpty, "A topic is required")
-      println(properties)
       require(properties.contains(bsc), s"$bsc is required.")
       properties(bsc).toString.split(",").foreach { host =>
         val url = host.split(":")
