@@ -43,13 +43,18 @@ object ValidationError {
 /**
   * A validation result.
   */
-sealed trait ValidationResult
+sealed trait ValidationResult {
+  def and(validation: () => ValidationResult): ValidationResult
+}
 
 /**
   * Validation was a success.
   */
-case object Valid extends ValidationResult
-
+case object Valid extends ValidationResult {
+  override def and(validation: () => ValidationResult): ValidationResult = {
+    validation.apply()
+  }
+}
 /**
   * Validation was a failure.
   *
@@ -64,6 +69,8 @@ case class Invalid(errors: Seq[ValidationError]) extends ValidationResult {
     * @return a new merged `Invalid`
     */
   def ++(other: Invalid): Invalid = Invalid(this.errors ++ other.errors)
+
+  override def and(validation: () => ValidationResult): ValidationResult = this
 }
 
 /**
@@ -80,7 +87,7 @@ object Invalid {
   def apply(error: ValidationError): Invalid = Invalid(Seq(error))
 
   def apply(origin: AnyRef, error: Throwable): Invalid =
-    Invalid((Seq(ValidationError(origin.getClass.getName, error.getMessage))))
+    Invalid(Seq(ValidationError(origin.getClass.getName, error.getMessage)))
 
   /**
     * Creates an `Invalid` value with a single error.

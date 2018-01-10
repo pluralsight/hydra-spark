@@ -65,6 +65,7 @@ class DslParserSpec extends Matchers with FunSpecLike with BeforeAndAfterEach wi
       |  "1:value-filter" {
       |    column = ip
       |    value = alex
+      |    operation = "="
       |  }
       |  "3:regex-filter" {
       |    field = ip
@@ -181,7 +182,8 @@ class DslParserSpec extends Matchers with FunSpecLike with BeforeAndAfterEach wi
           |      	"operations": {
           |      		"1:value-filter": {
           |      			"column": "ip",
-          |      			"value": "alex"
+          |      			"value": "alex",
+          |           "operation": "="
           |      		}
           |      	}
           |      }
@@ -222,7 +224,8 @@ class DslParserSpec extends Matchers with FunSpecLike with BeforeAndAfterEach wi
           |		"operations": {
           |			"value-filter": {
           |				"column": "ip",
-          |				"value": "alex"
+          |				"value": "alex",
+          |       "operation": "="
           |			}
           |		}
           |}
@@ -261,7 +264,8 @@ class DslParserSpec extends Matchers with FunSpecLike with BeforeAndAfterEach wi
           |		"operations": {
           |			"value-filter": {
           |				"column": "ip",
-          |				"value": "alex"
+          |				"value": "alex",
+          |       "operation": "="
           |			}
           |		}
           |}

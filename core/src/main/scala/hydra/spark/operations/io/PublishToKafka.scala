@@ -36,9 +36,11 @@ case class PublishToKafka(topic: String, format: String = "json", orderBy: Optio
 
   val cfg = ConfigFactory.defaultReference.withFallback(ConfigFactory.load(getClass.getClassLoader, "reference"))
 
-  val topicDefaults = cfg.get[Map[String, String]](s"hydra.kafka.formats.$format").valueOrElse(Map.empty)
+  val topicDefaults = cfg.get[Config](s"hydra.kafka.formats.$format").valueOrElse(ConfigFactory.empty)
+    .to[Map[String,String]]
 
-  val kafkaDefaults = cfg.get[Map[String, String]]("kafka.producer").valueOrElse(Map.empty)
+  val kafkaDefaults = cfg.get[Config]("kafka.producer").valueOrElse(ConfigFactory.empty)
+    .to[Map[String,String]]
 
   val opProps = topicDefaults ++ kafkaDefaults ++ properties
 
@@ -142,7 +144,9 @@ object ProducerObject {
 object PublishToKafka {
 
   def apply(cfg: Config): PublishToKafka = {
-    val properties = cfg.get[Map[String, String]]("properties").valueOrElse(Map.empty)
+    import hydra.spark.configs._
+    val properties:Map[String,String] = cfg.get[Config]("properties").valueOrElse(ConfigFactory.empty())
+      .to[Map[String, String]]
     val topic = cfg.get[String]("topic").valueOrElse(throw new IllegalArgumentException("Topic is required."))
     val orderBy = cfg.get[String]("orderBy").toOption
     val key = cfg.get[String]("key").toOption

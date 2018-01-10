@@ -15,24 +15,33 @@
 
 package hydra.spark.operations.filters
 
-import hydra.spark.api.{ Invalid, ValidationError, _ }
-import org.apache.spark.sql.DataFrame
+import hydra.spark.api.{Invalid, ValidationError, _}
+import org.apache.spark.sql.{Column, DataFrame}
 
 /**
  * Created by alexsilva on 6/24/16.
  */
-case class ValueFilter(column: String, value: Any) extends DFOperation {
+case class ValueFilter(column: String, value: Any, operation: String) extends DFOperation {
   override def id: String = s"value-filter-$column-$value"
 
+  val filterMap = Map[String, DataFrame => Column](
+    ">" -> (df => df(column) > value),
+    ">=" -> (df => df(column) >= value),
+    "<" -> (df => df(column) < value),
+    "<=" -> (df => df(column) <= value),
+    "=" -> (df => df(column) === value),
+    "==" -> (df => df(column) === value)
+  )
+
   override def transform(df: DataFrame): DataFrame = {
-    val condition = df(column) === value
-    df.filter(condition)
+    filterMap.get(operation).map(_.apply(df)).map(df.filter).getOrElse(
+      throw InvalidDslException("Provided operation parameter is not supported."))
   }
 
   override def validate: ValidationResult = {
-    if (Seq(Option(column), Option(value)).flatten.size == 0)
-      Invalid(ValidationError("value-filter", "Both column and value are required."))
+    if (!filterMap.contains(operation))
+      Invalid(ValidationError("value-filter", s"Operation $operation is not supported."))
     else
-      Valid
+      checkRequiredParams(Seq("column"->column, "value"->value, "operation"->operation))
   }
 }
