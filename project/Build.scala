@@ -36,7 +36,7 @@ object HydraSparkBuild extends Build {
     .settings(
       name := "hydra-spark-core",
       libraryDependencies ++= Seq(logging, spark, guava, postgres, kafka, confluent, slf4j, sprayJson,
-        springCore, spEL, scopt, coreTestDeps, dbTesting).flatten
+        springCore, spEL, scopt, coreTestDeps, dbTesting, hbase).flatten
     )
 
   lazy val buildTag = scala.util.Properties.envOrNone("version").map(v => "." + v).getOrElse("")
@@ -78,7 +78,8 @@ object HydraSparkBuild extends Build {
     ,
     resolvers += Resolver.mavenLocal,
     resolvers += "Confluent" at "http://packages.confluent.io/maven/",
-    resolvers += "The New Motion" at "http://nexus.thenewmotion.com/content/groups/public/"
+    resolvers += "The New Motion" at "http://nexus.thenewmotion.com/content/groups/public/",
+    resolvers += "Hortonworks" at "http://repo.hortonworks.com/content/repositories/releases/"
   )
 
   lazy val publishSettings = Seq(
