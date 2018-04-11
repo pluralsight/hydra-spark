@@ -19,7 +19,7 @@ import com.typesafe.config.Config
 import hydra.spark.api._
 import configs.syntax._
 import hydra.spark.configs.ConfigSupport
-import hydra.spark.dsl.parser.TypesafeDSLParser
+import hydra.spark.app.parser.TypesafeDSLParser
 import org.apache.spark.sql.SparkSession
 
 /**

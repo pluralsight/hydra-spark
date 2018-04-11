@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-package hydra.spark.dsl.parser
+package hydra.spark.app.parser
 
 import hydra.spark.api.TransformationDetails
 

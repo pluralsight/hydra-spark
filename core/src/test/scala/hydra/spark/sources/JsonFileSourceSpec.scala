@@ -16,7 +16,7 @@
 package hydra.spark.sources
 
 import hydra.spark.api.Invalid
-import hydra.spark.dsl.parser.TypesafeDSLParser
+import hydra.spark.app.parser.TypesafeDSLParser
 import hydra.spark.testutils.SharedSparkContext
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.SQLContext

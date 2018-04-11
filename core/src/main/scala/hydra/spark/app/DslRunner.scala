@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-package hydra.spark.dsl
+package hydra.spark.app
 
 import hydra.spark.api._
 import hydra.spark.dispatch.SparkTransformation

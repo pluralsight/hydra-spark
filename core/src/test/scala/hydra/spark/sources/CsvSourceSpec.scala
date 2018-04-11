@@ -16,7 +16,7 @@
 package hydra.spark.sources
 
 import hydra.spark.api.{Invalid, InvalidDslException}
-import hydra.spark.dsl.parser.TypesafeDSLParser
+import hydra.spark.app.parser.TypesafeDSLParser
 import hydra.spark.testutils.SharedSparkContext
 import org.apache.spark.streaming.{Seconds, StreamingContext}
 import org.scalatest.concurrent.{Eventually, PatienceConfiguration, ScalaFutures}

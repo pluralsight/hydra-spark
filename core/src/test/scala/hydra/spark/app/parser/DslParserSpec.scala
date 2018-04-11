@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-package hydra.spark.dsl.parser
+package hydra.spark.app.parser
 
 /**
   * Created by alexsilva on 1/3/17.

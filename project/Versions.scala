@@ -18,7 +18,7 @@
 object Versions {
   val jdkVersion = scala.util.Properties.isJavaAtLeast("1.8")
 
-  val hydraSparkVersion = "0.6.2"
+  val hydraSparkVersion = "0.6.5"
 
   lazy val typeSafeConfigVersion = if (jdkVersion) "1.3.0" else "1.2.1"
   lazy val kxbmapConfigVersion = "0.4.2"
@@ -37,7 +37,7 @@ object Versions {
   lazy val reflectionsVersion = "0.9.10"
   lazy val scoptVersion = "3.5.0"
   lazy val sparkVersion = "2.2.0"
-  lazy val avroSparkVersion = "3.2.0"
+  lazy val avroSparkVersion = "4.0.0"
   lazy val jacksonVersion = "2.6.5"
   lazy val akkaHttpVersion = "10.0.5"
   lazy val sprayVersion = "1.3.3"

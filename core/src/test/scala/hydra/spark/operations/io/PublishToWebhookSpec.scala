@@ -15,7 +15,7 @@
 
 package hydra.spark.operations.io
 
-import hydra.spark.dsl.parser.TypesafeDSLParser
+import hydra.spark.app.parser.TypesafeDSLParser
 import org.scalatest._
 
 /**

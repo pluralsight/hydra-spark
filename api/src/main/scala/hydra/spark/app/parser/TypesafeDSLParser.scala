@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-package hydra.spark.dsl.parser
+package hydra.spark.app.parser
 
 import java.util.UUID
 
@@ -21,7 +21,7 @@ import com.typesafe.config._
 import configs.syntax._
 import hydra.spark.api._
 import hydra.spark.configs._
-import hydra.spark.dsl.factories.ClasspathDslElementFactory
+import hydra.spark.app.factories.ClasspathDslElementFactory
 import hydra.spark.internal.Logging
 
 import scala.util.Try

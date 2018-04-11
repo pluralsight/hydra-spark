@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-package hydra.spark.dsl.factories
+package hydra.spark.app.factories
 
 import java.lang.reflect.Modifier
 

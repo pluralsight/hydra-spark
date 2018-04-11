@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-package hydra.spark.dsl.factories
+package hydra.spark.app.factories
 
 import java.lang.reflect.Method
 
@@ -127,7 +127,7 @@ object FactoryHelper {
 
 }
 
-private[dsl] case class DslKey(configKey: String) {
+private[app] case class DslKey(configKey: String) {
   val cfgKeyParts = configKey.split(":")
   val hasOrder = cfgKeyParts.size > 1
   val kname = if (hasOrder) cfgKeyParts.drop(1).mkString(":") else configKey

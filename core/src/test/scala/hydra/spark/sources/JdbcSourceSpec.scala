@@ -16,7 +16,7 @@
 package hydra.spark.sources
 
 import hydra.spark.api._
-import hydra.spark.dsl.parser.TypesafeDSLParser
+import hydra.spark.app.parser.TypesafeDSLParser
 import hydra.spark.operations.jdbc.H2Spec
 import hydra.spark.testutils.SharedSparkContext
 import org.apache.spark.sql.{Row, SQLContext, SparkSession}

@@ -18,7 +18,7 @@ package hydra.spark.operations.jdbc
 import java.security.MessageDigest
 
 import hydra.spark.api.{Invalid, Valid}
-import hydra.spark.dsl.parser.TypesafeDSLParser
+import hydra.spark.app.parser.TypesafeDSLParser
 import hydra.spark.operations.common.ColumnMapping
 import hydra.spark.testutils.SharedSparkContext
 import hydra.spark.util.DataTypes._

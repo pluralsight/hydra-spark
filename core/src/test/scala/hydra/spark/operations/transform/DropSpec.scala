@@ -15,7 +15,7 @@
 
 package hydra.spark.operations.transform
 
-import hydra.spark.dsl.parser.TypesafeDSLParser
+import hydra.spark.app.parser.TypesafeDSLParser
 import hydra.spark.testutils.{SharedSparkContext, StaticJsonSource}
 import org.scalatest.{FunSpecLike, Matchers}
 
