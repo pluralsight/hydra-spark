@@ -69,8 +69,6 @@ object Dependencies {
       ExclusionRule(organization = "com.fasterxml.jackson.core")
     ))
 
-  lazy val avro = Seq("org.apache.avro" % "avro" % avroVersion)
-
   lazy val guava = Seq("com.google.guava" % "guava" % guavaVersion).map(_.force())
 
   val logging = Seq(
