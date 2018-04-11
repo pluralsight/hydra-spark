@@ -7,6 +7,8 @@ import hydra.spark.testutils.{ListOperation, SharedSparkContext, StaticJsonSourc
 import org.scalatest.{BeforeAndAfterEach, FunSpecLike, Matchers}
 import spray.json._
 
+import scala.collection.mutable.ListBuffer
+
 class ChangeCaseSpec extends Matchers with FunSpecLike with BeforeAndAfterEach with SharedSparkContext {
 
   val config = ConfigFactory.parseString(
@@ -17,10 +19,18 @@ class ChangeCaseSpec extends Matchers with FunSpecLike with BeforeAndAfterEach w
     """.stripMargin
   )
 
+  /**
+    * ListOperation needs to be reset before each test suite because it is a global singleton
+    */
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    ListOperation.reset()
+  }
+
   describe("When changing case of column names") {
     it("changes case from lower underscore to lower camel") {
       val cc = ChangeCase("LOWER_UNDERSCORE", "LOWER_CAMEL")
-      val json = StaticJsonSource.msgs(0).parseJson
+      val json: JsValue = StaticJsonSource.msgs(0).parseJson
       SparkBatchTransformation("underscore_camel_test", StaticJsonSource, Seq(cc, ListOperation), config).run()
       val result = ListOperation.l.map(_.parseJson)
       val r2 = result.head.asJsObject.getFields("msgNo") shouldEqual json.asJsObject.getFields("msg_no")
@@ -42,4 +52,6 @@ class ChangeCaseSpec extends Matchers with FunSpecLike with BeforeAndAfterEach w
       validation.errors shouldBe Invalid.unapply(validation).get
     }
   }
+
+
 }
