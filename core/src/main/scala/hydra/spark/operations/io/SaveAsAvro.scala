@@ -15,18 +15,14 @@
 
 package hydra.spark.operations.io
 
-import java.io.File
-
 import com.databricks.spark.avro._
 import com.typesafe.config.Config
 import hydra.spark.api._
 import hydra.spark.avro.SchemaRegistrySupport
 import hydra.spark.internal.Logging
 import org.apache.avro.Schema
-import org.apache.hadoop.fs.Path
-import org.apache.spark.sql.{DataFrame, Dataset, Row, SaveMode}
+import org.apache.spark.sql.{DataFrame, SaveMode}
 
-import scala.reflect.ClassTag
 import scala.util.Try
 
 /**

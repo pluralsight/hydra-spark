@@ -27,7 +27,6 @@ import scala.language.existentials
   * Created by alexsilva on 10/25/16.
   */
 object DslRunner extends App {
-
   val dsl = args(0)
 
   runJob(dsl)

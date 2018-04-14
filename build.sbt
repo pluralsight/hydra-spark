@@ -95,9 +95,15 @@ val dockerSettings = Seq(
     val artifactTargetPath = s"/jars/${artifact.name}"
 
     new Dockerfile {
-      from("gettyimages/spark:2.2.1-hadoop-2.7")
+      from("gettyimages/spark:2.3.0-hadoop-2.8")
       maintainer("Alex Silva <alex-silva@pluralsight.com>")
       add(artifact, artifactTargetPath)
+      //Spark uses Avro 1.7.4 version that comes packaged with Hadoop.
+      // We have to manually override the
+      // jar in the docker container so that our KafkaAvroSource won't choke.
+      addRaw(
+        new java.net.URL("http://repo1.maven.org/maven2/org/apache/avro/avro/1.7.7/avro-1.7.7.jar"),
+        "/usr/spark-2.3.0/jars")
     }
   },
   imageNames in docker := Seq(
