@@ -57,8 +57,7 @@ object Dependencies {
     "com.github.kxbmap" %% "configs" % kxbmapConfigVersion)
 
   lazy val coreTestDeps = Seq(
-    "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
-    "org.lz4" % "lz4-java" % "1.4.1" % "test")
+    "org.scalatest" %% "scalatest" % scalaTestVersion % "test")
 
   lazy val httpTest = Seq("com.typesafe.akka" %% "akka-http-testkit" % akkaHttpVersion % "test")
 
