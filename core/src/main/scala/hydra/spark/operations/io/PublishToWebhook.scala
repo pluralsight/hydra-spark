@@ -31,11 +31,11 @@ import scala.concurrent.duration._
   *
   * Created by alexsilva on 6/21/16.
   */
-case class PublishToWebhook(url: String, timeout: FiniteDuration = 1.minute) extends DFOperation with Logging with
-  AkkaHttpService {
+case class PublishToWebhook(url: String, timeout: FiniteDuration = 1.minute) extends DFOperation
+  with Logging
+  with AkkaHttpService {
 
   override val id: String = s"publish-to-web-hook-$url"
-
 
   override def transform(df: DataFrame): DataFrame = {
     //TODO: Look into Akka HTTP with Spark 1.6
@@ -44,8 +44,6 @@ case class PublishToWebhook(url: String, timeout: FiniteDuration = 1.minute) ext
   }
 
   override def validate: ValidationResult = checkRequiredParams(Seq(("url", url)))
-
-
 }
 
 object PublishToWebhook {

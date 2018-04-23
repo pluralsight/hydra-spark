@@ -36,6 +36,8 @@ lazy val commonSettings = Seq(
   excludeDependencies += "org.slf4j" % "slf4j-log4j12",
   excludeDependencies += "log4j" % "log4j",
   excludeDependencies += "log4j" % "apache-log4j-extras",
+  excludeDependencies += "net.jpountz.lz4" % "lz4",
+  dependencyOverrides += "org.lz4" % "lz4-java" % "1.4.0",
   dependencyOverrides += "com.fasterxml.jackson.core" %% "jackson-core" % jacksonVersion,
   dependencyOverrides += "com.fasterxml.jackson.core" %% "jackson-annotations" % jacksonVersion,
   dependencyOverrides += "com.fasterxml.jackson.core" %% "jackson-databind" % jacksonVersion,
@@ -81,7 +83,7 @@ lazy val `core` = (project in file("core"))
   .settings(commonSettings ++ dockerSettings,
     name := "hydra-spark-core",
     libraryDependencies ++= Seq(logging, spark, guava, postgres, kafka, confluent, slf4j, sprayJson,
-      springCore, spEL, scopt, coreTestDeps, dbTesting, lz4).flatten
+      springCore, spEL, scopt, coreTestDeps, dbTesting).flatten
   )
 
 lazy val publishSettings = Seq(

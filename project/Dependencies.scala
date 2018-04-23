@@ -72,7 +72,7 @@ object Dependencies {
 
   lazy val guava = Seq("com.google.guava" % "guava" % guavaVersion).map(_.force())
 
-  lazy val lz4 = Seq("org.lz4" % "lz4-java" % "1.4.1")
+  lazy val lz4 = Seq("org.lz4" % "lz4-java" % "1.4.0")
 
   val logging = Seq(
     "org.apache.logging.log4j" % "log4j-slf4j-impl" % log4jVersion,
@@ -104,7 +104,7 @@ object Dependencies {
     //"com.typesafe.slick" %% "slick-hikaricp" % slickVersion
   )
 
-  lazy val sparkStreamingKafka = "org.apache.spark" %% "spark-streaming-kafka-0-10" % sparkVersion
+  lazy val sparkStreamingKafka =  "org.apache.spark" %% "spark-streaming-kafka-0-10" % sparkVersion
 
   lazy val sparkTags = ("org.apache.spark" %% "spark-tags" % sparkVersion) exclude("org.scalatest", "scalatest")
 
