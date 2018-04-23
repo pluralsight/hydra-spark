@@ -22,12 +22,13 @@ import hydra.spark.testutils.{LocalSparkContext, StaticJsonSource}
 import org.apache.commons.io.FileUtils
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.SparkSession
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, FunSpecLike, Matchers}
+import org.scalatest._
 import spray.json._
 
 /**
   * Created by alexsilva on 1/4/17.
   */
+@Ignore
 class HiveTableSpec extends Matchers with FunSpecLike with BeforeAndAfterEach with DefaultJsonProtocol
   with BeforeAndAfterAll {
 
