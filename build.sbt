@@ -81,7 +81,7 @@ lazy val `core` = (project in file("core"))
   .settings(commonSettings ++ dockerSettings,
     name := "hydra-spark-core",
     libraryDependencies ++= Seq(logging, spark, guava, postgres, kafka, confluent, slf4j, sprayJson,
-      springCore, spEL, scopt, coreTestDeps, dbTesting).flatten
+      springCore, spEL, scopt, coreTestDeps, dbTesting, lz4).flatten
   )
 
 lazy val publishSettings = Seq(

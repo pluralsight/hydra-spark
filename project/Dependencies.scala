@@ -72,6 +72,8 @@ object Dependencies {
 
   lazy val guava = Seq("com.google.guava" % "guava" % guavaVersion).map(_.force())
 
+  lazy val lz4 = Seq("org.lz4" % "lz4-java" % "1.4.1")
+
   val logging = Seq(
     "org.apache.logging.log4j" % "log4j-slf4j-impl" % log4jVersion,
     "org.apache.logging.log4j" % "log4j-core" % log4jVersion,
