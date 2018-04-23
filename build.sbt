@@ -37,7 +37,6 @@ lazy val commonSettings = Seq(
   excludeDependencies += "log4j" % "log4j",
   excludeDependencies += "log4j" % "apache-log4j-extras",
   excludeDependencies += "net.jpountz.lz4" % "lz4",
-  dependencyOverrides += "org.lz4" % "lz4-java" % "1.4.0",
   dependencyOverrides += "com.fasterxml.jackson.core" %% "jackson-core" % jacksonVersion,
   dependencyOverrides += "com.fasterxml.jackson.core" %% "jackson-annotations" % jacksonVersion,
   dependencyOverrides += "com.fasterxml.jackson.core" %% "jackson-databind" % jacksonVersion,
