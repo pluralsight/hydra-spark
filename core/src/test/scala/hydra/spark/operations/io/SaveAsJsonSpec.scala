@@ -20,8 +20,8 @@ import java.io.File
 import com.google.common.io.Files
 import com.typesafe.config.ConfigFactory
 import hydra.spark.api.Invalid
-import hydra.spark.dispatch.SparkBatchTransformation
 import hydra.spark.testutils.{ListOperation, SharedSparkContext, StaticJsonSource}
+import hydra.spark.transform.SparkBatchTransformation
 import org.scalatest.{BeforeAndAfterEach, FunSpecLike, Inside, Matchers}
 
 import scala.collection.JavaConversions._

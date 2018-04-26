@@ -13,22 +13,20 @@
  * limitations under the License.
  */
 
-package hydra.spark.dispatch
+package hydra.spark.transform
 
 /**
   * Created by alexsilva on 6/21/16.
   */
 
 import com.typesafe.config.ConfigFactory
-import hydra.spark.testutils.{ListOperation, SharedSparkContext, StaticJsonSource}
-import hydra.spark.transform.SparkBatchTransformation
 import org.scalatest.{BeforeAndAfterEach, FunSpecLike, Matchers}
-import spray.json._
 
 /**
   * Created by alexsilva on 6/20/16.
   */
-class SparkBatchTransformationTest extends Matchers with FunSpecLike with BeforeAndAfterEach with SharedSparkContext {
+class SparkBatchTransformationTest extends Matchers with FunSpecLike with BeforeAndAfterEach {
+  import spray.json._
 
   val props = ConfigFactory.parseString(
     s"""

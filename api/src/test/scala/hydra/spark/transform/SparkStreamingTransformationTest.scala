@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-package hydra.spark.dispatch
+package hydra.spark.transform
 
 /**
   * Created by alexsilva on 6/21/16.
@@ -21,9 +21,6 @@ package hydra.spark.dispatch
 
 import com.typesafe.config.ConfigFactory
 import hydra.spark.api._
-import hydra.spark.testutils.SharedSparkContext
-import hydra.spark.transform.{SparkStreamingTransformation, SparkTransformation}
-import hydra.spark.util.RDDConversions
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.apache.spark.streaming.StreamingContext
@@ -35,7 +32,7 @@ import scala.collection.JavaConverters._
 /**
   * Created by alexsilva on 6/20/16.
   */
-class SparkStreamingTransformationTest extends Matchers with FunSpecLike with SharedSparkContext {
+class SparkStreamingTransformationTest extends Matchers with FunSpecLike  {
 
   val props = Map("streaming.interval" -> "5s", "spark.local.dir" -> "/tmp/hydra", "spark.master" -> "local[*]")
 
@@ -43,7 +40,7 @@ class SparkStreamingTransformationTest extends Matchers with FunSpecLike with Sh
     it("Be configured properly") {
 
       val c = ConfigFactory.parseMap(props.asJava)
-      val sd = SparkStreamingTransformation("test", EmptySource, Seq.empty, c)
+      val sd = SparkStreamingTransformation("test", EmptySource(), Seq.empty, c)
       val conf = sd.ssc.sparkContext.getConf
       sd.ssc.stop(false, false)
     }
@@ -57,12 +54,12 @@ class SparkStreamingTransformationTest extends Matchers with FunSpecLike with Sh
           |        "spark.master":"local[*]",
           |        "streaming.interval" : "5s",
           |        "source": {
-          |            "hydra.spark.testutils.EmptySource":{
+          |            "hydra.spark.transform.EmptySource":{
           |             "testName":"streaming"
           |            }
           |        },
           |        "operations": {
-          |           "print-rows":{}
+          |           "hydra.spark.transform.NoOpOperation":{}
           |        }
           |}
           |
@@ -74,7 +71,11 @@ class SparkStreamingTransformationTest extends Matchers with FunSpecLike with Sh
   }
 }
 
-object EmptySource extends Source[String] {
+case class NoOpOperation() extends DFOperation {
+  override def transform(df: DataFrame): DataFrame = df
+}
+
+case class EmptySource() extends Source[String] {
   override def name: String = "empty-source"
 
   override def createStream(sc: StreamingContext): DStream[String] = ???
@@ -83,5 +84,7 @@ object EmptySource extends Source[String] {
 
   override def validate: ValidationResult = Valid
 
-  override def toDF(rdd: RDD[String]): DataFrame = RDDConversions.StringDF.toDF(rdd)
+  override def toDF(rdd: RDD[String]): DataFrame = {
+    SparkSession.builder().getOrCreate.emptyDataFrame
+  }
 }

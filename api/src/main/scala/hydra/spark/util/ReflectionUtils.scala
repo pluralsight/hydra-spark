@@ -19,8 +19,8 @@ import scala.reflect.runtime.universe._
 import scala.reflect.runtime.{currentMirror => cm, universe => ru}
 
 /**
- * Created by alexsilva on 1/4/16.
- */
+  * Created by alexsilva on 1/4/16.
+  */
 object ReflectionUtils {
 
   private lazy val universeMirror = ru.runtimeMirror(getClass.getClassLoader)
@@ -43,6 +43,12 @@ object ReflectionUtils {
   def companionOf[T](cls: Class[T]) = {
     val companionMirror = universeMirror.reflectModule(getType(cls).typeSymbol.companion.asModule)
     companionMirror.instance.asInstanceOf[T]
+  }
+
+  def objectOf[T](cls: Class[T]) = {
+    val module = universeMirror.staticModule(cls.getName)
+    val obj = universeMirror.reflectModule(module)
+    obj.instance.asInstanceOf[T]
   }
 
   def getType[T](clazz: Class[T]) = universeMirror.classSymbol(clazz).toType

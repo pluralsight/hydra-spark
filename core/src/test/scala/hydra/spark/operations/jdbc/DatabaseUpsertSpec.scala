@@ -389,7 +389,7 @@ class DatabaseUpsertSpec extends Matchers with FunSpecLike with ScalaFutures wit
           |}
         """.stripMargin
 
-      val dispatch = TypesafeDSLParser().parse(dsl).get
+      val dispatch = TypesafeDSLParser.parse(dsl).get
       dispatch.operations.head.validate shouldBe Valid
     }
 

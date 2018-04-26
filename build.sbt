@@ -23,7 +23,7 @@ val javaVersion = sys.env.getOrElse("JAVA_VERSION", "1.8")
 
 lazy val buildTag = scala.util.Properties.envOrNone("version").map(v => "." + v).getOrElse("")
 
-import Versions.jacksonVersion
+val jacksonVersion = "2.6.7"
 
 lazy val commonSettings = Seq(
   organization := "pluralsight",
@@ -40,6 +40,7 @@ lazy val commonSettings = Seq(
   dependencyOverrides += "com.fasterxml.jackson.core" %% "jackson-core" % jacksonVersion,
   dependencyOverrides += "com.fasterxml.jackson.core" %% "jackson-annotations" % jacksonVersion,
   dependencyOverrides += "com.fasterxml.jackson.core" %% "jackson-databind" % jacksonVersion,
+  dependencyOverrides += "com.fasterxml.jackson.module" % "jackson-module-scala" % jacksonVersion,
   dependencyOverrides += "org.scalatest" %% "scalatest" % "3.0.1",
   dependencyOverrides += "org.scala-lang" % "scala-compiler" % scalaVersion.value,
   publishArtifact in Test := false,
@@ -73,7 +74,8 @@ buildOptions in docker := BuildOptions(
 lazy val `api` = (project in file("api"))
   .settings(commonSettings,
     name := "hydra-spark-api",
-    libraryDependencies ++= Seq(logging, Dependencies.configs, spark, coreTestDeps, reflections).flatten
+    libraryDependencies ++= Seq(logging, Dependencies.configs, spark, coreTestDeps, reflections,
+      sprayJson).flatten
   )
 
 lazy val `core` = (project in file("core"))
@@ -82,7 +84,7 @@ lazy val `core` = (project in file("core"))
   .settings(commonSettings ++ dockerSettings,
     name := "hydra-spark-core",
     libraryDependencies ++= Seq(logging, spark, guava, postgres, kafka, confluent, slf4j, sprayJson,
-      springCore, spEL, scopt, coreTestDeps, dbTesting).flatten
+      springCore, spEL, scopt, coreTestDeps, dbTesting, hydra).flatten
   )
 
 lazy val publishSettings = Seq(

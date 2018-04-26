@@ -13,13 +13,13 @@
  * limitations under the License.
  */
 
-package hydra.spark.dispatch
+package hydra.spark.transform
 
 import com.typesafe.config.Config
-import hydra.spark.api._
 import configs.syntax._
-import hydra.spark.configs.ConfigSupport
+import hydra.spark.api._
 import hydra.spark.app.parser.TypesafeDSLParser
+import hydra.spark.configs.ConfigSupport
 import org.apache.spark.sql.SparkSession
 
 /**
@@ -40,10 +40,8 @@ object SparkTransformation {
 
   import scala.reflect.runtime.universe._
 
-  val parser = TypesafeDSLParser(Seq("hydra.spark.sources"), Seq("hydra.spark.operations"))
-
   def apply(dsl: String): SparkTransformation[_] = {
-    apply(parser.parse(dsl).get)
+    apply(TypesafeDSLParser.parse(dsl).get)
   }
 
   def apply[S: TypeTag](d: TransformationDetails[S]): SparkTransformation[S] = {

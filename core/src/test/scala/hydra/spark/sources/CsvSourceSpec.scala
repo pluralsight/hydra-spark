@@ -79,7 +79,7 @@ class CsvSourceSpec extends Matchers with FunSpecLike with ScalaFutures with Pat
           |}
         """.stripMargin
 
-      val dispatch = TypesafeDSLParser().parse(dsl).get
+      val dispatch = TypesafeDSLParser.parse(dsl).get
 
       val csv = dispatch.source.asInstanceOf[CsvSource]
       csv.header shouldBe false

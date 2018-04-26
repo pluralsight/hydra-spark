@@ -15,17 +15,20 @@
 
 package hydra.spark.app.parser
 
-import hydra.spark.api.{HydraSparkJob, JobDetails}
+import hydra.spark.internal.Logging
+import hydra.spark.util.ReflectionUtils
+import org.reflections.Reflections
 
-import scala.util.Try
+import scala.collection.JavaConverters._
 
-/**
-  * Created by alexsilva on 1/3/17.
-  */
-trait DSLParser {
-  def supports(dsl: String): Boolean
 
-  def parse(dsl: String): Try[JobDetails]
+object Parsers extends Logging {
 
-  def createJob(dsl: String): Try[HydraSparkJob]
+  private val reflections = new Reflections(Seq("hydra.spark").asJava)
+
+  private val parsers = reflections.getSubTypesOf(classOf[DSLParser]).asScala
+    .map(c => ReflectionUtils.objectOf(c))
+
+  def forDSL(dsl: String): Option[DSLParser] = parsers.find(_.supports(dsl))
+
 }
