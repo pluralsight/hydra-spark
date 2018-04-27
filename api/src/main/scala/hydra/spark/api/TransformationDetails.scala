@@ -37,5 +37,7 @@ trait JobDetails {
 case class TransformationDetails[S](name: String, source: Source[S], operations: Seq[DFOperation], isStreaming: Boolean,
                                     dsl: Config) extends JobDetails
 
-case class ReplicationDetails(name: String, topics: Either[List[String], String], startingOffsets: String,
-                              sink: String) extends JobDetails
+case class ReplicationDetails(name: String, topics: Either[List[String], String],
+                              startingOffsets: String,
+                              primaryKeys: Map[String, String],
+                              connectionInfo: Config) extends JobDetails

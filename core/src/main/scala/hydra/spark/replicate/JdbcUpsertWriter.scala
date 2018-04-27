@@ -6,14 +6,16 @@ import com.google.common.cache.{Cache, CacheBuilder}
 import com.typesafe.config.Config
 import hydra.avro.io.{DeleteByKey, Operation, SaveMode, Upsert}
 import hydra.avro.util.SchemaWrapper
+import hydra.spark.replicate.KafkaStreamSource.KafkaRecord
 import hydra.sql.{DriverManagerConnectionProvider, JdbcRecordWriter, JdbcWriterSettings}
 import io.confluent.kafka.schemaregistry.client.CachedSchemaRegistryClient
 import org.apache.avro.Schema
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.ForeachWriter
+
 import scala.collection.JavaConverters._
 
-class JdbcUpsertWriter(config: Config) extends ForeachWriter[KafkaRecord[String]] with Logging {
+class JdbcUpsertWriter(config: Config) extends ForeachWriter[KafkaRecord] with Logging {
 
   var writers: Cache[String, JdbcRecordWriter] = _
 
@@ -28,14 +30,18 @@ class JdbcUpsertWriter(config: Config) extends ForeachWriter[KafkaRecord[String]
   }
 
 
-  override def process(record: KafkaRecord[String]) = {
+  override def process(record: KafkaRecord) = {
 
-    val op: Option[Operation] = Option(record.payload).map(p => Upsert(p)) orElse {
-      record.primaryKeyColumn.map(pk => DeleteByKey(Map(pk -> record.key)))
+    val payload = record._4
+    val primaryKey = record._5
+    val topic = record._1
+
+    val op: Option[Operation] = Option(payload).map(p => Upsert(p)) orElse {
+      primaryKey.map(pk => DeleteByKey(Map(pk -> payload.get(pk))))
     }
 
-    op.foreach(o => writers.get(record.topic, createWriter(record.topic,
-      record.primaryKeyColumn)).batch(o))
+    op.foreach(o => writers.get(topic, createWriter(topic,
+      primaryKey)).batch(o))
   }
 
   override def close(errorOrNull: Throwable) = {

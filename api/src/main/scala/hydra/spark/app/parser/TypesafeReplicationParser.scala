@@ -15,19 +15,24 @@
 
 package hydra.spark.app.parser
 
+import java.util.UUID
+
 import com.typesafe.config._
 import configs.syntax._
 import hydra.spark.api._
 import hydra.spark.internal.Logging
-
+import hydra.spark.configs._
 import scala.util.Try
 
 /*
 {
-  topics:"" <<OR>>
-  topicPattern:""
-  startingOffsets:""
-  sink:
+    "replicate": {
+        "topics": ["my.Topic", "my.OtherTopic"],
+        "topicPattern": "my.*",
+        "startingOffsets": "earliest",
+        "primaryKeys": "jwt",
+        "connectionUri": "JDBC-URL"
+    }
 }
  */
 object TypesafeReplicationParser extends DSLParser with Logging {
@@ -44,21 +49,37 @@ object TypesafeReplicationParser extends DSLParser with Logging {
       val r = cfg.get[Config]("replicate")
         .valueOrThrow(_ => InvalidDslException("Not a valid replication DSL."))
 
-      val topicList = r.get[String]("topics")
-      val topicsPattern = r.get[String]("topicsPattern")
+      require(!r.hasPath("primaryKey"), "primaryKey is not a valid key. Did you mean primaryKeys?")
+
+      val topicList = r.get[List[String]]("topics")
+        .orElse(r.get[String]("topics").map(_.split(",").map(_.trim).toList))
+
+      val topicsPattern = r.get[String]("topicPattern")
       if (topicList.isSuccess && topicsPattern.isSuccess)
-        throw InvalidDslException("Only one of `topics` or `topicsPattern` is allowed.")
+        throw InvalidDslException("Only one of `topics` or `topicPattern` is allowed.")
 
       if (topicList.isFailure && topicsPattern.isFailure)
         throw InvalidDslException("One of `topics` or `topicsPattern` is required.")
 
       val startingOffsets = r.get[String]("startingOffsets").valueOrElse("earliest")
+      val connectionInfo = r.get[Config]("connection").valueOrElse(ConfigFactory.empty)
 
-      val sink = "jdbc"
+      val topics = topicList.map(t => Left(t)).valueOrElse(Right(topicsPattern.value))
 
-      val topics = topicList.map(t => Left(t.split(",").toList))
-        .valueOrElse(Right(topicsPattern.value))
-      ReplicationDetails("name", topics, startingOffsets, sink)
+      val name = r.get[String]("name")
+        .valueOrElse(UUID.nameUUIDFromBytes(deriveName(topics).getBytes()).toString)
+
+      val pks = r.get[Config]("primaryKeys").map(_.to[Map[String, String]]).valueOrElse(Map.empty)
+
+      ReplicationDetails(name, topics, startingOffsets, pks, connectionInfo)
+    }
+  }
+
+  private def deriveName(topics: Either[List[String], String]): String = {
+    topics match {
+      case Right(s) => s
+      case Left(topics) => topics.map(_.trim).mkString("")
+
     }
   }
 
@@ -67,5 +88,6 @@ object TypesafeReplicationParser extends DSLParser with Logging {
       .get[Config]("replicate").isSuccess
   }
 
-  override def createJob(dsl: String): Try[HydraSparkJob] = parse(dsl).map(d => null)
+  override def createJob(dsl: String): Try[HydraSparkJob] =
+    parse(dsl).map(new KafkaReplicationJob(_))
 }
