@@ -1,7 +1,7 @@
 package hydra.spark.sources
 
 import com.typesafe.config.ConfigFactory
-import hydra.spark.replicate.kafka.KafkaStreamSource
+import hydra.spark.replication.kafka.KafkaStreamSource
 import org.apache.avro.generic.GenericRecord
 import org.apache.spark.sql.SparkSession
 

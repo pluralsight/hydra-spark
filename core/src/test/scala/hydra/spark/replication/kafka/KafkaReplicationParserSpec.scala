@@ -1,12 +1,11 @@
-package hydra.spark.app.parser
+package hydra.spark.replication.kafka
 
 import java.util.UUID
 
-import com.typesafe.config.ConfigFactory
 import hydra.spark.api.InvalidDslException
 import org.scalatest.{FlatSpecLike, Matchers}
 
-class TypesafeReplicationParserSpec extends Matchers with FlatSpecLike {
+class KafkaReplicationParserSpec extends Matchers with FlatSpecLike {
   "The Typesafe replication parser" should "parse a well-formed DSL" in {
     val dsl =
       """
@@ -14,14 +13,15 @@ class TypesafeReplicationParserSpec extends Matchers with FlatSpecLike {
         |  name:"test"
         |  topicPattern:"exp.identity.*"
         |  startingOffsets:"earliest"
-        |  connection.uri="jdbc"
+        |  connection.url="jdbc"
         |}
       """.stripMargin
 
-    val r = TypesafeReplicationParser.parse(dsl).get
+    val r = KafkaReplicationParser.parse(dsl).get
     r.topics shouldBe Right("exp.identity.*")
     r.startingOffsets shouldBe "earliest"
-    r.connectionInfo shouldBe ConfigFactory.parseString("""uri="jdbc"""")
+    r.connectionInfo shouldBe Map("url" -> "jdbc")
+    r.saveMode shouldBe "append"
     r.name shouldBe "test"
   }
 
@@ -32,13 +32,13 @@ class TypesafeReplicationParserSpec extends Matchers with FlatSpecLike {
         |  name:"test"
         |  topicPattern:"exp.identity.*"
         |  startingOffsets:"earliest"
-        |  connection.uri="jdbc"
+        |  connection.url="jdbc"
         |  primaryKey = test
         |}
       """.stripMargin
 
     intercept[IllegalArgumentException] {
-      TypesafeReplicationParser.parse(dsl).get
+      KafkaReplicationParser.parse(dsl).get
     }
   }
 
@@ -49,7 +49,8 @@ class TypesafeReplicationParserSpec extends Matchers with FlatSpecLike {
         |  name:"test"
         |  topicPattern:"exp.identity.*"
         |  startingOffsets:"earliest"
-        |  connection.uri="jdbc"
+        |  writeMode = overwrite
+        |  connection.url="jdbc"
         |  primaryKeys {
         |      exp.identity.UserSignedIn=test
         |      exp.identity.UserSignedOut=handle
@@ -57,7 +58,8 @@ class TypesafeReplicationParserSpec extends Matchers with FlatSpecLike {
         |}
       """.stripMargin
 
-    val r = TypesafeReplicationParser.parse(dsl).get
+    val r = KafkaReplicationParser.parse(dsl).get
+    r.saveMode shouldBe "overwrite"
     r.primaryKeys should contain theSameElementsAs Map(
       "exp.identity.UserSignedIn" -> "test",
       "exp.identity.UserSignedOut" -> "handle")
@@ -70,11 +72,11 @@ class TypesafeReplicationParserSpec extends Matchers with FlatSpecLike {
         |  name:"test"
         |  topicPattern:"exp.identity.*"
         |  startingOffsets:"earliest"
-        |  connection.uri="jdbc"
+        |  connection.url="jdbc"
         |}
       """.stripMargin
 
-    val r = TypesafeReplicationParser.parse(dsl).get
+    val r = KafkaReplicationParser.parse(dsl).get
     r.primaryKeys shouldBe Map.empty
   }
 
@@ -84,11 +86,11 @@ class TypesafeReplicationParserSpec extends Matchers with FlatSpecLike {
         |replicate {
         |  topics: ["myTopic"]
         |  startingOffsets:"earliest"
-        |  connection.uri="jdbc"
+        |  connection.url="jdbc"
         |}
       """.stripMargin
 
-    val r = TypesafeReplicationParser.parse(dsl).get
+    val r = KafkaReplicationParser.parse(dsl).get
     r.name.toString shouldBe UUID.nameUUIDFromBytes("myTopic".getBytes).toString
     r.topics shouldBe Left(List("myTopic"))
 
@@ -98,11 +100,11 @@ class TypesafeReplicationParserSpec extends Matchers with FlatSpecLike {
         |replicate {
         |  topics:  "myTopic1, myTopic2"
         |  startingOffsets:"earliest"
-        |  connection.uri="jdbc"
+        |  connection.url="jdbc"
         |}
       """.stripMargin
 
-    val tr = TypesafeReplicationParser.parse(tdsl).get
+    val tr = KafkaReplicationParser.parse(tdsl).get
     tr.name.toString shouldBe UUID.nameUUIDFromBytes("myTopic1myTopic2".getBytes).toString
     tr.topics shouldBe Left(List("myTopic1", "myTopic2"))
 
@@ -111,11 +113,11 @@ class TypesafeReplicationParserSpec extends Matchers with FlatSpecLike {
         |replicate {
         |  topicPattern: "my.topics.*"
         |  startingOffsets:"earliest"
-        |  connection.uri="jdbc"
+        |  connection.url="jdbc"
         |}
       """.stripMargin
 
-    val sr = TypesafeReplicationParser.parse(sdsl).get
+    val sr = KafkaReplicationParser.parse(sdsl).get
     sr.name.toString shouldBe UUID.nameUUIDFromBytes("my.topics.*".getBytes).toString
     sr.topics shouldBe Right("my.topics.*")
   }
@@ -132,7 +134,7 @@ class TypesafeReplicationParserSpec extends Matchers with FlatSpecLike {
       """.stripMargin
 
     intercept[InvalidDslException] {
-      TypesafeReplicationParser.parse(dsl).get
+      KafkaReplicationParser.parse(dsl).get
     }
   }
 
@@ -150,7 +152,7 @@ class TypesafeReplicationParserSpec extends Matchers with FlatSpecLike {
       """.stripMargin
 
     intercept[InvalidDslException] {
-      TypesafeReplicationParser.parse(dsl).get
+      KafkaReplicationParser.parse(dsl).get
     }
   }
 }

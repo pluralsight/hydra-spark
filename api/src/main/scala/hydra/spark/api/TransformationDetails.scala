@@ -40,4 +40,5 @@ case class TransformationDetails[S](name: String, source: Source[S], operations:
 case class ReplicationDetails(name: String, topics: Either[List[String], String],
                               startingOffsets: String,
                               primaryKeys: Map[String, String],
-                              connectionInfo: Config) extends JobDetails
+                              saveMode: String,
+                              connectionInfo: Map[String,String]) extends JobDetails

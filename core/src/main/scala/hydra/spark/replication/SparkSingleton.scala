@@ -1,4 +1,4 @@
-package hydra.spark.replicate
+package hydra.spark.replication
 
 import java.util.UUID
 

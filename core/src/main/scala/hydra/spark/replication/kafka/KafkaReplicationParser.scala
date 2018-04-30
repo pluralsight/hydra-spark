@@ -13,15 +13,17 @@
  * limitations under the License.
  */
 
-package hydra.spark.app.parser
+package hydra.spark.replication.kafka
 
 import java.util.UUID
 
 import com.typesafe.config._
 import configs.syntax._
 import hydra.spark.api._
-import hydra.spark.internal.Logging
+import hydra.spark.app.parser.DSLParser
 import hydra.spark.configs._
+import hydra.spark.internal.Logging
+
 import scala.util.Try
 
 /*
@@ -35,7 +37,7 @@ import scala.util.Try
     }
 }
  */
-object TypesafeReplicationParser extends DSLParser with Logging {
+object KafkaReplicationParser extends DSLParser with Logging {
 
 
   def parse(dsl: String): Try[ReplicationDetails] = {
@@ -62,16 +64,19 @@ object TypesafeReplicationParser extends DSLParser with Logging {
         throw InvalidDslException("One of `topics` or `topicsPattern` is required.")
 
       val startingOffsets = r.get[String]("startingOffsets").valueOrElse("earliest")
-      val connectionInfo = r.get[Config]("connection").valueOrElse(ConfigFactory.empty)
+      val connectionInfo = r.get[Config]("connection").map(_.to[Map[String, String]])
+        .valueOrElse(Map.empty)
 
       val topics = topicList.map(t => Left(t)).valueOrElse(Right(topicsPattern.value))
+
+      val writeMode = r.get[String]("saveMode").valueOrElse("Append")
 
       val name = r.get[String]("name")
         .valueOrElse(UUID.nameUUIDFromBytes(deriveName(topics).getBytes()).toString)
 
       val pks = r.get[Config]("primaryKeys").map(_.to[Map[String, String]]).valueOrElse(Map.empty)
 
-      ReplicationDetails(name, topics, startingOffsets, pks, connectionInfo)
+      ReplicationDetails(name, topics, startingOffsets, pks, writeMode, connectionInfo)
     }
   }
 
@@ -89,5 +94,5 @@ object TypesafeReplicationParser extends DSLParser with Logging {
   }
 
   override def createJob(dsl: String): Try[HydraSparkJob] =
-    parse(dsl).map(new KafkaReplicationJob(_))
+    parse(dsl).map(details => new KafkaReplicationJob(details))
 }

@@ -1,4 +1,4 @@
-package hydra.spark.replicate.sinks
+package hydra.spark.replication.sinks
 
 import java.sql.{Connection, PreparedStatement}
 
@@ -10,15 +10,14 @@ import org.apache.spark.sql.types._
 
 class JDBCSinkLog(parameters: Map[String, String], sparkSession: SparkSession) {
 
-  val tableName = parameters(JDBCOptions.JDBC_TABLE_NAME)
-  val options = new JDBCOptions(parameters)
-  val logTableName = tableName + "$_HYDRA_STREAM_LOG"
+  val tableName = "HYDRA"
+  val logTableName = tableName + "$_REPLICATION_LOG"
   val logParams: Map[String, String] = parameters + (JDBCOptions.JDBC_TABLE_NAME -> logTableName)
   val logOptions = new JDBCOptions(logParams)
   val batchIdCol = parameters.get("batchIdCol")
 
-  val BATCH_ID = "batchId"
-  val STATUS = "status"
+  private val BATCH_ID = "batchId"
+  private val STATUS = "status"
 
   def isBatchCommitted(batchId: Long, connection: Connection): Boolean = {
     createTableIfNotExists(connection)

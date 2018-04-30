@@ -1,13 +1,13 @@
-package hydra.spark.replicate.sinks
+package hydra.spark.replication.sinks
 
 import java.util.concurrent.Callable
 
 import com.esotericsoftware.kryo.io.Input
 import com.google.common.cache.CacheBuilder
-import com.typesafe.config.ConfigFactory
+import com.typesafe.config.{ConfigFactory, ConfigValueFactory}
 import hydra.avro.io.{DeleteByKey, Upsert}
 import hydra.avro.util.SchemaWrapper
-import hydra.spark.replicate.SparkSingleton
+import hydra.spark.replication.SparkSingleton
 import hydra.sql.{DriverManagerConnectionProvider, JdbcRecordWriter, JdbcWriterSettings}
 import io.confluent.kafka.schemaregistry.client.{CachedSchemaRegistryClient, SchemaRegistryClient}
 import org.apache.avro.Schema
@@ -15,6 +15,7 @@ import org.apache.avro.generic.GenericRecord
 import org.apache.spark.internal.Logging
 import org.apache.spark.serializer.KryoSerializer
 import org.apache.spark.sql._
+import org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions.JDBC_TABLE_NAME
 import org.apache.spark.sql.execution.datasources.jdbc._
 import org.apache.spark.sql.execution.streaming.Sink
 import org.apache.spark.sql.streaming.OutputMode
@@ -37,7 +38,8 @@ object JdbcSink {
     })
   }
 
-  def getWriter(topic: String, initialSchema: Schema, pk: String, params: Map[String, String]) = {
+  def getWriter(topic: String, initialSchema: Schema, pk: String, params: Map[String, String],
+                options: JDBCOptions) = {
     writerCache.get(topic, new Callable[JdbcRecordWriter] {
       override def call(): JdbcRecordWriter = {
         val wrapper = Option(if (pk.isEmpty) null else pk)
@@ -45,7 +47,10 @@ object JdbcSink {
           .getOrElse(SchemaWrapper.from(initialSchema))
         val config = ConfigFactory.parseMap(params.asJava)
         val provider = DriverManagerConnectionProvider(config)
-        new JdbcRecordWriter(JdbcWriterSettings(config), provider, wrapper)
+        val sConfig = config.withValue("batch.size",
+          ConfigValueFactory.fromAnyRef(options.batchSize))
+        new JdbcRecordWriter(JdbcWriterSettings(sConfig), provider, wrapper,
+          hydra.avro.io.SaveMode.withName(params("saveMode")))
       }
     })
   }
@@ -58,7 +63,8 @@ class JdbcSink(sqlContext: SQLContext,
                parameters: Map[String, String],
                partitionColumns: Seq[String],
                outputMode: OutputMode) extends Sink with Logging {
-  val options = new JDBCOptions(parameters)
+  val sparkParams = parameters + (JDBC_TABLE_NAME -> "") // have to set it even though we don't use it
+  val options = new JDBCOptions(sparkParams)
   val sinkLog = new JDBCSinkLog(parameters, sqlContext.sparkSession)
   // If user specifies a batchIdCol in the parameters, then it means that the user wants exactly
   // once semantics. This column will store the batch Id for the row when an uncommitted batch
@@ -66,9 +72,6 @@ class JdbcSink(sqlContext: SQLContext,
   // batch
   val batchIdCol = parameters.get("batchIdCol")
   val conf = sqlContext.sparkContext.getConf
-
-  require(parameters.isDefinedAt(JdbcSink.SchemaRegistryUrlParam),
-    s"Option '${JdbcSink.SchemaRegistryUrlParam}' is required.")
 
   def addBatch(batchId: Long, df: DataFrame): Unit = {
 
@@ -87,10 +90,7 @@ class JdbcSink(sqlContext: SQLContext,
     }
   }
 
-  def saveRows(df: DataFrame,
-
-               options: JDBCOptions,
-               batchId: Long): Unit = {
+  def saveRows(df: DataFrame, options: JDBCOptions, batchId: Long): Unit = {
     val repartitionedDF = options.numPartitions match {
       case Some(n) if n <= 0 => throw new IllegalArgumentException(
         s"Invalid value `$n` for parameter `${JDBCOptions.JDBC_NUM_PARTITIONS}` in table writing " +
@@ -110,36 +110,22 @@ class JdbcSink(sqlContext: SQLContext,
     if (batchIdCol.isEmpty) {
       repartitionedDF.queryExecution.toRdd.foreachPartition(it => {
         val kryo = new KryoSerializer(lconf).newKryo()
-
         it.foreach { row =>
           val pk = row.getString(4)
           val topic = row.getString(0)
           val input = new Input(row.getBinary(3))
           val payload = kryo.readClassAndObject(input).asInstanceOf[GenericRecord]
           val initialSchema = JdbcSink.getInitialSchema(topic, registry.get)
-          val writer = JdbcSink.getWriter(topic, initialSchema, pk, localParams)
+          val writer = JdbcSink.getWriter(topic, initialSchema, pk, localParams, options)
           val operation = Option(payload).map(p => Upsert(p)) orElse {
             Option(if (pk.isEmpty) null else pk).map(pk => DeleteByKey(Map(pk -> payload.get(pk))))
           }
           operation.foreach(op => writer.batch(op))
-          println(payload.toString)
-
         }
 
         JdbcSink.flushWriters()
       })
     }
   }
-
-  def saveMode(outputMode: OutputMode): SaveMode = {
-    if (outputMode == OutputMode.Append()) {
-      SaveMode.Append
-    } else if (outputMode == OutputMode.Complete()) {
-      SaveMode.Overwrite
-    } else {
-      throw new IllegalArgumentException(s"Output mode $outputMode is not supported by JdbcSink")
-    }
-  }
-
 }
 
