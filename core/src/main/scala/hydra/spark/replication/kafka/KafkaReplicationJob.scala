@@ -1,9 +1,9 @@
 package hydra.spark.replication.kafka
 
+import com.typesafe.config.Config
 import configs.syntax._
 import hydra.avro.io.SaveMode
 import hydra.spark.api._
-import hydra.spark.configs.ConfigSupport
 import org.apache.avro.generic.GenericRecord
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.SparkSession
@@ -13,7 +13,7 @@ import spray.json.DefaultJsonProtocol
 
 import scala.util.Try
 
-class KafkaReplicationJob(details: ReplicationDetails) extends HydraSparkJob with ConfigSupport
+class KafkaReplicationJob(details: ReplicationDetails, config: Config) extends HydraSparkJob
   with Logging with DefaultJsonProtocol {
 
   import spray.json._

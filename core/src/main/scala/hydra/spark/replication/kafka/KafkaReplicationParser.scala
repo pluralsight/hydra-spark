@@ -94,5 +94,5 @@ object KafkaReplicationParser extends DSLParser with Logging {
   }
 
   override def createJob(dsl: String): Try[HydraSparkJob] =
-    parse(dsl).map(details => new KafkaReplicationJob(details))
+    parse(dsl).map(details => new KafkaReplicationJob(details, ConfigFactory.load()))
 }
