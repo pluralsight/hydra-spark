@@ -41,4 +41,4 @@ case class ReplicationDetails(name: String, topics: Either[List[String], String]
                               startingOffsets: String,
                               primaryKeys: Map[String, String],
                               saveMode: String,
-                              connectionInfo: Map[String,String]) extends JobDetails
+                              connectionInfo: Map[String, String]) extends JobDetails

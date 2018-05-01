@@ -68,7 +68,8 @@ object Dependencies {
 
   lazy val confluent = Seq(
     "io.confluent" % "kafka-avro-serializer" % confluentVersion,
-    "io.confluent" % "kafka-schema-registry" % confluentVersion % "test")
+    "io.confluent" % "kafka-schema-registry" % confluentVersion % "test"
+  )
     .map(_.excludeAll(
       ExclusionRule(organization = "com.fasterxml.jackson.core")
     ))
@@ -89,7 +90,10 @@ object Dependencies {
 
   lazy val sparkCore = Seq(
     "org.apache.spark" %% "spark-core" % sparkVersion % "provided",
-    "org.apache.spark" %% "spark-streaming" % sparkVersion % "provided")
+    "org.apache.spark" %% "spark-streaming" % sparkVersion % "provided",
+    "org.apache.hadoop" % "hadoop-client" % hadoopVersion
+      excludeAll(ExclusionRule("javax.servlet"), ExclusionRule("com.sun.jersey"))
+  )
 
   lazy val spark = sparkCore ++ Seq(
     "org.apache.spark" %% "spark-sql" % sparkVersion % "provided",

@@ -69,7 +69,7 @@ object KafkaReplicationParser extends DSLParser with Logging {
 
       val topics = topicList.map(t => Left(t)).valueOrElse(Right(topicsPattern.value))
 
-      val writeMode = r.get[String]("saveMode").valueOrElse("Append")
+      val writeMode = r.get[String]("saveMode").map(_.capitalize).valueOrElse("Append")
 
       val name = r.get[String]("name")
         .valueOrElse(UUID.nameUUIDFromBytes(deriveName(topics).getBytes()).toString)

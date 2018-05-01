@@ -2,7 +2,7 @@ package hydra.spark.transform
 
 import hydra.spark.api.{Source, Valid}
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{DataFrame, SQLContext, SparkSession}
+import org.apache.spark.sql.{DataFrame, Encoders, SQLContext, SparkSession}
 import org.apache.spark.streaming.StreamingContext
 import org.apache.spark.streaming.dstream.DStream
 
@@ -34,6 +34,7 @@ object StaticJsonSource extends Source[String] {
 
   override def toDF(rdd: RDD[String]): DataFrame = {
     val spark: SQLContext = SparkSession.builder().getOrCreate.sqlContext
-    spark.read.json(rdd)
+    val ds = spark.createDataset(rdd)(Encoders.STRING)
+    ds.toDF()
   }
 }

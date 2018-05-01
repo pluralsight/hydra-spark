@@ -21,7 +21,7 @@ class KafkaReplicationParserSpec extends Matchers with FlatSpecLike {
     r.topics shouldBe Right("exp.identity.*")
     r.startingOffsets shouldBe "earliest"
     r.connectionInfo shouldBe Map("url" -> "jdbc")
-    r.saveMode shouldBe "append"
+    r.saveMode shouldBe "Append"
     r.name shouldBe "test"
   }
 
@@ -49,7 +49,7 @@ class KafkaReplicationParserSpec extends Matchers with FlatSpecLike {
         |  name:"test"
         |  topicPattern:"exp.identity.*"
         |  startingOffsets:"earliest"
-        |  writeMode = overwrite
+        |  saveMode = overwrite
         |  connection.url="jdbc"
         |  primaryKeys {
         |      exp.identity.UserSignedIn=test
@@ -59,7 +59,7 @@ class KafkaReplicationParserSpec extends Matchers with FlatSpecLike {
       """.stripMargin
 
     val r = KafkaReplicationParser.parse(dsl).get
-    r.saveMode shouldBe "overwrite"
+    r.saveMode shouldBe "Overwrite"
     r.primaryKeys should contain theSameElementsAs Map(
       "exp.identity.UserSignedIn" -> "test",
       "exp.identity.UserSignedOut" -> "handle")
