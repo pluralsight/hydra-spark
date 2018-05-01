@@ -59,6 +59,7 @@ class KafkaReplicationJob(details: ReplicationDetails) extends HydraSparkJob wit
       .writeStream
       .format("hydra-jdbc-replicator")
       .option("connection.url", connectionUrl)
+      .option("driver", details.connectionInfo.getOrElse("driver", "org.postgresql.Driver"))
       .option("url", connectionUrl) //for spark
       .option("connection.user", details.connectionInfo.get("user").getOrElse(""))
       .option("connection.password", details.connectionInfo.get("password").getOrElse(""))
