@@ -43,6 +43,6 @@ object Versions {
   lazy val akkaHttpVersion = "10.0.5"
   lazy val sprayVersion = "1.3.3"
   lazy val serviceContainerVersion = "2.0.5"
-  lazy val hydraVersion = "2f965e26a7"
+  lazy val hydraVersion = "ee1f572ec7"
 
 }
