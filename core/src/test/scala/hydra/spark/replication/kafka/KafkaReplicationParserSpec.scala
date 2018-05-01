@@ -2,6 +2,7 @@ package hydra.spark.replication.kafka
 
 import java.util.UUID
 
+import com.typesafe.config.ConfigFactory
 import hydra.spark.api.InvalidDslException
 import org.scalatest.{FlatSpecLike, Matchers}
 
@@ -15,6 +16,9 @@ class KafkaReplicationParserSpec extends Matchers with FlatSpecLike {
         |  startingOffsets:"earliest"
         |  connection.url="jdbc"
         |}
+        |properties {
+        |    schema.registry.url=mock
+        |  }
       """.stripMargin
 
     val r = KafkaReplicationParser.parse(dsl).get
@@ -23,6 +27,7 @@ class KafkaReplicationParserSpec extends Matchers with FlatSpecLike {
     r.connectionInfo shouldBe Map("url" -> "jdbc")
     r.saveMode shouldBe "Append"
     r.name shouldBe "test"
+    r.properties shouldBe ConfigFactory.parseString("schema.registry.url=mock")
   }
 
   it should "throw an error if `primaryKey` is present" in {
@@ -35,6 +40,9 @@ class KafkaReplicationParserSpec extends Matchers with FlatSpecLike {
         |  connection.url="jdbc"
         |  primaryKey = test
         |}
+        |properties {
+        |    schema.registry.url=mock
+        |  }
       """.stripMargin
 
     intercept[IllegalArgumentException] {

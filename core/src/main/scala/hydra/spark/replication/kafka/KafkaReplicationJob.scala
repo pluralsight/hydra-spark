@@ -1,6 +1,5 @@
 package hydra.spark.replication.kafka
 
-import com.typesafe.config.Config
 import configs.syntax._
 import hydra.avro.io.SaveMode
 import hydra.spark.api._
@@ -13,7 +12,7 @@ import spray.json.DefaultJsonProtocol
 
 import scala.util.Try
 
-class KafkaReplicationJob(details: ReplicationDetails, config: Config) extends HydraSparkJob
+class KafkaReplicationJob(details: ReplicationDetails) extends HydraSparkJob
   with Logging with DefaultJsonProtocol {
 
   import spray.json._
@@ -22,20 +21,20 @@ class KafkaReplicationJob(details: ReplicationDetails, config: Config) extends H
 
   override val author: String = "TBD"
 
-  private val schemaRegistryUrl = config.get[String]("hydra.schema.registry.url")
+  private val schemaRegistryUrl = details.properties.get[String]("hydra.schema.registry.url")
     .valueOrThrow(e => InvalidDslException("A schema registry url is required."))
 
   private val connectionUrl = details.connectionInfo.get("url")
     .getOrElse(throw new InvalidDslException("A connection url is required."))
 
   lazy val source = new KafkaStreamSource(details.topics,
-    config.getString("kafka.bootstrap.servers"),
+    details.properties.getString("kafka.bootstrap.servers"),
     schemaRegistryUrl,
     details.primaryKeys,
     details.startingOffsets)
 
   private lazy val checkpointDir = s"${
-    config.get[String]("spark.checkpoint.dir")
+    details.properties.get[String]("spark.checkpoint.dir")
       .valueOrElse("/tmp")
   }/$id"
 

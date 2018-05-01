@@ -76,7 +76,9 @@ object KafkaReplicationParser extends DSLParser with Logging {
 
       val pks = r.get[Config]("primaryKeys").map(_.to[Map[String, String]]).valueOrElse(Map.empty)
 
-      ReplicationDetails(name, topics, startingOffsets, pks, writeMode, connectionInfo)
+      val properties = dsl.get[Config]("properties").valueOrElse(ConfigFactory.empty)
+
+      ReplicationDetails(name, topics, startingOffsets, pks, writeMode, properties, connectionInfo)
     }
   }
 
@@ -94,5 +96,5 @@ object KafkaReplicationParser extends DSLParser with Logging {
   }
 
   override def createJob(dsl: String): Try[HydraSparkJob] =
-    parse(dsl).map(details => new KafkaReplicationJob(details, ConfigFactory.load()))
+    parse(dsl).map(details => new KafkaReplicationJob(details))
 }
