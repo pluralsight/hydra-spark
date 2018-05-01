@@ -20,15 +20,19 @@ import java.util.UUID
 import com.typesafe.config._
 import configs.syntax._
 import hydra.spark.api._
-import hydra.spark.configs._
 import hydra.spark.app.factories.ClasspathDslElementFactory
+import hydra.spark.configs._
 import hydra.spark.internal.Logging
+import hydra.spark.transform.SparkTransformation
 
 import scala.util.Try
 
-case class TypesafeDSLParser(sourcesPkg: Seq[String] = Seq("hydra.spark.sources"),
-                             operationsPkg: Seq[String] = Seq("hydra.spark.operations"))
+object TypesafeDSLParser
   extends DSLParser with Logging {
+
+  val sourcesPkg: Seq[String] = Seq("hydra.spark.sources")
+
+  val operationsPkg: Seq[String] = Seq("hydra.spark.operations")
 
   val factory = ClasspathDslElementFactory(sourcesPkg, operationsPkg)
 
@@ -56,5 +60,14 @@ case class TypesafeDSLParser(sourcesPkg: Seq[String] = Seq("hydra.spark.sources"
 
       TransformationDetails(name, source, operations, isStreaming, dsl)
     }
+  }
+
+  override def supports(dsl: String): Boolean = {
+    ConfigFactory.parseString(dsl, ConfigParseOptions.defaults().setSyntax(ConfigSyntax.CONF))
+      .get[Config]("replicate").isFailure
+  }
+
+  override def createJob(dsl: String): Try[HydraSparkJob] = {
+    parse(dsl).map(details => SparkTransformation(details))
   }
 }

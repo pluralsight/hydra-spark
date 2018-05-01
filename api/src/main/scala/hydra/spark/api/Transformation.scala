@@ -24,7 +24,7 @@ import scala.language.existentials
 /**
   * Created by alexsilva on 6/17/16.
   */
-trait Transformation[S] extends Validatable {
+trait Transformation[S] extends HydraSparkJob {
 
   /**
     * A unique id identifying this dispatch job.  It is important it is unique but reproducible because it is used in
@@ -38,19 +38,13 @@ trait Transformation[S] extends Validatable {
     "hydra-" + digest.digest(idString.getBytes).map("%02x".format(_)).mkString
   }
 
-  /**
-    * A user-provided name for this dispatch. (Optional)
-    * If none is provided, the id is used.
-    *
-    * @return
-    */
-  def name: String = id
 
   /**
     * The person (or machine?) who wrote this dispatch.
+    *
     * @return
     */
-  def author:String
+  def author: String
 
   def source: Source[S]
 

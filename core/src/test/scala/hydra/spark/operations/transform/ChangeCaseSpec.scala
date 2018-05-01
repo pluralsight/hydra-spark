@@ -2,12 +2,10 @@ package hydra.spark.operations.transform
 
 import com.typesafe.config.ConfigFactory
 import hydra.spark.api.{Invalid, Valid}
-import hydra.spark.dispatch.SparkBatchTransformation
 import hydra.spark.testutils.{ListOperation, SharedSparkContext, StaticJsonSource}
+import hydra.spark.transform.SparkBatchTransformation
 import org.scalatest.{BeforeAndAfterEach, FunSpecLike, Matchers}
 import spray.json._
-
-import scala.collection.mutable.ListBuffer
 
 class ChangeCaseSpec extends Matchers with FunSpecLike with BeforeAndAfterEach with SharedSparkContext {
 
@@ -31,6 +29,7 @@ class ChangeCaseSpec extends Matchers with FunSpecLike with BeforeAndAfterEach w
     it("changes case from lower underscore to lower camel") {
       val cc = ChangeCase("LOWER_UNDERSCORE", "LOWER_CAMEL")
       val json: JsValue = StaticJsonSource.msgs(0).parseJson
+
       SparkBatchTransformation("underscore_camel_test", StaticJsonSource, Seq(cc, ListOperation), config).run()
       val result = ListOperation.l.map(_.parseJson)
       val r2 = result.head.asJsObject.getFields("msgNo") shouldEqual json.asJsObject.getFields("msg_no")

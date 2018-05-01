@@ -17,7 +17,7 @@ package hydra.spark.testutils
 
 import com.typesafe.config.ConfigFactory
 import hydra.spark.api._
-import hydra.spark.dispatch.SparkStreamingTransformation
+import hydra.spark.transform.SparkStreamingTransformation
 
 import scala.reflect.runtime.universe._
 

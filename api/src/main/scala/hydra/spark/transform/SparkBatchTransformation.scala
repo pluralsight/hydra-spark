@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-package hydra.spark.dispatch
+package hydra.spark.transform
 
 import com.typesafe.config.Config
 import hydra.spark.api._

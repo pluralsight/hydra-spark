@@ -140,7 +140,7 @@ class JdbcSourceSpec extends Matchers with FunSpecLike with ScalaFutures with Pa
         """.stripMargin
 
       val rdd = ctx.read.json(sc.parallelize(Seq("""{"name":"alex"}"""))).rdd
-      val disp = TypesafeDSLParser().parse(dsl).get
+      val disp = TypesafeDSLParser.parse(dsl).get
       disp.source.asInstanceOf[Source[Row]].toDF(rdd).count() shouldBe 1
     }
   }

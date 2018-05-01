@@ -16,7 +16,7 @@
 package hydra.spark.app
 
 import hydra.spark.api._
-import hydra.spark.dispatch.SparkTransformation
+import hydra.spark.app.parser.Parsers
 import org.apache.spark.SparkException
 
 import scala.language.existentials
@@ -33,15 +33,15 @@ object DslRunner extends App {
 
   def runJob(dsl: String) = {
 
-    val sparkDispatch = SparkTransformation(dsl)
+    val hydraSparkJob = Parsers.forDSL(dsl).get.createJob(dsl).get
 
-    sparkDispatch.validate match {
+    hydraSparkJob.validate match {
       case Invalid(errors) =>
         throw new SparkException(errors.map(_.message).mkString(";"))
       case Valid =>
-        sparkDispatch.run()
-        sparkDispatch.awaitTermination()
-        sparkDispatch.stop()
+        hydraSparkJob.run()
+        hydraSparkJob.awaitTermination()
+        hydraSparkJob.stop()
     }
   }
 }

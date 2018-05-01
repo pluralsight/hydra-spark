@@ -16,9 +16,9 @@
 package hydra.spark.operations.filters
 
 import com.typesafe.config.ConfigFactory
-import hydra.spark.dispatch.SparkBatchTransformation
+import hydra.spark.api.Invalid
 import hydra.spark.testutils.{ListOperation, SharedSparkContext, StaticJsonSource}
-import hydra.spark.api.{Invalid, Source}
+import hydra.spark.transform.SparkBatchTransformation
 import org.scalatest.{BeforeAndAfterEach, FunSpecLike, Matchers}
 import spray.json._
 

@@ -1,8 +1,8 @@
 package hydra.spark.operations.sql
 
 import hydra.spark.api.Invalid
-import hydra.spark.dispatch.SparkTransformation
 import hydra.spark.testutils.SharedSparkContext
+import hydra.spark.transform.SparkTransformation
 import org.scalatest.{BeforeAndAfterEach, FunSpecLike, Matchers}
 
 /**

@@ -19,7 +19,8 @@ package hydra.spark.testutils
   * Created by alexsilva on 1/9/17.
   */
 
-import org.apache.spark.sql.{SQLContext, SQLImplicits, SparkSession}
+import org.apache.spark.rdd.RDD
+import org.apache.spark.sql._
 import org.apache.spark.{SparkConf, SparkContext}
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Suite}
 
@@ -54,6 +55,11 @@ trait SharedSparkContext extends BeforeAndAfterAll with BeforeAndAfterEach {
     } finally {
       super.afterAll()
     }
+  }
+
+  def createStringDataSet(spark: SparkSession, rdd: RDD[String]): DataFrame = {
+    val ds = spark.createDataset(rdd)(Encoders.STRING)
+    ds.toDF()
   }
 
   protected override def beforeEach(): Unit = {

@@ -111,7 +111,7 @@ class JsonFileSourceSpec extends Matchers with FunSpecLike with ScalaFutures wit
           |}
         """.stripMargin
 
-      val dispatch = TypesafeDSLParser().parse(dsl).get
+      val dispatch = TypesafeDSLParser.parse(dsl).get
 
       val csv = dispatch.source.asInstanceOf[JsonFileSource]
       csv.path shouldBe "s3n://path"

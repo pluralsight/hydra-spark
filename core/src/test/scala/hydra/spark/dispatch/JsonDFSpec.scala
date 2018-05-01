@@ -17,6 +17,7 @@ package hydra.spark.dispatch
 
 import hydra.spark.api.DFOperation
 import hydra.spark.testutils.{SharedSparkContext, StaticJsonSource, StreamingTestTransformation}
+import hydra.spark.transform.SparkStreamingTransformation
 import org.apache.spark.sql.DataFrame
 import org.scalatest.concurrent.{Eventually, PatienceConfiguration, ScalaFutures}
 import org.scalatest.time.{Seconds, Span}

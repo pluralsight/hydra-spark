@@ -26,6 +26,11 @@ object Dependencies {
     "ru.yandex.qatools.embed" % "postgresql-embedded" % "2.2" % "test",
     "com.h2database" % "h2" % "1.4.192" % "test") ++ postgres.map(_ % "test")
 
+
+  lazy val hydra = Seq("com.github.pluralsight.hydra" % "hydra-sql_2.11" % hydraVersion)
+    .map(_ excludeAll ("com.fasterxml.jackson.core"))
+
+
   lazy val serviceContainer = Seq("com.github.vonnagy" %% "service-container" % serviceContainerVersion)
     .map(_.excludeAll(
       ExclusionRule(organization = "ch.qos.logback"),
@@ -63,7 +68,8 @@ object Dependencies {
 
   lazy val confluent = Seq(
     "io.confluent" % "kafka-avro-serializer" % confluentVersion,
-    "io.confluent" % "kafka-schema-registry" % confluentVersion % "test")
+    "io.confluent" % "kafka-schema-registry" % confluentVersion % "test"
+  )
     .map(_.excludeAll(
       ExclusionRule(organization = "com.fasterxml.jackson.core")
     ))
@@ -84,14 +90,16 @@ object Dependencies {
 
   lazy val sparkCore = Seq(
     "org.apache.spark" %% "spark-core" % sparkVersion % "provided",
-    "org.apache.spark" %% "spark-streaming" % sparkVersion % "provided")
+    "org.apache.spark" %% "spark-streaming" % sparkVersion % "provided",
+    "org.apache.hadoop" % "hadoop-client" % hadoopVersion
+      excludeAll(ExclusionRule("javax.servlet"), ExclusionRule("com.sun.jersey"))
+  )
 
   lazy val spark = sparkCore ++ Seq(
     "org.apache.spark" %% "spark-sql" % sparkVersion % "provided",
     "org.apache.spark" %% "spark-hive" % sparkVersion % "provided",
     "org.apache.spark" %% "spark-yarn" % sparkVersion % "provided",
-    "com.databricks" %% "spark-avro" % avroSparkVersion,
-    sparkStreamingKafka, sparkTags)
+    "com.databricks" %% "spark-avro" % avroSparkVersion, sparkTags) ++ sparkStreamingKafka
 
   lazy val slick = Seq(
     "com.typesafe.slick" %% "slick" % slickVersion,
@@ -102,7 +110,9 @@ object Dependencies {
     //"com.typesafe.slick" %% "slick-hikaricp" % slickVersion
   )
 
-  lazy val sparkStreamingKafka =  "org.apache.spark" %% "spark-streaming-kafka-0-10" % sparkVersion
+  lazy val sparkStreamingKafka = Seq(
+    "org.apache.spark" %% "spark-streaming-kafka-0-10" % sparkVersion,
+    "org.apache.spark" %% "spark-sql-kafka-0-10" % sparkVersion)
 
   lazy val sparkTags = ("org.apache.spark" %% "spark-tags" % sparkVersion) exclude("org.scalatest", "scalatest")
 

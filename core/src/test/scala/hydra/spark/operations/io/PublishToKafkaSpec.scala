@@ -20,8 +20,8 @@ import java.util.Properties
 
 import com.typesafe.config.ConfigFactory
 import hydra.spark.api.{Invalid, Valid}
-import hydra.spark.dispatch.SparkBatchTransformation
 import hydra.spark.testutils.{SharedSparkContext, StaticJsonSource}
+import hydra.spark.transform.SparkBatchTransformation
 import kafka.serializer.StringEncoder
 import net.manub.embeddedkafka.{EmbeddedKafka, EmbeddedKafkaConfig, KafkaUnavailableException}
 import org.apache.kafka.clients.consumer.{ConsumerRecord, KafkaConsumer, OffsetAndMetadata}

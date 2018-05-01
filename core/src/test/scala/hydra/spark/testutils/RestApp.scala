@@ -6,7 +6,6 @@ package hydra.spark.testutils
 
 import java.util.Properties
 
-import io.confluent.kafka.schemaregistry.avro.AvroCompatibilityLevel
 import io.confluent.kafka.schemaregistry.exceptions.SchemaRegistryException
 import io.confluent.kafka.schemaregistry.rest.{SchemaRegistryConfig, SchemaRegistryRestApplication}
 import io.confluent.kafka.schemaregistry.storage.SchemaRegistry

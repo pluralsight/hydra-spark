@@ -102,7 +102,7 @@ class DslParserSpec extends Matchers with FunSpecLike with BeforeAndAfterEach wi
   describe("When parsing the dsl") {
     it("Should load sources") {
       import configs.syntax._
-      val d = TypesafeDSLParser().parse(dsl).get
+      val d = TypesafeDSLParser.parse(dsl).get
 
       d.name shouldBe "test-job"
 
@@ -190,7 +190,7 @@ class DslParserSpec extends Matchers with FunSpecLike with BeforeAndAfterEach wi
         """.
           stripMargin
 
-      val sd = TypesafeDSLParser().parse(defDsl).get
+      val sd = TypesafeDSLParser.parse(defDsl).get
       val source = sd.source.asInstanceOf[KafkaSource]
       source.topics.get("test.topic").get("format") shouldBe "json"
       source.properties.get("metadata.broker.list") shouldBe Some("localhost:6667")
@@ -231,7 +231,7 @@ class DslParserSpec extends Matchers with FunSpecLike with BeforeAndAfterEach wi
           |}
         """.stripMargin
 
-      val sd = TypesafeDSLParser().parse(defDsl).get
+      val sd = TypesafeDSLParser.parse(defDsl).get
       val source = sd.source.asInstanceOf[KafkaSource]
 
       source.properties("metadata.broker.list") shouldBe "broker1:6667,broker2:6667,broker3:6667"
@@ -272,7 +272,7 @@ class DslParserSpec extends Matchers with FunSpecLike with BeforeAndAfterEach wi
         """
           .stripMargin
 
-      val sd = TypesafeDSLParser().parse(defDsl).get
+      val sd = TypesafeDSLParser.parse(defDsl).get
       sd.isStreaming shouldBe false
       val source = sd.source.asInstanceOf[KafkaSource]
 
@@ -311,7 +311,7 @@ class DslParserSpec extends Matchers with FunSpecLike with BeforeAndAfterEach wi
            |      		}
            |      	}
         """.stripMargin
-      val sd = TypesafeDSLParser().parse(defDsl).get
+      val sd = TypesafeDSLParser.parse(defDsl).get
       sd.source.asInstanceOf[KafkaSource].properties("schema.registry.url") shouldBe "testschema"
       val op = sd.operations.head.asInstanceOf[SaveAsJson]
       op.directory shouldBe "/test"
@@ -351,7 +351,7 @@ class DslParserSpec extends Matchers with FunSpecLike with BeforeAndAfterEach wi
            |  }
            |}
         """.stripMargin
-      val sd = TypesafeDSLParser().parse(defDsl).get
+      val sd = TypesafeDSLParser.parse(defDsl).get
       sd.source.asInstanceOf[KafkaSource].properties("mydb-un") shouldBe "test-user"
       sd.source.asInstanceOf[KafkaSource].properties("mydb-pwd") shouldBe "password"
 

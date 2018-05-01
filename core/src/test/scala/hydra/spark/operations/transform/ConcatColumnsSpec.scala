@@ -44,7 +44,7 @@ class ConcatColumnsSpec extends Matchers with FunSpecLike with SharedSparkContex
         |}
       """.stripMargin
 
-      val dispatch = TypesafeDSLParser().parse(dsl).get
+      val dispatch = TypesafeDSLParser.parse(dsl).get
       val d = dispatch.operations.head.asInstanceOf[ConcatColumns]
       d.columnNames shouldBe Seq("col1","col2")
       d.newName shouldBe "newCol"

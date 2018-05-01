@@ -17,6 +17,11 @@ package hydra.spark.api
 
 import com.typesafe.config.Config
 
+
+trait JobDetails {
+  def name: String
+}
+
 /**
   * Contains all the information needed to run a dispatch, but without
   * a context associated with it.
@@ -30,4 +35,10 @@ import com.typesafe.config.Config
   *                    Created by alexsilva on 1/3/17.
   */
 case class TransformationDetails[S](name: String, source: Source[S], operations: Seq[DFOperation], isStreaming: Boolean,
-                              dsl: Config)
+                                    dsl: Config) extends JobDetails
+
+case class ReplicationDetails(name: String, topics: Either[List[String], String],
+                              startingOffsets: String,
+                              primaryKeys: Map[String, String],
+                              saveMode: String,
+                              connectionInfo: Map[String, String]) extends JobDetails

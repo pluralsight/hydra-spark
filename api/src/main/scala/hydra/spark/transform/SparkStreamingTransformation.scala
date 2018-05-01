@@ -13,13 +13,13 @@
  * limitations under the License.
  */
 
-package hydra.spark.dispatch
+package hydra.spark.transform
 
 import com.typesafe.config.{Config, ConfigFactory}
 import hydra.spark.api._
 import hydra.spark.internal.Logging
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{DataFrame, SparkSession}
+import org.apache.spark.sql.DataFrame
 import org.apache.spark.streaming.{Seconds, StreamingContext}
 
 import scala.concurrent.duration.FiniteDuration
