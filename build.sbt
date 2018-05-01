@@ -61,6 +61,7 @@ lazy val commonSettings = Seq(
   }
   ,
   resolvers += Resolver.mavenLocal,
+  resolvers += "jitpack" at "https://jitpack.io",
   resolvers += "Confluent" at "http://packages.confluent.io/maven/",
   resolvers += "The New Motion" at "http://nexus.thenewmotion.com/content/groups/public/"
 )

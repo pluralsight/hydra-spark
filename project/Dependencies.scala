@@ -26,8 +26,10 @@ object Dependencies {
     "ru.yandex.qatools.embed" % "postgresql-embedded" % "2.2" % "test",
     "com.h2database" % "h2" % "1.4.192" % "test") ++ postgres.map(_ % "test")
 
-  lazy val hydra = Seq("pluralsight" %% "hydra-sql" % hydraVersion)
+
+  lazy val hydra = Seq("com.github.pluralsight.hydra" % "hydra-sql_2.11" % hydraVersion)
     .map(_ excludeAll ("com.fasterxml.jackson.core"))
+
 
   lazy val serviceContainer = Seq("com.github.vonnagy" %% "service-container" % serviceContainerVersion)
     .map(_.excludeAll(
