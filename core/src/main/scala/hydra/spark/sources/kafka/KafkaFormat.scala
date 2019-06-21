@@ -43,7 +43,7 @@ abstract class KafkaFormat[K: ClassTag, V: ClassTag]
                key: Option[K]): DataFrame = {
     val rdd = createRDD(ctx, topic, topicProps, properties, key)
 
-    val fxn = rdd.map(_.value.toString)
+    val fxn: RDD[String] = rdd.map(record => Option(record).map(_.value.toString).getOrElse("")) //replaces null with empty strings
 
     schemaOpt(topicProps).map(s => ctx.read.schema(s).json(fxn)) getOrElse ctx.read.json(fxn)
   }
